@@ -2,6 +2,7 @@ const http = require("http");
 const fs = require("fs/promises");
 const path = require("path");
 const { searchKnowledge } = require("./lib/search");
+const { createSessionService } = require("./lib/session");
 
 const root = __dirname;
 const publicDirectory = path.join(root, "public");
@@ -18,7 +19,8 @@ const mimeTypes = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
-  ".svg": "image/svg+xml"
+  ".svg": "image/svg+xml",
+  ".woff2": "font/woff2"
 };
 
 function cleanText(value, maxLength = 4000) {
@@ -98,9 +100,10 @@ function nextTicketId(tickets) {
   return `CAP-${highest + 1}`;
 }
 
-function normalizeNewTicket(input, tickets) {
-  const name = cleanText(input.name, 120);
-  const email = cleanText(input.email, 254).toLowerCase();
+function normalizeNewTicket(input, tickets, session = null) {
+  const account = session?.account;
+  const name = cleanText(account ? account.name : input.name, 120);
+  const email = cleanText(account ? account.email : input.email, 254).toLowerCase();
   const category = cleanText(input.category, 80) || "Other";
   const question = cleanText(input.question, 500);
   const details = cleanText(input.details, 3000);
@@ -116,6 +119,8 @@ function normalizeNewTicket(input, tickets) {
     id: nextTicketId(tickets),
     name,
     email,
+    accountId: account?.id || null,
+    identitySource: account ? (session.status === "demo" ? "demo-session" : "portal-session") : "manual",
     category,
     question,
     details,
@@ -127,7 +132,16 @@ function normalizeNewTicket(input, tickets) {
   };
 }
 
-async function handleApi(request, response, url) {
+async function handleApi(request, response, url, sessions) {
+  if (request.method === "GET" && url.pathname === "/api/session") {
+    return sendJson(response, 200, await sessions.current(request));
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/demo-session") {
+    const input = await readJson(request);
+    sessions.changeDemo(request, response, input.action);
+    return sendJson(response, 200, { ok: true });
+  }
   if (request.method === "GET" && url.pathname === "/api/health") {
     return sendJson(response, 200, { status: "ok", mode: "zero-token" });
   }
@@ -145,8 +159,9 @@ async function handleApi(request, response, url) {
 
   if (request.method === "POST" && url.pathname === "/api/tickets") {
     const input = await readJson(request);
+    const session = await sessions.forTicket(request, input);
     const ticket = await mutateTickets(async (tickets) => {
-      const created = normalizeNewTicket(input, tickets);
+      const created = normalizeNewTicket(input, tickets, session);
       tickets.unshift(created);
       return created;
     });
@@ -197,23 +212,42 @@ async function serveStatic(response, pathname) {
   }
 }
 
-const server = http.createServer(async (request, response) => {
-  try {
-    const url = new URL(request.url, `http://${request.headers.host || "localhost"}`);
-    if (url.pathname.startsWith("/api/")) return await handleApi(request, response, url);
-    if (request.method !== "GET") return sendJson(response, 405, { error: "Method not allowed." });
-    await serveStatic(response, url.pathname);
-  } catch (error) {
-    const status = error.statusCode || 500;
-    if (status >= 500) console.error(error);
-    sendJson(response, status, { error: error.message || "Server error." });
-  }
-});
+function createServer({ sessions = createSessionService() } = {}) {
+  return http.createServer(async (request, response) => {
+    try {
+      const url = new URL(request.url, `http://${request.headers.host || "localhost"}`);
+      if (url.pathname.startsWith("/api/")) {
+        if (["POST", "PATCH", "DELETE"].includes(request.method)) {
+          if (request.headers["sec-fetch-site"] === "cross-site" ||
+              (request.headers.origin && request.headers.origin !== url.origin)) {
+            throw requestError("Submit this request from the assistant page.", 403);
+          }
+          if (request.headers["content-type"]?.split(";")[0].trim() !== "application/json") {
+            throw requestError("Request body must use application/json.", 415);
+          }
+        }
+        return await handleApi(request, response, url, sessions);
+      }
+      if (request.method !== "GET") return sendJson(response, 405, { error: "Method not allowed." });
+      await serveStatic(response, url.pathname);
+    } catch (error) {
+      const status = error.statusCode || 500;
+      if (status >= 500) console.error(error);
+      sendJson(response, status, { error: error.message || "Server error." });
+    }
+  });
+}
+
+const server = createServer();
 
 if (require.main === module) {
-  server.listen(port, () => {
+  const resolveAccount = process.env.CAPSTONE_SESSION_ADAPTER
+    ? require(path.resolve(process.env.CAPSTONE_SESSION_ADAPTER))
+    : null;
+  const app = createServer({ sessions: createSessionService({ resolveAccount, enableDemo: true }) });
+  app.listen(port, "127.0.0.1", () => {
     console.log(`Capstone AI Chat is running at http://localhost:${port}`);
   });
 }
 
-module.exports = { cleanText, normalizeNewTicket, server };
+module.exports = { cleanText, normalizeNewTicket, createServer, server };

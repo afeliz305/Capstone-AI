@@ -66,6 +66,12 @@
       createElement("span", "", ticket.email),
       createElement("span", "", formatDate(ticket.createdAt))
     );
+    const identityLabels = {
+      "portal-session": "From signed-in account",
+      "demo-session": "Sample account · demo only",
+      manual: "Manually entered contact"
+    };
+    meta.append(createElement("span", "", identityLabels[ticket.identitySource] || identityLabels.manual));
     if (ticket.privateToInstructor) meta.append(createElement("span", "ticket-privacy", "Private to instructor"));
     if (ticket.transcript) meta.append(createElement("span", "", "Chat included"));
     content.append(meta);

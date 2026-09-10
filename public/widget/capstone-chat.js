@@ -8,8 +8,17 @@
   const supportDialog = document.querySelector("#support-dialog");
   const supportForm = document.querySelector("#support-form");
   const supportStatus = document.querySelector("#support-status");
+  const accountStatus = document.querySelector("#account-status");
+  const sampleStart = document.querySelector("#sample-account-start");
+  const sampleEnd = document.querySelector("#sample-account-end");
+  const accountRetry = document.querySelector("#account-retry");
   const conversation = [];
   let lastQuestion = "";
+  let currentSession = null;
+  let accountBusy = false;
+  let submittingTicket = false;
+  let identityWasAccount = false;
+  let accountRequest = 0;
 
   function createElement(tag, className, text) {
     const element = document.createElement(tag);
@@ -72,12 +81,100 @@
     return button;
   }
 
-  function openSupportDialog(question = lastQuestion) {
+  function updateAccountControls() {
+    const ready = currentSession && ["guest", "demo", "signed-in"].includes(currentSession.status);
+    supportForm.querySelector("button[type='submit']").disabled = accountBusy || submittingTicket || !ready;
+    for (const field of [supportForm.elements.name, supportForm.elements.email]) {
+      field.readOnly = accountBusy || submittingTicket || currentSession?.status !== "guest";
+    }
+    for (const button of [sampleStart, sampleEnd, accountRetry]) {
+      button.disabled = accountBusy || submittingTicket;
+    }
+  }
+
+  async function loadAccount() {
+    const requestNumber = ++accountRequest;
+    currentSession = null;
+    accountBusy = true;
+    accountStatus.textContent = "Checking account details…";
+    sampleStart.hidden = sampleEnd.hidden = accountRetry.hidden = true;
+    updateAccountControls();
+    try {
+      const response = await fetch("/api/session", { credentials: "same-origin", cache: "no-store" });
+      const session = await response.json();
+      if (!response.ok) throw new Error(session.error || "Account details are unavailable.");
+      if (requestNumber !== accountRequest) return;
+      currentSession = session;
+      if (session.account) {
+        supportForm.elements.name.value = session.account.name;
+        supportForm.elements.email.value = session.account.email;
+        identityWasAccount = true;
+      } else if (identityWasAccount) {
+        supportForm.elements.name.value = "";
+        supportForm.elements.email.value = "";
+        identityWasAccount = false;
+      }
+      const notices = {
+        "signed-in": "Your name and email were filled from your signed-in account. These details are checked again when you submit.",
+        demo: "Sample account only — not your FIU login. Name and email are filled automatically to demonstrate the connected experience.",
+        guest: "FIU login is not connected to this standalone demo. Enter your contact details." + (session.demoAvailable ? " You can also try the sample account below." : ""),
+        "sign-in-required": "Sign in to the Capstone portal, then check your account again. A signed-in account is required to submit."
+      };
+      accountStatus.textContent = notices[session.status] || "Account details are unavailable.";
+      sampleStart.hidden = !session.demoAvailable || session.status === "demo";
+      sampleEnd.hidden = session.status !== "demo";
+      accountRetry.hidden = session.status !== "sign-in-required";
+    } catch (error) {
+      if (requestNumber !== accountRequest) return;
+      if (identityWasAccount) {
+        supportForm.elements.name.value = "";
+        supportForm.elements.email.value = "";
+        identityWasAccount = false;
+      }
+      accountStatus.textContent = `${error.message} Your request has not been submitted. Check your account again to continue.`;
+      accountRetry.hidden = false;
+    } finally {
+      if (requestNumber === accountRequest) {
+        accountBusy = false;
+        updateAccountControls();
+      }
+    }
+  }
+
+  async function changeSampleAccount(action) {
+    accountBusy = true;
+    updateAccountControls();
+    supportStatus.textContent = "";
+    try {
+      const response = await fetch("/api/demo-session", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Sample account could not be changed.");
+    } catch (error) {
+      supportStatus.className = "form-status error";
+      supportStatus.textContent = error.message;
+    } finally {
+      await loadAccount();
+    }
+  }
+
+  sampleStart.addEventListener("click", () => void changeSampleAccount("start"));
+  sampleEnd.addEventListener("click", () => void changeSampleAccount("end"));
+  accountRetry.addEventListener("click", () => void loadAccount());
+
+  async function openSupportDialog(question = lastQuestion) {
     const questionField = supportForm.elements.question;
     if (question && !questionField.value) questionField.value = question;
     supportStatus.textContent = "";
     supportDialog.showModal();
-    supportForm.elements.name.focus();
+    await loadAccount();
+    if (supportDialog.open) {
+      (currentSession?.account ? questionField : supportForm.elements.name).focus();
+    }
   }
 
   function addFeedback(message) {
@@ -200,12 +297,14 @@
 
   supportForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const submitButton = supportForm.querySelector("button[type='submit']");
+    if (accountBusy || submittingTicket || !currentSession || currentSession.status === "sign-in-required") return;
     const formData = new FormData(supportForm);
     const transcript = conversation.map((item) => `${item.role}: ${item.text}`).join("\n");
     const payload = {
-      name: formData.get("name"),
-      email: formData.get("email"),
+      // Connected identities come from the server, not these browser fields.
+      name: currentSession.account ? undefined : formData.get("name"),
+      email: currentSession.account ? undefined : formData.get("email"),
+      identityContext: currentSession.identityContext,
       category: formData.get("category"),
       question: formData.get("question"),
       details: formData.get("details"),
@@ -214,17 +313,24 @@
       transcript
     };
 
-    submitButton.disabled = true;
+    submittingTicket = true;
+    let created = false;
+    updateAccountControls();
     supportStatus.className = "form-status";
     supportStatus.textContent = "Creating request…";
     try {
       const response = await fetch("/api/tickets", {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
       const ticket = await response.json();
-      if (!response.ok) throw new Error(ticket.error || "The request could not be created.");
+      if (!response.ok) {
+        if ([401, 409, 503].includes(response.status)) await loadAccount();
+        throw new Error(ticket.error || "The request could not be created.");
+      }
+      created = true;
       supportStatus.className = "form-status success";
       supportStatus.textContent = `${ticket.id} was created in the local staff queue.`;
       addAssistantText(
@@ -235,12 +341,17 @@
         supportDialog.close();
         supportForm.reset();
         supportStatus.textContent = "";
+        submittingTicket = false;
+        updateAccountControls();
       }, 900);
     } catch (error) {
       supportStatus.className = "form-status error";
       supportStatus.textContent = error.message;
     } finally {
-      submitButton.disabled = false;
+      if (!created) {
+        submittingTicket = false;
+        updateAccountControls();
+      }
     }
   });
 
