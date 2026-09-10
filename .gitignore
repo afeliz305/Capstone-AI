@@ -1,0 +1,8 @@
+node_modules/
+data/tickets.json
+data/*.tmp
+.env
+.env.*
+!.env.example
+coverage/
+dist/
