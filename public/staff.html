@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Local support-request queue for the Capstone AI Chat prototype.">
+    <title>Support Queue · Capstone AI Chat</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/staff.css">
+    <script src="/staff.js" defer></script>
+  </head>
+  <body class="staff-page">
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Return to Capstone Assistant">
+        <span class="brand-fiu">FIU</span>
+        <span class="brand-copy">
+          <strong>Knight Foundation School of Computing &amp; Information Sciences</strong>
+          <span>CAPSTONE SUPPORT · PROTOTYPE</span>
+        </span>
+      </a>
+      <nav aria-label="Staff navigation">
+        <a href="/">Student assistant</a>
+        <button class="refresh-button" id="refresh-tickets" type="button">Refresh queue</button>
+      </nav>
+    </header>
+
+    <main class="staff-shell">
+      <section class="queue-heading">
+        <div>
+          <p class="eyebrow">LOCAL DEMO QUEUE</p>
+          <h1>Support requests</h1>
+          <p>Requests created through the prototype appear here. No emails are sent.</p>
+        </div>
+        <div class="queue-metrics" aria-label="Queue summary">
+          <div><strong id="open-count">0</strong><span>Open</span></div>
+          <div><strong id="review-count">0</strong><span>In review</span></div>
+          <div><strong id="resolved-count">0</strong><span>Resolved</span></div>
+        </div>
+      </section>
+
+      <section class="queue-toolbar" aria-label="Ticket filters">
+        <label>
+          Search requests
+          <input id="ticket-search" type="search" placeholder="Search name, ticket, or question…">
+        </label>
+        <label>
+          Status
+          <select id="status-filter">
+            <option value="all">All statuses</option>
+            <option value="open">Open</option>
+            <option value="in-review">In review</option>
+            <option value="resolved">Resolved</option>
+          </select>
+        </label>
+      </section>
+
+      <p class="queue-status" id="queue-status" role="status" aria-live="polite"></p>
+      <section class="ticket-grid" id="ticket-grid" aria-label="Support tickets"></section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,47 @@
+.staff-page { background: #eef2f7; }
+.staff-page .site-header nav { display: flex; }
+.refresh-button { padding: 0.62rem 0.85rem; border: 1px solid rgba(255,255,255,0.35); border-radius: 0.5rem; color: #fff; background: transparent; cursor: pointer; font-weight: 750; }
+.refresh-button:hover { background: rgba(255,255,255,0.08); }
+.staff-shell { width: min(76rem, calc(100% - 2rem)); margin: 0 auto; padding: clamp(1.5rem, 4vw, 3.5rem) 0; }
+.queue-heading { display: flex; justify-content: space-between; align-items: end; gap: 2rem; margin-bottom: 1.5rem; }
+.queue-heading h1 { margin: 0; color: var(--fiu-blue); font: 800 clamp(2rem, 4vw, 3.2rem)/1.05 Georgia, serif; letter-spacing: -0.035em; }
+.queue-heading > div > p:last-child { margin: 0.65rem 0 0; color: var(--muted); }
+.queue-metrics { display: grid; grid-template-columns: repeat(3, minmax(5.6rem, 1fr)); border: 1px solid var(--line); border-radius: 0.9rem; overflow: hidden; background: #fff; box-shadow: 0 8px 24px rgba(8,30,63,0.06); }
+.queue-metrics div { padding: 0.9rem 1rem; display: grid; gap: 0.2rem; text-align: center; border-left: 1px solid var(--line); }
+.queue-metrics div:first-child { border-left: 0; }
+.queue-metrics strong { color: var(--fiu-blue); font-size: 1.45rem; }
+.queue-metrics span { color: var(--muted); font-size: 0.72rem; font-weight: 750; }
+.queue-toolbar { padding: 1rem; display: grid; grid-template-columns: minmax(15rem, 1fr) 12rem; gap: 1rem; border: 1px solid var(--line); border-radius: 0.9rem; background: #fff; }
+.queue-toolbar label { display: grid; gap: 0.38rem; color: var(--fiu-blue); font-size: 0.75rem; font-weight: 800; }
+.queue-toolbar input, .queue-toolbar select { min-height: 2.7rem; padding: 0.65rem 0.75rem; border: 1px solid #bac5d3; border-radius: 0.55rem; color: var(--ink); background: #fff; }
+.queue-status { min-height: 1.4rem; margin: 0.75rem 0; color: var(--muted); font-size: 0.82rem; }
+.ticket-grid { display: grid; gap: 0.8rem; }
+.ticket-card { padding: 1.1rem 1.2rem; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; border: 1px solid var(--line); border-left: 4px solid var(--fiu-gold); border-radius: 0.85rem; background: #fff; box-shadow: 0 8px 20px rgba(8,30,63,0.05); }
+.ticket-card h2 { margin: 0.25rem 0 0.45rem; color: var(--fiu-blue); font-size: 1.05rem; }
+.ticket-id { color: #84661f; font-size: 0.7rem; font-weight: 900; letter-spacing: 0.08em; }
+.ticket-question { margin: 0; color: var(--ink); line-height: 1.5; }
+.ticket-details { margin: 0.7rem 0 0; padding-top: 0.7rem; border-top: 1px solid var(--line); color: var(--muted); line-height: 1.5; font-size: 0.87rem; white-space: pre-wrap; }
+.ticket-meta { margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.35rem 0.8rem; color: var(--muted); font-size: 0.76rem; }
+.ticket-privacy { color: #6c5318; font-weight: 750; }
+.ticket-actions { min-width: 9rem; display: flex; flex-direction: column; align-items: flex-end; gap: 0.45rem; }
+.ticket-actions label { color: var(--muted); font-size: 0.72rem; font-weight: 750; }
+.ticket-actions select { min-height: 2.5rem; padding: 0.55rem 0.65rem; border: 1px solid #b8c3d1; border-radius: 0.5rem; color: var(--fiu-blue); background: #fff; font-weight: 750; }
+.empty-queue { padding: 4rem 1rem; display: grid; place-items: center; gap: 0.4rem; text-align: center; border: 1px dashed #b9c4d1; border-radius: 1rem; color: var(--muted); background: rgba(255,255,255,0.6); }
+.empty-queue strong { color: var(--fiu-blue); font-size: 1.05rem; }
+.status-pill { padding: 0.3rem 0.5rem; border-radius: 999px; font-size: 0.68rem; font-weight: 850; text-transform: uppercase; }
+.status-open { color: #8a3e12; background: #fff0e4; }
+.status-in-review { color: #57430f; background: #fff5cc; }
+.status-resolved { color: #0e633b; background: #def7ea; }
+
+@media (max-width: 760px) {
+  .queue-heading { align-items: stretch; flex-direction: column; }
+  .queue-metrics { width: 100%; }
+  .queue-toolbar { grid-template-columns: 1fr; }
+  .ticket-card { grid-template-columns: 1fr; }
+  .ticket-actions { align-items: flex-start; }
+}
+
+@media (max-width: 520px) {
+  .staff-page .site-header nav a { display: none; }
+  .queue-metrics div { padding: 0.75rem 0.4rem; }
+}
