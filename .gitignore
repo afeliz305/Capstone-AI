@@ -1,5 +1,8 @@
 node_modules/
 data/tickets.json
+data/attachments/
+data/staff-credentials.json
+data/*.seed-backup-*
 data/*.tmp
 .env
 .env.*

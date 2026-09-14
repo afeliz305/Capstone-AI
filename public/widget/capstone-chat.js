@@ -4,7 +4,11 @@
   const form = document.querySelector("#chat-form");
   const input = document.querySelector("#chat-input");
   const log = document.querySelector(".chat-log");
-  const clearButton = document.querySelector(".chat-header .icon-button");
+  const clearButton = document.querySelector("#clear-chat");
+  const chatPanel = document.querySelector("#assistant");
+  const launcher = document.querySelector("#chat-launcher");
+  const minimizeButton = document.querySelector("#minimize-chat");
+  const openButtons = [launcher, ...document.querySelectorAll("[data-open-chat]")];
   const supportDialog = document.querySelector("#support-dialog");
   const supportForm = document.querySelector("#support-form");
   const supportStatus = document.querySelector("#support-status");
@@ -12,6 +16,11 @@
   const sampleStart = document.querySelector("#sample-account-start");
   const sampleEnd = document.querySelector("#sample-account-end");
   const accountRetry = document.querySelector("#account-retry");
+  const attachmentInput = document.querySelector("#ticket-attachments");
+  const attachmentList = document.querySelector("#attachment-list");
+  const attachmentStatus = document.querySelector("#attachment-status");
+  const attachmentPolicy = window.CapstoneAttachmentPolicy;
+  let selectedAttachments = [];
   const conversation = [];
   let lastQuestion = "";
   let currentSession = null;
@@ -19,6 +28,31 @@
   let submittingTicket = false;
   let identityWasAccount = false;
   let accountRequest = 0;
+
+  function openChat() {
+    chatPanel.hidden = false;
+    launcher.hidden = true;
+    openButtons.forEach((button) => button.setAttribute("aria-expanded", "true"));
+    (input.disabled ? chatPanel : input).focus({ preventScroll: true });
+  }
+
+  function minimizeChat() {
+    chatPanel.hidden = true;
+    launcher.hidden = false;
+    openButtons.forEach((button) => button.setAttribute("aria-expanded", "false"));
+    launcher.focus({ preventScroll: true });
+  }
+
+  openButtons.forEach((button) => button.addEventListener("click", openChat));
+  minimizeButton.addEventListener("click", minimizeChat);
+  chatPanel.addEventListener("keydown", (event) => {
+    // The separate support dialog owns Escape while it is open.
+    if (event.key === "Escape" && !supportDialog.open) {
+      event.preventDefault();
+      event.stopPropagation();
+      minimizeChat();
+    }
+  });
 
   function createElement(tag, className, text) {
     const element = document.createElement(tag);
@@ -90,6 +124,46 @@
     for (const button of [sampleStart, sampleEnd, accountRetry]) {
       button.disabled = accountBusy || submittingTicket;
     }
+    attachmentInput.disabled = submittingTicket;
+    attachmentList.querySelectorAll("button").forEach((button) => { button.disabled = submittingTicket; });
+    document.querySelectorAll(".dialog-close, [data-close-dialog]").forEach((button) => { button.disabled = submittingTicket; });
+  }
+
+  function renderAttachments() {
+    attachmentList.replaceChildren();
+    attachmentList.hidden = selectedAttachments.length === 0;
+    selectedAttachments.forEach((file, index) => {
+      const item = createElement("li");
+      item.append(createElement("span", "", `${file.name} (${Math.max(1, Math.ceil(file.size / 1024))} KB)`));
+      const remove = createActionButton("Remove", "secondary-action", () => {
+        selectedAttachments.splice(index, 1);
+        attachmentStatus.textContent = "";
+        renderAttachments();
+        attachmentInput.focus();
+      });
+      remove.setAttribute("aria-label", `Remove ${file.name}`);
+      item.append(remove);
+      attachmentList.append(item);
+    });
+  }
+
+  attachmentInput.addEventListener("change", () => {
+    const next = [...selectedAttachments, ...attachmentInput.files];
+    const error = attachmentPolicy.validate(next);
+    attachmentInput.value = "";
+    attachmentStatus.textContent = error;
+    if (error) return;
+    selectedAttachments = next;
+    renderAttachments();
+  });
+
+  function readAttachment(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({ name: file.name, size: file.size, data: String(reader.result).split(",")[1] });
+      reader.onerror = reader.onabort = () => reject(new Error(`Could not read ${file.name}. Remove it and select the document again.`));
+      reader.readAsDataURL(file);
+    });
   }
 
   async function loadAccount() {
@@ -232,6 +306,7 @@
     const loading = addLoadingMessage();
     form.querySelector("button[type='submit']").disabled = true;
     input.disabled = true;
+    chatPanel.focus({ preventScroll: true });
 
     try {
       const response = await fetch(`/api/search?q=${encodeURIComponent(question)}`);
@@ -252,13 +327,18 @@
     } finally {
       form.querySelector("button[type='submit']").disabled = false;
       input.disabled = false;
-      input.focus();
+      // A response arriving after minimization must not reopen the widget or
+      // steal focus from the page or the support form.
+      if (!chatPanel.hidden && !supportDialog.open && chatPanel.contains(document.activeElement)) {
+        input.focus({ preventScroll: true });
+      }
     }
   }
 
   function submitQuestion(question) {
     const value = String(question || "").trim();
     if (!value) return Promise.resolve({ status: "unmatched", matches: [] });
+    openChat();
     input.value = "";
     return search(value);
   }
@@ -289,7 +369,10 @@
   });
 
   supportDialog?.addEventListener("click", (event) => {
-    if (event.target === supportDialog) supportDialog.close();
+    if (event.target === supportDialog && !submittingTicket) supportDialog.close();
+  });
+  supportDialog?.addEventListener("cancel", (event) => {
+    if (submittingTicket) event.preventDefault();
   });
   document.querySelectorAll(".dialog-close, [data-close-dialog]").forEach((button) => {
     button.addEventListener("click", () => supportDialog.close());
@@ -317,8 +400,11 @@
     let created = false;
     updateAccountControls();
     supportStatus.className = "form-status";
-    supportStatus.textContent = "Creating request…";
+    supportStatus.textContent = selectedAttachments.length ? "Reading documents and creating request…" : "Creating request…";
     try {
+      const attachmentError = attachmentPolicy.validate(selectedAttachments);
+      if (attachmentError) throw new Error(attachmentError);
+      payload.attachments = await Promise.all(selectedAttachments.map(readAttachment));
       const response = await fetch("/api/tickets", {
         method: "POST",
         credentials: "same-origin",
@@ -340,6 +426,9 @@
       window.setTimeout(() => {
         supportDialog.close();
         supportForm.reset();
+        selectedAttachments = [];
+        attachmentStatus.textContent = "";
+        renderAttachments();
         supportStatus.textContent = "";
         submittingTicket = false;
         updateAccountControls();

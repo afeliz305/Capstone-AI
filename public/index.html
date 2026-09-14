@@ -7,6 +7,7 @@
     <title>Capstone Assistant · FIU KFSCIS</title>
     <link rel="stylesheet" href="/styles.css">
     <link rel="stylesheet" href="/widget/capstone-chat.css">
+    <script src="/widget/attachment-policy.js" defer></script>
     <script src="/widget/capstone-chat.js" defer></script>
   </head>
   <body>
@@ -28,9 +29,9 @@
     <div class="portal-shell">
       <aside class="side-nav" aria-label="Capstone sections">
         <p class="nav-label">SUPPORT</p>
-        <a class="active" href="#assistant" aria-current="page">
+        <button type="button" class="active" data-open-chat aria-controls="assistant" aria-expanded="false" aria-haspopup="dialog">
           <svg class="ui-icon" aria-hidden="true"><use href="/assets/icons.svg#chat"></use></svg> Capstone Assistant
-        </a>
+        </button>
         <a href="https://capstone.cs.fiu.edu/portal" target="_blank" rel="noreferrer">
           <svg class="ui-icon" aria-hidden="true"><use href="/assets/icons.svg#home"></use></svg> My Dashboard
         </a>
@@ -101,38 +102,46 @@
           </div>
         </section>
       </main>
-
-      <section class="chat-panel" id="assistant" aria-labelledby="chat-title">
-        <header class="chat-header">
-          <div class="assistant-avatar" aria-hidden="true"><svg class="ui-icon"><use href="/assets/icons.svg#chat"></use></svg></div>
-          <div>
-            <h2 id="chat-title">Capstone Assistant</h2>
-            <p><span class="status-dot" aria-hidden="true"></span> Ready · site knowledge only</p>
-          </div>
-          <button type="button" class="icon-button" aria-label="Clear conversation" title="Clear conversation"><svg class="ui-icon" aria-hidden="true"><use href="/assets/icons.svg#refresh"></use></svg></button>
-        </header>
-
-        <div class="chat-log" role="log" aria-live="polite" aria-relevant="additions">
-          <article class="message assistant-message">
-            <div class="message-label">CAPSTONE ASSISTANT</div>
-            <p>Hi! What would you like help finding on the Capstone site?</p>
-            <p class="message-note">I’ll show the source for every answer. If I can’t find it, I can help you create a support request.</p>
-          </article>
-          <div class="starter-prompts" aria-label="Suggested questions">
-            <button type="button" data-question="How do I get started with Capstone?">Getting started</button>
-            <button type="button" data-question="Where are the Capstone tutorials?">Find tutorials</button>
-            <button type="button" data-question="How should our team prepare for the showcase?">Showcase checklist</button>
-          </div>
-        </div>
-
-        <form class="chat-composer" id="chat-form">
-          <label class="sr-only" for="chat-input">Ask a question about the Capstone site</label>
-          <textarea id="chat-input" name="question" rows="2" placeholder="Ask about Capstone…" required></textarea>
-          <button type="submit" aria-label="Send question"><svg class="ui-icon" aria-hidden="true"><use href="/assets/icons.svg#send"></use></svg></button>
-          <p>Press Enter to send · Shift+Enter for a new line</p>
-        </form>
-      </section>
     </div>
+
+    <button type="button" class="chat-launcher" id="chat-launcher" aria-controls="assistant" aria-expanded="false" aria-haspopup="dialog">
+      <svg class="ui-icon" aria-hidden="true"><use href="/assets/icons.svg#chat"></use></svg>
+      <span>Chat with Capstone</span>
+    </button>
+
+    <section class="chat-panel" id="assistant" role="dialog" aria-modal="false" aria-labelledby="chat-title" tabindex="-1" hidden>
+      <header class="chat-header">
+        <div class="assistant-avatar" aria-hidden="true"><svg class="ui-icon"><use href="/assets/icons.svg#chat"></use></svg></div>
+        <div>
+          <h2 id="chat-title">Capstone Assistant</h2>
+          <p><span class="status-dot" aria-hidden="true"></span> Ready · site knowledge only</p>
+        </div>
+        <div class="chat-header-actions">
+          <button type="button" class="icon-button" id="clear-chat" aria-label="Clear conversation" title="Clear conversation"><svg class="ui-icon" aria-hidden="true"><use href="/assets/icons.svg#refresh"></use></svg></button>
+          <button type="button" class="icon-button" id="minimize-chat" aria-label="Minimize chat" title="Minimize chat (Escape)"><svg class="ui-icon" aria-hidden="true"><use href="/assets/icons.svg#minimize"></use></svg></button>
+        </div>
+      </header>
+
+      <div class="chat-log" role="log" aria-live="polite" aria-relevant="additions">
+        <article class="message assistant-message">
+          <div class="message-label">CAPSTONE ASSISTANT</div>
+          <p>Hi! What would you like help finding on the Capstone site?</p>
+          <p class="message-note">I’ll show the source for every answer. If I can’t find it, I can help you create a support request.</p>
+        </article>
+        <div class="starter-prompts" aria-label="Suggested questions">
+          <button type="button" data-question="How do I get started with Capstone?">Getting started</button>
+          <button type="button" data-question="Where are the Capstone tutorials?">Find tutorials</button>
+          <button type="button" data-question="How should our team prepare for the showcase?">Showcase checklist</button>
+        </div>
+      </div>
+
+      <form class="chat-composer" id="chat-form">
+        <label class="sr-only" for="chat-input">Ask a question about the Capstone site</label>
+        <textarea id="chat-input" name="question" rows="2" placeholder="Ask about Capstone…" required></textarea>
+        <button type="submit" aria-label="Send question"><svg class="ui-icon" aria-hidden="true"><use href="/assets/icons.svg#send"></use></svg></button>
+        <p>Press Enter to send · Shift+Enter for a new line</p>
+      </form>
+    </section>
 
     <dialog class="support-dialog" id="support-dialog" aria-labelledby="support-title">
       <form class="support-form" id="support-form">
@@ -170,6 +179,7 @@
           <select name="category">
             <option>Website navigation</option>
             <option>Coursework</option>
+            <option>Attendance</option>
             <option>Scrum and sprints</option>
             <option>Showcase</option>
             <option>Templates and branding</option>
@@ -186,6 +196,14 @@
           What would help?
           <textarea name="details" rows="4" maxlength="3000" placeholder="Tell the instructor what answer or action you need." required></textarea>
         </label>
+
+        <div class="attachment-field">
+          <label for="ticket-attachments">Attach documents <span>(optional)</span></label>
+          <input id="ticket-attachments" type="file" accept=".pdf,.docx,.txt" multiple aria-describedby="attachment-help attachment-status">
+          <p class="attachment-help" id="attachment-help">PDF, Word (.docx), or UTF-8 text (.txt). Up to 3 documents, 5 MB each, 10 MB total. Sample files only; no medical records or other sensitive documents.</p>
+          <p class="attachment-status" id="attachment-status" role="status" aria-live="polite"></p>
+          <ul class="attachment-list" id="attachment-list" aria-label="Selected documents" hidden></ul>
+        </div>
 
         <label class="check-row">
           <input name="includeTranscript" type="checkbox" checked>

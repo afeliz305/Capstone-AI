@@ -27,7 +27,7 @@ The prototype uses its own small stylesheets rather than importing the entire po
 | Context bar | White, 14px 22px padding, blue term chip |
 | Success / warning / error | `#13633A` / `#8A6516` / `#B3261E` on light surfaces |
 
-Secondary text and navigation labels are slightly larger where needed for readability. On narrower screens the chat appears before the reference cards; the sidebar is hidden on phones. The existing search, escalation, account autofill, and queue behavior remain unchanged.
+Secondary text and navigation labels are slightly larger where needed for readability. The chat starts minimized as a navy-and-gold launcher in the bottom-right corner. Opening it reveals a floating, non-modal popup without reserving a page column. The popup is constrained to the viewport on smaller screens; the sidebar is hidden on phones. The existing search, escalation, account autofill, and queue behavior remain unchanged.
 
 ## Assets and attribution
 

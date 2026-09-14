@@ -44,10 +44,15 @@ This variable is read from the process environment; `.env` files are not loaded 
 
 `identityContext` in the session response is an opaque account-change guard, not authentication. Clients send it with the ticket; the server still resolves the session on every submission. API mutations require JSON and reject cross-origin browser requests. These checks do not replace portal session validation, authorization, or production CSRF protections.
 
+## Staff access is separate
+
+Staff now sign in with an approved email and locally configured prototype password. Ticket listing, updates/assignments, and attachment downloads are checked server-side. The student sample account and portal session adapter do not grant staff access. See [staff access](STAFF_ACCESS.md).
+
 ## Before production
 
-- Protect the staff page, ticket listing, and ticket updates with actual instructor/staff authorization. Connecting student identity does not secure the existing demo queue.
+- Replace or integrate local staff password provisioning with institutional identity and role management. Preserve server-side protection for listing, updates, and downloads.
 - Enforce student/instructor ticket access rules, rather than relying on the privacy checkbox.
+- Add ticket-level/instructor-only authorization, malware scanning, quotas, and retention. The current six staff accounts can access all team tickets and their attachments. See [document upload notes](DOCUMENT_ATTACHMENTS.md).
 - Agree on HTTPS, session cookie scope, trusted proxy/origin handling, logout/expiry behavior, and CSRF protection with the portal owner. The demo's origin guard assumes direct local HTTP; a production reverse proxy needs deliberate configuration and testing.
 - Replace local JSON storage as appropriate, define retention/consent, and configure professor email delivery separately.
 - Keep real account data, tickets, secrets, and session credentials out of GitHub. Only sample/test data belongs in the demo.

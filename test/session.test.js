@@ -11,8 +11,11 @@ const directory = fs.mkdtempSync(path.join(os.tmpdir(), "capstone-session-test-"
 const ticketFile = path.join(directory, "tickets.json");
 process.env.CAPSTONE_DATA_FILE = ticketFile;
 const { createServer } = require("../server");
+const { createStaffAuth, setStaffPassword } = require("../lib/staff-auth");
+const staffFile = path.join(directory, "staff-credentials.json");
+test.before(() => setStaffPassword("afeli016@fiu.edu", "Fixture password for tests only", { file: staffFile }));
 test.after(() => {
-  for (const file of [ticketFile, `${ticketFile}.tmp`]) {
+  for (const file of [ticketFile, `${ticketFile}.tmp`, staffFile, `${staffFile}.tmp`]) {
     try { fs.unlinkSync(file); } catch (error) { if (error.code !== "ENOENT") throw error; }
   }
   fs.rmdirSync(directory);
@@ -23,7 +26,7 @@ const account = { id: "student-42", name: "Account Student", email: "account@exa
 const requestDetails = { question: "Where is the form?", details: "Please help locate the form." };
 
 async function app(t, options = {}) {
-  const server = createServer({ sessions: createSessionService(options) });
+  const server = createServer({ sessions: createSessionService(options), staffAuth: createStaffAuth({ file: staffFile }) });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   t.after(() => new Promise((resolve, reject) => {
@@ -31,10 +34,15 @@ async function app(t, options = {}) {
     server.closeAllConnections();
   }));
   const base = `http://127.0.0.1:${server.address().port}`;
+  const staffLogin = await fetch(`${base}/api/staff/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "afeli016@fiu.edu", password: "Fixture password for tests only" }) });
+  assert.equal(staffLogin.status, 200);
+  const staffCookie = staffLogin.headers.get("set-cookie").split(";")[0];
   return async (route, { body, cookie, headers, method } = {}) => {
+    const needsStaff = route === "/api/tickets" && !body || method === "PATCH";
+    const combinedCookie = [cookie, needsStaff ? staffCookie : ""].filter(Boolean).join("; ");
     const response = await fetch(`${base}${route}`, {
       method: method || (body ? "POST" : "GET"),
-      headers: { ...(body ? { "Content-Type": "application/json" } : {}), ...(cookie ? { Cookie: cookie } : {}), ...headers },
+      headers: { ...(body ? { "Content-Type": "application/json" } : {}), ...(combinedCookie ? { Cookie: combinedCookie } : {}), ...headers },
       ...(body ? { body: JSON.stringify(body) } : {})
     });
     return { status: response.status, headers: response.headers, data: await response.json() };

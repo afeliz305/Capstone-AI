@@ -7,6 +7,7 @@
     <title>Support Queue · Capstone AI Chat</title>
     <link rel="stylesheet" href="/styles.css">
     <link rel="stylesheet" href="/staff.css">
+    <script src="/staff-view.js" defer></script>
     <script src="/staff.js" defer></script>
   </head>
   <body class="staff-page">
@@ -20,16 +21,48 @@
       </a>
       <nav aria-label="Staff navigation">
         <a href="/">Student assistant</a>
-        <button class="refresh-button" id="refresh-tickets" type="button">Refresh queue</button>
+        <button class="refresh-button" id="refresh-tickets" type="button" hidden>Refresh queue</button>
+        <button class="refresh-button" id="staff-logout" type="button" hidden>Sign out</button>
       </nav>
     </header>
 
-    <main class="staff-shell">
+    <main class="staff-access" id="staff-access">
+      <section class="staff-access-card" id="staff-checking" role="status">Checking staff access…</section>
+      <section class="staff-access-card" id="staff-login" aria-labelledby="staff-login-title" hidden>
+        <p class="eyebrow">CAPSTONE SUPPORT</p>
+        <h1 id="staff-login-title">Staff sign-in</h1>
+        <p>Sign in to view and manage support requests.</p>
+        <form id="staff-login-form">
+          <label for="staff-email">Staff email</label>
+          <input id="staff-email" type="email" autocomplete="username" maxlength="254" required>
+          <label for="staff-password">Prototype password</label>
+          <input id="staff-password" type="password" autocomplete="current-password" minlength="12" maxlength="128" required>
+          <p class="staff-login-status" id="staff-login-status" role="status" aria-live="polite"></p>
+          <button class="staff-primary" type="submit">Sign in</button>
+        </form>
+        <p class="staff-setup-note">Use a separate password for this prototype, not your FIU password. First time on this computer? Run <code>npm.cmd run staff:password</code> in the project terminal to set one.</p>
+        <a class="staff-back" href="/">Back to the student assistant</a>
+      </section>
+      <section class="staff-access-card staff-denied" id="staff-denied" aria-labelledby="staff-denied-title" hidden>
+        <p class="eyebrow">STAFF ACCESS ONLY</p>
+        <h1 id="staff-denied-title" tabindex="-1">Unauthorized access</h1>
+        <p id="staff-denied-message" role="alert">Your account is not authorized for the staff queue.</p>
+        <p>Returning to the student assistant in <strong id="staff-return-seconds">15</strong> seconds without a response.</p>
+        <div class="staff-denied-actions">
+          <a class="staff-primary" href="/">Back to the student assistant</a>
+          <button class="staff-secondary" id="staff-retry" type="button">Try signing in again</button>
+        </div>
+      </section>
+      <noscript>JavaScript is required to sign in. <a href="/">Return to the student assistant</a>.</noscript>
+    </main>
+
+    <main class="staff-shell" id="staff-workspace" hidden>
       <section class="queue-heading">
         <div>
-          <p class="eyebrow">LOCAL DEMO QUEUE</p>
-          <h1>Support requests</h1>
-          <p>Requests created through the prototype appear here. No emails are sent.</p>
+          <p class="eyebrow">STAFF SUPPORT QUEUE</p>
+          <h1 id="staff-welcome">Support requests</h1>
+          <p id="staff-identity"></p>
+          <p><strong id="my-ticket-count">0</strong> assigned to you · <strong id="unassigned-count">0</strong> unassigned. No emails are sent.</p>
         </div>
         <div class="queue-metrics" aria-label="Queue summary">
           <div><strong id="open-count">0</strong><span>Open</span></div>
@@ -39,6 +72,14 @@
       </section>
 
       <section class="queue-toolbar" aria-label="Ticket filters">
+        <label>
+          Assignment
+          <select id="assignment-filter">
+            <option value="mine">Assigned to me</option>
+            <option value="unassigned">Unassigned tickets</option>
+            <option value="all">All team tickets</option>
+          </select>
+        </label>
         <label>
           Search requests
           <input id="ticket-search" type="search" placeholder="Search name, ticket, or question…">

@@ -8,5 +8,6 @@
   <symbol id="layers" viewBox="0 0 24 24"><path d="m12 3 10 5-10 5L2 8Zm-10 9 10 5 10-5M2 16l10 5 10-5"/></symbol>
   <symbol id="check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
   <symbol id="refresh" viewBox="0 0 24 24"><path d="M20 7a9 9 0 1 0 1 8M20 3v5h-5"/></symbol>
+  <symbol id="minimize" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="send" viewBox="0 0 24 24"><path d="m21 3-7 18-4-7-7-4Zm0 0L10 14"/></symbol>
 </svg>
