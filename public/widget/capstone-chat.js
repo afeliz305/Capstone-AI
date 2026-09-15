@@ -20,6 +20,12 @@
   const attachmentList = document.querySelector("#attachment-list");
   const attachmentStatus = document.querySelector("#attachment-status");
   const attachmentPolicy = window.CapstoneAttachmentPolicy;
+  const contactPolicy = window.CapstoneContactPolicy;
+  const contactFields = contactPolicy.bindContactFields({
+    method: document.querySelector("#request-contact-method"),
+    phone: document.querySelector("#request-contact-phone"),
+    phoneField: document.querySelector("#request-phone-field")
+  });
   let selectedAttachments = [];
   const conversation = [];
   let lastQuestion = "";
@@ -28,6 +34,7 @@
   let submittingTicket = false;
   let identityWasAccount = false;
   let accountRequest = 0;
+  let contactAccountKey = null;
 
   function openChat() {
     chatPanel.hidden = false;
@@ -125,6 +132,7 @@
       button.disabled = accountBusy || submittingTicket;
     }
     attachmentInput.disabled = submittingTicket;
+    contactFields.setBusy(submittingTicket);
     attachmentList.querySelectorAll("button").forEach((button) => { button.disabled = submittingTicket; });
     document.querySelectorAll(".dialog-close, [data-close-dialog]").forEach((button) => { button.disabled = submittingTicket; });
   }
@@ -178,6 +186,9 @@
       const session = await response.json();
       if (!response.ok) throw new Error(session.error || "Account details are unavailable.");
       if (requestNumber !== accountRequest) return;
+      const nextContactAccountKey = session.account ? session.status + ":" + session.account.id + ":" + session.account.email : session.status;
+      if (contactAccountKey !== null && contactAccountKey !== nextContactAccountKey) contactFields.reset();
+      contactAccountKey = nextContactAccountKey;
       currentSession = session;
       if (session.account) {
         supportForm.elements.name.value = session.account.name;
@@ -391,10 +402,18 @@
       category: formData.get("category"),
       question: formData.get("question"),
       details: formData.get("details"),
+      preferredContactMethod: formData.get("preferredContactMethod"),
+      contactPhone: formData.get("preferredContactMethod") === "phone" ? formData.get("contactPhone") : undefined,
       includeTranscript: formData.has("includeTranscript"),
       privateToInstructor: formData.has("privateToInstructor"),
       transcript
     };
+    try { contactPolicy.normalizeContact(payload, currentSession.account?.email || payload.email); }
+    catch (error) {
+      supportStatus.className = "form-status error";
+      supportStatus.textContent = error.message;
+      return;
+    }
 
     submittingTicket = true;
     let created = false;
@@ -426,6 +445,7 @@
       window.setTimeout(() => {
         supportDialog.close();
         supportForm.reset();
+        contactFields.reset();
         selectedAttachments = [];
         attachmentStatus.textContent = "";
         renderAttachments();

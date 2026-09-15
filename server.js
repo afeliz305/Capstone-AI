@@ -5,6 +5,8 @@ const { searchKnowledge } = require("./lib/search");
 const { createSessionService } = require("./lib/session");
 const { prepareAttachments, createAttachmentStore } = require("./lib/attachments");
 const { createStaffAuth, memberFor, normalizeEmail } = require("./lib/staff-auth");
+const { TICKET_TOPICS, revisionOf, applyTicketWork, requesterView } = require("./lib/ticket-work");
+const { normalizeContact } = require("./public/contact-policy");
 
 const root = __dirname;
 const publicDirectory = path.join(root, "public");
@@ -14,6 +16,7 @@ const ticketFile = process.env.CAPSTONE_DATA_FILE
   : path.join(root, "data", "tickets.json");
 const port = Number(process.env.PORT) || 3000;
 const allowedStatuses = new Set(["open", "in-review", "resolved"]);
+const staffTicketTopics = new Set(TICKET_TOPICS);
 const attachmentStore = createAttachmentStore(path.join(path.dirname(ticketFile), "attachments"));
 let mutationQueue = Promise.resolve();
 
@@ -120,11 +123,15 @@ function normalizeNewTicket(input, tickets, session = null) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw requestError("Enter a valid email address.");
   }
+  let contact;
+  try { contact = normalizeContact(input, email); }
+  catch (error) { throw requestError(error.message); }
 
   return {
     id: nextTicketId(tickets),
     name,
     email,
+    contact,
     accountId: account?.id || null,
     identitySource: account ? (session.status === "demo" ? "demo-session" : "portal-session") : "manual",
     category,
@@ -175,8 +182,51 @@ async function handleApi(request, response, url, sessions, staffAuth) {
     return sendJson(response, 200, await readTickets());
   }
 
+  if (request.method === "POST" && url.pathname === "/api/staff/tickets") {
+    const { staff } = await staffAuth.current(request);
+    const input = await readJson(request, 14 * 1024 * 1024);
+    if (input.projectOwnerTicket !== undefined && typeof input.projectOwnerTicket !== "boolean") throw requestError("Project-owner classification must be true or false.");
+    if (!staffTicketTopics.has(input.category)) throw requestError("Choose a ticket topic from the list.");
+    for (const [field, label, limit] of [["question", "Title", 500], ["details", "Details", 3000]]) {
+      if (typeof input[field] !== "string" || !input[field].trim() || input[field].length > limit) {
+        throw requestError(`${label} is required and must be no longer than ${limit} characters.`);
+      }
+    }
+    const assignee = input.assignedTo == null ? null : normalizeEmail(input.assignedTo);
+    if (assignee !== null && !memberFor(assignee)) throw requestError("Choose a staff member from the approved list.");
+    const documents = prepareAttachments(input.attachments);
+    let savedAttachments = [];
+    let ticket;
+    try {
+      ticket = await mutateTickets(async (tickets) => {
+        // Staff identity and audit fields always come from the validated session.
+        const created = normalizeNewTicket({
+          name: staff.name, email: staff.email, category: input.category,
+          question: input.question, details: input.details,
+          preferredContactMethod: input.preferredContactMethod, contactPhone: input.contactPhone
+        }, tickets);
+        savedAttachments = await attachmentStore.save(documents);
+        Object.assign(created, {
+          identitySource: "staff-session", source: "Capstone staff queue",
+          createdBy: staff.email, assignedTo: assignee, attachments: savedAttachments
+        });
+        if (assignee) Object.assign(created, { assignedBy: staff.email, assignedAt: created.createdAt });
+        if (input.projectOwnerTicket === true) Object.assign(created, {
+          projectOwnerTicket: true, projectOwnerMarkedBy: staff.email, projectOwnerMarkedAt: created.createdAt
+        });
+        tickets.unshift(created);
+        return created;
+      });
+    } catch (error) {
+      // Roll back this request's new files only; never remove existing documents.
+      await attachmentStore.remove(savedAttachments.map(file => file.id));
+      throw error;
+    }
+    return sendJson(response, 201, ticket);
+  }
+
   if (request.method === "POST" && url.pathname === "/api/tickets") {
-    // Base64 document bytes plus ticket fields; all other APIs keep the 128 KB limit.
+    // Both creation APIs allow base64 documents; other APIs keep the 128 KB limit.
     const input = await readJson(request, 14 * 1024 * 1024);
     const session = await sessions.forTicket(request, input);
     const documents = prepareAttachments(input.attachments);
@@ -225,6 +275,24 @@ async function handleApi(request, response, url, sessions, staffAuth) {
   }
 
   const ticketMatch = url.pathname.match(/^\/api\/tickets\/(CAP-\d+)$/);
+  const workMatch = url.pathname.match(/^\/api\/tickets\/(CAP-\d+)\/work$/);
+  const previewMatch = url.pathname.match(/^\/api\/tickets\/(CAP-\d+)\/requester-preview$/);
+  if (request.method === "GET" && (ticketMatch || previewMatch)) {
+    await staffAuth.current(request);
+    const id = (ticketMatch || previewMatch)[1];
+    const ticket = (await readTickets()).find(item => item.id === id);
+    if (!ticket) return sendJson(response, 404, { error: "Ticket not found." });
+    return sendJson(response, 200, previewMatch ? requesterView(ticket) : ticket);
+  }
+  if (request.method === "PATCH" && workMatch) {
+    const { staff } = await staffAuth.current(request);
+    const input = await readJson(request);
+    const updated = await mutateTickets((tickets) => {
+      const ticket = tickets.find(item => item.id === workMatch[1]);
+      return ticket ? applyTicketWork(ticket, input, staff) : null;
+    });
+    return sendJson(response, updated ? 200 : 404, updated || { error: "Ticket not found." });
+  }
   if (request.method === "PATCH" && ticketMatch) {
     const { staff } = await staffAuth.current(request);
     const input = await readJson(request);
@@ -248,6 +316,7 @@ async function handleApi(request, response, url, sessions, staffAuth) {
         ticket.assignedAt = new Date().toISOString();
       }
       if (changingStatus) ticket.status = input.status;
+      ticket.revision = revisionOf(ticket) + 1;
       ticket.updatedAt = new Date().toISOString();
       ticket.updatedBy = staff.email;
       return ticket;

@@ -1,19 +1,19 @@
 # Ticket document attachments
 
-The local prototype accepts optional PDF, Word (.docx), and UTF-8 text (.txt) documents when creating a ticket, including the new **Attendance** topic. No AI service reads the files; they are available as downloads in the staff queue. No professor email is sent.
+The local prototype accepts optional PDF, Word (.docx), and UTF-8 text (.txt) documents in both the student **Create a support request** form and **Staff queue → Create ticket**, for every topic including **Attendance**. The staff picker is labeled **Attach documents (optional)** below Details. No AI service reads the files; they are available as downloads on staff cards and in opened ticket workspaces. No professor email is sent. This feature attaches files during creation, not afterward while editing an existing ticket.
 
 ## Limits and behavior
 
 - Up to 3 files per ticket, 5 MB each, 10 MB combined (MB here uses 1,048,576 bytes).
 - Empty files, unsupported extensions, invalid filenames, mismatched sizes/encoding, and invalid basic file signatures are rejected on the server. Browser validation gives early feedback but is not trusted as the security boundary.
 - Filenames are at most 180 characters, without path separators, control characters, or reserved punctuation. TXT must be UTF-8. Old `.doc` and macro-enabled `.docm` files are not supported.
-- The picker can add files in multiple selections. **Remove** discards a pending selection. Closing/reopening the form retains selections; submitting successfully clears them. Refreshing/leaving the page clears unsent selections.
+- Both pickers can add files in multiple selections. **Remove** discards a pending selection. Closing/reopening the student form retains selections; cancelling the staff form clears its selections along with the rest of its draft. Submitting successfully or refreshing/leaving the page clears unsent selections. Staff logout/session loss clears the draft, and late file reads cannot submit it afterward.
 - Failed submission preserves the selected files so the user can correct/retry. A failure to persist the ticket rolls back newly saved documents, leaving existing tickets/files unchanged. A process or machine crash can still leave orphan files; production needs transactional storage/reconciliation.
 - Basic PDF/DOCX header checks are not full document parsing, file sanitization, or malware scanning. A file passing these checks is not guaranteed safe to open.
 
 ## Local storage and API
 
-`POST /api/tickets` still accepts JSON and uses the existing account/origin checks. It now accepts an optional `attachments` array of `{ name, size, data }`, where `data` is canonical base64. Server-generated IDs and MIME metadata replace any client-supplied IDs/types. This route has a 14 MB JSON body limit to accommodate encoding overhead; other mutation routes retain their 128 KB limit.
+`POST /api/tickets` and the authenticated staff route `POST /api/staff/tickets` accept JSON with the existing account/session/origin checks. Both accept an optional `attachments` array of `{ name, size, data }`, where `data` is canonical base64. Server-generated IDs and MIME metadata replace any client-supplied IDs/types. These two routes have a 14 MB JSON body limit to accommodate encoding overhead; other mutation routes retain their 128 KB limit. Staff identity is still derived from the validated session, and file validation completes before any file is saved.
 
 Files are written under random UUID names to `data/attachments/`, outside `public`. The JSON queue stores only `{ id, name, size, type }` metadata. Both `data/tickets.json` and `data/attachments/` are excluded from Git, so teammates have separate files/queues. Keep them together for any intentional local-data backup. Changing status does not remove files.
 

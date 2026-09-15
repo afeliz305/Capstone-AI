@@ -47,6 +47,7 @@ a { color: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: wait; opacity: .6; }
 [hidden] { display: none !important; }
+.contact-help { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
 .ui-icon { width: 20px; height: 20px; display: block; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 .site-header { min-height: 64px; padding: 10px 22px; display: flex; align-items: center; justify-content: space-between; gap: 24px; color: #fff; background: var(--fiu-blue); border-bottom: 1px solid rgba(255,255,255,.09); }
 .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; min-width: 0; }

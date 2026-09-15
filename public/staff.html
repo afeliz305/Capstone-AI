@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="/styles.css">
     <link rel="stylesheet" href="/staff.css">
     <script src="/staff-view.js" defer></script>
+    <script src="/contact-policy.js" defer></script>
+    <script src="/widget/attachment-policy.js" defer></script>
+    <script src="/ticket-workspace.js" defer></script>
     <script src="/staff.js" defer></script>
   </head>
   <body class="staff-page">
@@ -34,12 +37,13 @@
         <p>Sign in to view and manage support requests.</p>
         <form id="staff-login-form">
           <label for="staff-email">Staff email</label>
-          <input id="staff-email" type="email" autocomplete="username" maxlength="254" required>
+          <input id="staff-email" type="email" autocomplete="username" maxlength="254" aria-describedby="staff-remember-email-note" required>
           <label for="staff-password">Prototype password</label>
-          <input id="staff-password" type="password" autocomplete="current-password" minlength="12" maxlength="128" required>
+          <input id="staff-password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required>
           <p class="staff-login-status" id="staff-login-status" role="status" aria-live="polite"></p>
           <button class="staff-primary" type="submit">Sign in</button>
         </form>
+        <p class="staff-setup-note" id="staff-remember-email-note">Your last signed-in email is remembered on this browser. This app never saves your password in browser storage.</p>
         <p class="staff-setup-note">Use a separate password for this prototype, not your FIU password. First time on this computer? Run <code>npm.cmd run staff:password</code> in the project terminal to set one.</p>
         <a class="staff-back" href="/">Back to the student assistant</a>
       </section>
@@ -57,11 +61,22 @@
     </main>
 
     <main class="staff-shell" id="staff-workspace" hidden>
+      <section class="queue-search" role="search" aria-label="Search support tickets">
+        <label for="ticket-search">Search tickets</label>
+        <div class="queue-search-controls">
+          <input id="ticket-search" type="search" placeholder="Search ticket ID, student, topic, or issue…" autocomplete="off" aria-controls="ticket-grid" aria-describedby="ticket-search-hint">
+          <button type="button" class="staff-secondary" id="clear-ticket-search" disabled>Clear search</button>
+        </div>
+        <p id="ticket-search-hint">Results update as you type within the selected view. No Enter key needed.</p>
+        <p class="queue-status" id="queue-status" role="status" aria-live="polite"></p>
+      </section>
+
       <section class="queue-heading">
         <div>
           <p class="eyebrow">STAFF SUPPORT QUEUE</p>
           <h1 id="staff-welcome">Support requests</h1>
           <p id="staff-identity"></p>
+          <button class="staff-primary" id="create-staff-ticket" type="button" aria-haspopup="dialog" aria-controls="staff-ticket-dialog">Create ticket</button>
           <p><strong id="my-ticket-count">0</strong> assigned to you · <strong id="unassigned-count">0</strong> unassigned. No emails are sent.</p>
         </div>
         <div class="queue-metrics" aria-label="Queue summary">
@@ -71,19 +86,15 @@
         </div>
       </section>
 
+      <div class="queue-views" role="group" aria-label="Ticket views">
+        <button type="button" class="queue-view" data-view="all" aria-pressed="true" aria-controls="ticket-grid"><span>All tickets</span><span class="view-count" data-view-count="all">0</span></button>
+        <button type="button" class="queue-view" data-view="mine" aria-pressed="false" aria-controls="ticket-grid"><span>My tickets</span><span class="view-count" data-view-count="mine">0</span></button>
+        <button type="button" class="queue-view" data-view="resolved" aria-pressed="false" aria-controls="ticket-grid"><span>All resolved</span><span class="view-count" data-view-count="resolved">0</span></button>
+        <button type="button" class="queue-view" data-view="mine-resolved" aria-pressed="false" aria-controls="ticket-grid"><span>My resolved</span><span class="view-count" data-view-count="mine-resolved">0</span></button>
+      </div>
+      <p class="queue-view-description" id="queue-view-description">All team tickets, grouped by assignee. Unassigned tickets appear first.</p>
+
       <section class="queue-toolbar" aria-label="Ticket filters">
-        <label>
-          Assignment
-          <select id="assignment-filter">
-            <option value="mine">Assigned to me</option>
-            <option value="unassigned">Unassigned tickets</option>
-            <option value="all">All team tickets</option>
-          </select>
-        </label>
-        <label>
-          Search requests
-          <input id="ticket-search" type="search" placeholder="Search name, ticket, or question…">
-        </label>
         <label>
           Status
           <select id="status-filter">
@@ -93,10 +104,121 @@
             <option value="resolved">Resolved</option>
           </select>
         </label>
+        <label class="unassigned-filter" id="unassigned-filter-label">
+          <input id="unassigned-filter" type="checkbox">
+          Unassigned only
+        </label>
       </section>
 
-      <p class="queue-status" id="queue-status" role="status" aria-live="polite"></p>
       <section class="ticket-grid" id="ticket-grid" aria-label="Support tickets"></section>
     </main>
+
+    <dialog class="staff-ticket-dialog" id="staff-ticket-dialog" aria-labelledby="staff-ticket-title" aria-describedby="staff-ticket-note">
+      <form id="staff-ticket-form">
+        <div class="staff-ticket-heading">
+          <p class="eyebrow">STAFF SUPPORT QUEUE</p>
+          <h2 id="staff-ticket-title">Create ticket</h2>
+          <p id="staff-ticket-note">Track a task, improvement, or site issue. Tickets start as Open and stay in this local queue. No emails are sent.</p>
+        </div>
+        <fieldset id="staff-ticket-fields">
+          <legend class="sr-only">New ticket details</legend>
+          <label for="staff-ticket-creator">Created by</label>
+          <input id="staff-ticket-creator" type="text" readonly aria-describedby="staff-ticket-creator-note">
+          <p class="staff-ticket-hint" id="staff-ticket-creator-note">Uses your signed-in staff account. This is not a student request on someone else's behalf.</p>
+          <label for="staff-contact-method">Preferred method of contact</label>
+          <select id="staff-contact-method"><option value="email">Email</option><option value="phone">Phone</option></select>
+          <div id="staff-phone-field" hidden>
+            <label for="staff-contact-phone">Contact number</label>
+            <input id="staff-contact-phone" type="tel" autocomplete="tel" maxlength="40" placeholder="(305) 555-0123" aria-describedby="staff-contact-help" disabled>
+          </div>
+          <p class="staff-ticket-hint" id="staff-contact-help">Email uses your signed-in staff email. Phone: U.S./Canada 10 digits, or +country code internationally; no extensions. Format checks do not verify ownership or reachability. No call or email is sent.</p>
+          <label for="staff-ticket-owner">Project-owner tag</label>
+          <select id="staff-ticket-owner" aria-describedby="staff-ticket-owner-help"><option value="standard">Not marked</option><option value="project-owner">Created by a project owner — staff marked</option></select>
+          <p class="staff-ticket-hint" id="staff-ticket-owner-help">Only mark this when you know the request originated from a project owner. This is a staff classification, not a verified account role or a change to the recorded creator.</p>
+          <label for="staff-ticket-topic">Topic</label>
+          <select id="staff-ticket-topic" required autofocus>
+            <option>Workflow and improvements</option>
+            <option>Testing and updates</option>
+            <option>Implementation and testing</option>
+            <option>Website navigation</option>
+            <option>Coursework</option>
+            <option>Attendance</option>
+            <option>Scrum and sprints</option>
+            <option>Showcase</option>
+            <option>Templates and branding</option>
+            <option>Other</option>
+          </select>
+          <label for="staff-ticket-question">Title</label>
+          <input id="staff-ticket-question" type="text" maxlength="500" placeholder="Briefly describe the task or issue" required>
+          <label for="staff-ticket-details">Details</label>
+          <textarea id="staff-ticket-details" rows="5" maxlength="3000" placeholder="Describe the issue, proposed change, or testing steps and expected result." required></textarea>
+          <label for="staff-ticket-attachments">Attach documents (optional)</label>
+          <input id="staff-ticket-attachments" type="file" accept=".pdf,.docx,.txt" multiple aria-describedby="staff-attachment-help staff-attachment-status">
+          <p class="staff-ticket-hint" id="staff-attachment-help">PDF, Word (.docx), or UTF-8 text (.txt). Up to 3 files, 5 MB each, 10 MB total. Use trusted fictional test files only; uploads are not malware-scanned. Cancel clears selected files.</p>
+          <ul class="staff-attachment-list" id="staff-attachment-list" aria-label="Selected documents" hidden></ul>
+          <p class="staff-ticket-status" id="staff-attachment-status" role="status" aria-live="polite"></p>
+          <label for="staff-ticket-assignee">Assign to</label>
+          <select id="staff-ticket-assignee"><option value="">Unassigned</option></select>
+        </fieldset>
+        <p id="staff-ticket-status" class="staff-ticket-status" role="status" aria-live="polite"></p>
+        <div class="staff-ticket-actions">
+          <button class="staff-secondary" id="cancel-staff-ticket" type="button">Cancel</button>
+          <button class="staff-primary" id="save-staff-ticket" type="submit">Create ticket</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog class="ticket-workspace" id="ticket-workspace-dialog" aria-labelledby="ticket-workspace-title">
+      <form id="ticket-workspace-form">
+        <header class="ticket-workspace-heading">
+          <div><p class="eyebrow">TICKET WORKSPACE</p><h2 id="ticket-workspace-title" tabindex="-1">Ticket details</h2></div>
+          <button type="button" class="staff-secondary" id="close-ticket-workspace">Back to queue</button>
+        </header>
+        <p id="ticket-workspace-status" role="status" aria-live="polite"></p>
+        <fieldset id="ticket-workspace-fields" disabled>
+          <legend class="sr-only">Ticket fields</legend>
+          <div class="ticket-field-grid">
+            <label>Ticket number<input id="work-number" readonly></label>
+            <label>Requester<input id="work-requester" readonly></label>
+            <label>Requester email<input id="work-email" readonly></label>
+            <label>Preferred contact<input id="work-contact" readonly></label>
+            <label>Project-owner tag<select id="work-owner" aria-describedby="work-owner-help"><option value="standard">Not marked</option><option value="project-owner">Created by a project owner — staff marked</option></select></label>
+            <label>Opened<input id="work-created" readonly></label>
+            <label>Category<select id="work-category" required></select></label>
+            <label>Status<select id="work-state" required><option value="open">Open</option><option value="in-review">In review</option><option value="resolved">Resolved</option></select></label>
+            <label>Priority<select id="work-priority" required><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option></select></label>
+            <label>Assigned to<select id="work-assignee"><option value="">Unassigned</option></select></label>
+          </div>
+          <p class="staff-ticket-hint" id="work-owner-help">The owner tag is a staff-applied classification, not proof of account role. Only apply it when you know the request originated from a project owner. It does not grant access or change the recorded requester.</p>
+          <label>Title<input id="work-question" maxlength="500" required></label>
+          <label>Description<textarea id="work-details" rows="4" maxlength="3000" required></textarea></label>
+          <label>Resolution notes — staff only<textarea id="work-resolution" rows="3" maxlength="3000" placeholder="Record the resolution for staff; use Additional comments for the requester."></textarea></label>
+          <div class="ticket-journal-grid">
+            <section class="journal-editor journal-internal">
+              <label for="work-note">Work notes — internal only</label>
+              <p id="work-note-hint">Only staff can read these notes. Each save adds an entry to the activity history.</p>
+              <textarea id="work-note" rows="5" maxlength="4000" aria-describedby="work-note-hint" placeholder="Investigation, troubleshooting, or handoff notes"></textarea>
+            </section>
+            <section class="journal-editor journal-requester">
+              <label for="work-comment">Additional comments — requester-visible</label>
+              <p id="work-comment-hint">For the requester, not internal information. Delivery is not connected yet; use the preview below.</p>
+              <textarea id="work-comment" rows="5" maxlength="4000" aria-describedby="work-comment-hint" placeholder="An update or follow-up question for the requester"></textarea>
+            </section>
+          </div>
+        </fieldset>
+        <div class="ticket-workspace-actions">
+          <button type="button" class="staff-secondary" id="reload-ticket-workspace">Reload latest</button>
+          <button type="submit" class="staff-primary" id="save-ticket-workspace" disabled>Save changes</button>
+        </div>
+        <section class="ticket-work-section" aria-labelledby="work-documents-title"><h3 id="work-documents-title">Documents</h3><div id="work-documents"></div></section>
+        <details class="ticket-work-section"><summary>Original chat — staff only</summary><p id="work-transcript"></p></details>
+        <section class="ticket-work-section" aria-labelledby="work-activity-title"><h3 id="work-activity-title">Activity history</h3><p>Saved entries cannot be edited. Add a new entry to correct or clarify an earlier note.</p><div id="work-activity"></div></section>
+        <section class="ticket-work-section" aria-labelledby="requester-preview-title">
+          <h3 id="requester-preview-title">Requester preview</h3>
+          <p>Staff-only preview of saved requester-facing information. It excludes work notes and internal resolution notes. No email or requester access link is sent.</p>
+          <button type="button" class="staff-secondary" id="load-requester-preview">Preview requester view</button>
+          <div id="requester-preview-content" aria-live="polite"></div>
+        </section>
+      </form>
+    </dialog>
   </body>
 </html>

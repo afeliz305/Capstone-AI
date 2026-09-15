@@ -12,6 +12,6 @@ if (process.env.NODE_ENV === "production") {
   seedSampleTickets(file).then((result) => {
     console.log(result.added ? `Added ${result.resolved} resolved examples and ${result.open} open test tickets. Queue total: ${result.total}.` : "This sample batch is already present. No tickets were added or changed.");
     if (result.backup) console.log("Previous queue backed up locally: " + result.backup);
-    console.log("Start the app, sign in to Staff queue, and choose All team tickets.");
+    console.log("Start the app, sign in to Staff queue, and choose All tickets.");
   }).catch((error) => { console.error("Sample tickets could not be imported: " + error.message); process.exitCode = 1; });
 }

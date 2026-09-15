@@ -29,6 +29,9 @@ function mount(fetchResult = async () => ({ ok: true, json: async () => ({ statu
       return this.listeners[type]?.({ preventDefault() {}, stopPropagation() {}, ...event });
     }
     setAttribute(name, value) { this.attributes[name] = value; }
+    setCustomValidity(message) { this.validationMessage = message; }
+    showModal() { this.open = true; }
+    close() { this.open = false; }
     focus() { document.activeElement = this; }
     append(...children) {
       children.forEach((child) => { child.parent = this; this.children.push(child); });
@@ -57,12 +60,24 @@ function mount(fetchResult = async () => ({ ok: true, json: async () => ({ statu
   panel.append(input, log);
   log.append(new Element()); // The initial welcome message.
   document.querySelector("#chat-form").submitButton = new Element();
+  const supportForm = document.querySelector("#support-form");
+  supportForm.submitButton = new Element();
+  supportForm.elements = Object.fromEntries(["name", "email", "category", "question", "details", "includeTranscript", "privateToInstructor"].map(name => [name, new Element()]));
+  supportForm.elements.preferredContactMethod = document.querySelector("#request-contact-method");
+  supportForm.elements.preferredContactMethod.value = "email";
+  supportForm.elements.contactPhone = document.querySelector("#request-contact-phone");
+  supportForm.reset = () => { Object.values(supportForm.elements).forEach(field => { field.value = ""; }); };
+  class TestFormData {
+    constructor(form) { this.fields = form.elements; }
+    get(name) { return this.fields[name]?.disabled ? null : this.fields[name]?.value ?? null; }
+    has(name) { return Boolean(this.fields[name]?.checked); }
+  }
   document.querySelectorAll = (selector) => ({
     "[data-open-chat]": [sidebar],
     "[data-question]": [topic]
   }[selector] || []);
   document.createElement = () => new Element();
-  vm.runInNewContext(script, { document, fetch: fetchResult, window: { CapstoneAttachmentPolicy: require("../public/widget/attachment-policy") } });
+  vm.runInNewContext(script, { document, FormData: TestFormData, fetch: fetchResult, window: { setTimeout: callback => callback(), CapstoneContactPolicy: require("../public/contact-policy"), CapstoneAttachmentPolicy: require("../public/widget/attachment-policy") } });
   return {
     panel, launcher, input, log, sidebar, topic, document,
     minimize: document.querySelector("#minimize-chat"),
@@ -173,4 +188,42 @@ test("invalid document selection shows an error while preserving valid selected 
   assert.match(ui.attachmentStatus.textContent, /Only PDF/);
   assert.equal(ui.attachmentList.children.length, 1);
   assert.match(ui.attachmentList.children[0].children[0].textContent, /attendance.txt/);
+});
+
+test("student form shows the phone field only when preferred and blocks invalid contact before submitting", async () => {
+  const posts = [];
+  const ui = mount(async (url, options) => {
+    if (url === "/api/session") return { ok: true, json: async () => ({ status: "guest", identityContext: "fictional-test-context" }) };
+    assert.equal(url, "/api/tickets"); posts.push(JSON.parse(options.body));
+    return { ok: true, json: async () => ({ id: "CAP-9000" }) };
+  });
+  await ui.document.querySelector("#account-retry").emit("click");
+  await new Promise(resolve => setImmediate(resolve));
+  const form = ui.document.querySelector("#support-form");
+  form.elements.name.value = "Fictional Student";
+  form.elements.email.value = "fictional@example.edu";
+  form.elements.question.value = "Fictional contact test";
+  form.elements.details.value = "No real contact needed.";
+  const method = form.elements.preferredContactMethod;
+  const phone = form.elements.contactPhone;
+  assert.equal(ui.document.querySelector("#request-phone-field").hidden, true);
+  method.value = "phone"; method.emit("change");
+  assert.equal(ui.document.querySelector("#request-phone-field").hidden, false);
+  assert.equal(phone.required, true);
+  phone.value = "123";
+  await form.emit("submit");
+  assert.equal(posts.length, 0);
+  assert.match(ui.document.querySelector("#support-status").textContent, /valid phone format/);
+  phone.value = "3055550123";
+  form.elements.email.value = "invalid@email";
+  await form.emit("submit");
+  assert.equal(posts.length, 0);
+  assert.match(ui.document.querySelector("#support-status").textContent, /valid requester email/);
+  form.elements.email.value = "fictional@example.edu";
+  await form.emit("submit");
+  assert.equal(posts.length, 1);
+  assert.equal(posts[0].preferredContactMethod, "phone");
+  assert.equal(posts[0].contactPhone, "3055550123");
+  assert.equal(method.value, "email"); assert.equal(phone.value, "");
+  assert.equal(phone.disabled, true); assert.equal(phone.required, false);
 });

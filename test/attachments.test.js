@@ -49,7 +49,11 @@ async function app(t) {
     method: "POST", headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify({ ...details, identityContext: session.identityContext, ...body })
   });
-  return { base, post, fetch: (url, options = {}) => fetch(url, { ...options, headers: { ...options.headers, Cookie: staffCookie } }) };
+  const staffPost = (body, headers = {}) => fetch(`${base}/api/staff/tickets`, {
+    method: "POST", headers: { "Content-Type": "application/json", Cookie: staffCookie, ...headers },
+    body: JSON.stringify({ ...details, ...body })
+  });
+  return { base, post, staffPost, fetch: (url, options = {}) => fetch(url, { ...options, headers: { ...options.headers, Cookie: staffCookie } }) };
 }
 
 test("accepts basic PDF, DOCX container, and UTF-8 text formats", () => {
@@ -134,13 +138,80 @@ test("invalid files and rejected identity/origin never create tickets or stored 
   assert.deepEqual(fs.readdirSync(documentDirectory), storedBefore);
 });
 
-test("failed ticket persistence rolls back only the newly uploaded documents", async (t) => {
-  const { base, post, fetch } = await app(t);
+test("student and staff persistence failures roll back only their newly uploaded documents", async (t) => {
+  const { base, post, staffPost, fetch } = await app(t);
   const before = await (await fetch(`${base}/api/tickets`)).json();
   const storedBefore = fs.readdirSync(documentDirectory);
   fs.mkdirSync(`${ticketFile}.tmp`); // Deliberately block this test queue's atomic write.
-  try { assert.equal((await post({ attachments: [documentInput()] })).status, 500); }
+  try {
+    for (const submit of [post, staffPost]) assert.equal((await submit({ attachments: [documentInput()] })).status, 500);
+  }
   finally { fs.rmdirSync(`${ticketFile}.tmp`); }
   assert.deepEqual(fs.readdirSync(documentDirectory), storedBefore);
   assert.deepEqual(await (await fetch(`${base}/api/tickets`)).json(), before);
+});
+
+test("staff creation saves validated documents with server-owned metadata and authenticated downloads", async (t) => {
+  const { base, staffPost, fetch: staffFetch } = await app(t);
+  const files = [documentInput(), documentInput("notes.pdf", Buffer.from("%PDF-1.7\nFictional notes")),
+    documentInput("steps.docx", Buffer.from("PK\x03\x04[Content_Types].xml word/document.xml"))];
+  const response = await staffPost({ category: "Testing and updates", assignedTo: "afeli016@fiu.edu", projectOwnerTicket: true,
+    attachments: files.map(file => ({ ...file, id: "forged", type: "text/html", path: "../ignored" })) });
+  assert.equal(response.status, 201);
+  const ticket = await response.json();
+  assert.equal(ticket.createdBy, "afeli016@fiu.edu");
+  assert.equal(ticket.email, ticket.createdBy);
+  assert.equal(ticket.identitySource, "staff-session");
+  assert.equal(ticket.projectOwnerTicket, true);
+  assert.equal(ticket.attachments.length, 3);
+  for (const [index, file] of ticket.attachments.entries()) {
+    assert.deepEqual(Object.keys(file).sort(), ["id", "name", "size", "type"]);
+    assert.match(file.id, /^[0-9a-f-]{36}$/);
+    assert.equal(file.type, policy.types[policy.extension(file.name)]);
+    const url = `${base}/api/tickets/${ticket.id}/attachments/${file.id}`;
+    assert.equal((await fetch(url)).status, 401);
+    assert.equal((await fetch(`${base}/data/attachments/${file.id}`)).status, 404);
+    const download = await staffFetch(url);
+    assert.equal(download.status, 200);
+    assert.match(download.headers.get("content-disposition"), /^attachment;/);
+    assert.equal(Buffer.from(await download.arrayBuffer()).toString("base64"), files[index].data);
+  }
+  const empty = await (await staffPost({})).json();
+  assert.deepEqual(empty.attachments, []);
+  assert.equal((await staffFetch(`${base}/api/tickets/${empty.id}/attachments/${ticket.attachments[0].id}`)).status, 404);
+  const restarted = await app(t);
+  const persisted = await (await restarted.fetch(`${restarted.base}/api/tickets/${ticket.id}`)).json();
+  assert.deepEqual(persisted.attachments, ticket.attachments);
+});
+
+test("staff upload validation and access failures leave tickets and documents unchanged", async (t) => {
+  const { base, staffPost, fetch: staffFetch } = await app(t);
+  const before = fs.readFileSync(ticketFile, "utf8");
+  const storedBefore = fs.readdirSync(documentDirectory);
+  for (const attachments of [null, [{ id: "forged" }], [documentInput("run.exe")],
+    [documentInput("fake.pdf")], [{ ...documentInput(), data: "%%%%" }],
+    [{ ...documentInput(), size: policy.MAX_FILE_BYTES + 1 }],
+    Array.from({ length: 4 }, () => documentInput()),
+    Array.from({ length: 3 }, () => ({ ...documentInput(), size: policy.MAX_FILE_BYTES }))]) {
+    assert.equal((await staffPost({ attachments })).status, 400);
+  }
+  for (const [headers, status] of [[{ Cookie: "" }, 401], [{ Cookie: "capstone_staff_session=forged" }, 401],
+    [{ Origin: "https://unrelated.example" }, 403], [{ "Sec-Fetch-Site": "cross-site" }, 403]]) {
+    assert.equal((await staffPost({ attachments: [documentInput()] }, headers)).status, status);
+  }
+  assert.equal((await staffPost({ contactPhone: "wrong", preferredContactMethod: "phone", attachments: [documentInput()] })).status, 400);
+  await staffFetch(`${base}/api/staff/logout`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+  assert.equal((await staffPost({ attachments: [documentInput()] })).status, 401);
+  assert.equal(fs.readFileSync(ticketFile, "utf8"), before);
+  assert.deepEqual(fs.readdirSync(documentDirectory), storedBefore);
+});
+
+test("staff creation accepts the full ten MB document allowance beyond the usual API body limit", async (t) => {
+  const { staffPost } = await app(t);
+  const file = documentInput("large-fictional.txt", Buffer.alloc(policy.MAX_FILE_BYTES, "a"));
+  const response = await staffPost({ attachments: [file, { ...file, name: "second-fictional.txt" }] });
+  assert.equal(response.status, 201);
+  const ticket = await response.json();
+  assert.equal(ticket.attachments.reduce((sum, item) => sum + item.size, 0), policy.MAX_TOTAL_BYTES);
+  for (const attachment of ticket.attachments) assert.equal(fs.statSync(path.join(documentDirectory, attachment.id)).size, policy.MAX_FILE_BYTES);
 });

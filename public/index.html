@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/styles.css">
     <link rel="stylesheet" href="/widget/capstone-chat.css">
     <script src="/widget/attachment-policy.js" defer></script>
+    <script src="/contact-policy.js" defer></script>
     <script src="/widget/capstone-chat.js" defer></script>
   </head>
   <body>
@@ -173,6 +174,16 @@
             <input name="email" type="email" autocomplete="email" maxlength="254" placeholder="student@fiu.edu" aria-describedby="account-status" required>
           </label>
         </div>
+
+        <label for="request-contact-method">Preferred method of contact</label>
+        <select name="preferredContactMethod" id="request-contact-method">
+          <option value="email">Email</option><option value="phone">Phone</option>
+        </select>
+        <div id="request-phone-field" hidden>
+          <label for="request-contact-phone">Contact number</label>
+          <input name="contactPhone" id="request-contact-phone" type="tel" autocomplete="tel" maxlength="40" placeholder="(305) 555-0123" aria-describedby="request-contact-help" disabled>
+        </div>
+        <p class="contact-help" id="request-contact-help">Email uses your requester email above. It is still required when phone is preferred. Phone: U.S./Canada 10 digits, or +country code internationally; no extensions. Format checks do not verify ownership or reachability. No call or email is sent.</p>
 
         <label>
           Topic
