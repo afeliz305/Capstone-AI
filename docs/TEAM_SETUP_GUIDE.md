@@ -35,7 +35,7 @@ Close and reopen VS Code after installing Node or Git so its terminal picks up t
 
 4. Choose a parent folder for your projects, such as your Documents folder. Do not select the HelpDesk INC folder.
 5. Reading this public repository does not require sign-in. If VS Code asks you to authenticate, you can use your GitHub account or use the Download ZIP method below. Signing in alone does not grant permission to push changes.
-6. When cloning finishes, select **Open**. The project folder should contain `package.json` and `server.js` directly inside it.
+6. When cloning finishes, select **Open**. The project folder should contain `package.json` and `index.html` directly inside it. The backend entry point is now `server/server.js`.
 
 Cloning gives you a Git-connected copy that can receive updates later. These steps use VS Code's built-in Git support. [VS Code GitHub instructions](https://code.visualstudio.com/docs/sourcecontrol/github)
 
@@ -54,18 +54,34 @@ In VS Code's Explorer, you should see these files and folders at the top level:
 
 ```text
 Capstone-AI-Chat/
+  index.html                Student assistant homepage
+  pages/staff.html          Staff login and ticket queue
+  css/                      Stylesheets
+    images/                 FIU mark and interface icons
+    fonts/                  Mulish font
+  js/
+    chat/                   Chat and student request behavior
+    staff/                  Staff views and ticket workspace
+    shared/                 Contact and attachment rules
+  docs/                     Setup, design, and integration guides
+    licenses/               Bundled font license
+  server/
+    server.js               Node backend entry point
+    lib/                    Authentication, search, and ticket helpers
+  scripts/                  Local password and sample-data commands
+  data/                     Knowledge base and private local runtime data
+  test/                     Automated tests and fictional fixtures
   package.json
   package-lock.json
-  server.js
   README.md
-  TEAM_SETUP_GUIDE.md
-  data/
-  lib/
-  public/
-  test/
+  AGENTS.md
 ```
 
-The folder name can differ; the important part is that **`package.json` is directly inside the folder you opened**. Do not open only `public`, and do not create a blank `package.json` to work around a missing-file error.
+The folder name can differ; the important part is that **`package.json` is directly inside the folder you opened**. Do not open only `css`, `js`, or `server`, and do not create a blank `package.json` to work around a missing-file error. Paths in this guide are relative to that project root unless stated otherwise. README and AGENTS stay at the root for GitHub and project-tool discovery; the other guides are in `docs/`.
+
+The September 15 folder reorganization moves the actual homepage to root `index.html`, not a redirect page. After updating, restart with `npm.cmd start`, hard-refresh with **Ctrl+Shift+R**, and sign in again. The start command now runs `server/server.js`; do not run the old root `server.js`. Existing tickets, passwords, uploaded documents, and ignored backups stay in `data/` without a migration. The canonical staff page is `/pages/staff.html`; old `/staff.html` bookmarks redirect there through the Node server.
+
+**A root index is not an HTML-only conversion.** Node is still required for chat search, account checks, staff login, ticket changes, and uploads. The Node server serves only an explicit list of public files. Never expose the entire repository through a generic file server or upload private `data/`, `.env`, or credential files into an unrestricted web folder. A static interface-only upload can contain `index.html`, `pages/`, `css/`, and `js/`, but it cannot run the backend features by itself. Uploaded ticket documents belong in private `data/attachments/`, not in `docs/` or `css/images/`.
 
 Select **Terminal → New Terminal**. On Windows, use a PowerShell terminal. VS Code normally starts the integrated terminal in the opened workspace folder. [VS Code terminal instructions](https://code.visualstudio.com/docs/terminal/basics)
 
@@ -107,7 +123,7 @@ Keep this terminal open while testing. The command stays running; that is normal
 | Page | Local address |
 | --- | --- |
 | Student assistant | [localhost:3000](http://localhost:3000) |
-| Local staff queue | [localhost:3000/staff.html](http://localhost:3000/staff.html) |
+| Local staff queue | [localhost:3000/pages/staff.html](http://localhost:3000/pages/staff.html) |
 | Basic server check | [localhost:3000/api/health](http://localhost:3000/api/health) |
 
 The server check should show `{"status":"ok","mode":"zero-token"}`. Each teammate runs their own local copy. Sending someone your `localhost` link does not share your running app or your tickets.
@@ -116,7 +132,17 @@ On the student page, the chat starts as a **Chat with Capstone** button in the b
 
 Minimizing does not clear messages or unsent text. They remain only for the current page session: refreshing or leaving the page resets the conversation and starts the chat minimized again. **Clear conversation** is a separate reset action.
 
-**Do not double-click `index.html` or use Live Server for this project.** The chat and tickets require the Node server started by `npm.cmd start`.
+### Keyword links to the Capstone site
+
+After sending a question, **Related site links** shows clickable recognized keywords and their destination titles. For example, `sprint planning and tutorials` offers the reviewed Sprint Planning document and the Tutorials page. Keywords ignore capitalization, common singular/plural variants, and punctuation; longer phrases take precedence over overlapping broad terms. Repeated terms are grouped, with up to four topic links per question.
+
+Links open in a new tab and show **Sign-in required** or **Public page**. The document link may download a file. Portal topics use the existing dashboard address when no reviewed section-specific URL is available; follow the answer's navigation instructions there. Your real FIU session is separate from this prototype.
+
+These are navigation suggestions, not a claim that every part of the question has been answered. Answer confidence and **Create support request** / **I still need help** behavior are unchanged. There is no approved attendance-policy page in the current knowledge file, so attendance questions must not invent one. Matching is local and uses no paid AI tokens or live crawling. Maintainers can update `linkKeywords` alongside the reviewed source URL in `data/capstone-knowledge.json`; only HTTPS links on `capstone.cs.fiu.edu` are eligible. Never add private account data there.
+
+Restart `npm.cmd start` after stopping the previous server with **Ctrl+C**, then refresh the page with **Ctrl+Shift+R** to load this backend/browser update. Roary artwork remains a separate design preview and is not installed on the live chat button.
+
+**Use `npm.cmd start`, not a double-click on `index.html` or Live Server, to test the full project.** Relative asset paths let the HTML reference its CSS, images, fonts, and scripts in the new folders, but chat and tickets still require the Node server. A generic server must not expose the whole project folder.
 
 On macOS/Linux, use the same local project folder and replace `npm.cmd` with `npm`:
 
@@ -158,7 +184,7 @@ For a short password in a **local-only, fictional-data test**, run `npm.cmd run 
 
 ### Remembered staff email
 
-Refresh `/staff.html` with **Ctrl+Shift+R**; this update does not require a server restart. After a successful login (or recognition of an existing valid session), the app remembers the server-confirmed staff email on this browser only. Sign out and reload the page: the email is prefilled, but a password is still required. Edit the email to switch accounts; a successful sign-in replaces the saved address. A failed attempt does not replace the remembered address, though the attempted email remains editable when you choose **Try signing in again**.
+Refresh `/pages/staff.html` with **Ctrl+Shift+R**; this update does not require a server restart. After a successful login (or recognition of an existing valid session), the app remembers the server-confirmed staff email on this browser only. Sign out and reload the page: the email is prefilled, but a password is still required. Edit the email to switch accounts; a successful sign-in replaces the saved address. A failed attempt does not replace the remembered address, though the attempted email remains editable when you choose **Try signing in again**.
 
 The app saves only the email preference, not a password or session token, in browser storage. It does not provide automatic login or bypass any access checks. Browsers/password managers may separately offer password autofill. Other people using the same browser profile can see the saved email; sign out and clear this site's browser data to remove it. The preference is specific to the browser profile and site address/port, not synced by the app to teammates. Private browsing or blocked storage may prevent remembering it across visits; sign-in still works normally.
 
@@ -170,7 +196,7 @@ Every ticket card now shows a labeled **Category** tag beside its status, using 
 
 ### Create a ticket from the staff queue
 
-After updating this feature, stop the server with **Ctrl+C**, run `npm.cmd start`, refresh `/staff.html` with **Ctrl+Shift+R**, and sign in again. Restarting clears staff sessions but preserves saved tickets and passwords.
+After updating this feature, stop the server with **Ctrl+C**, run `npm.cmd start`, refresh `/pages/staff.html` with **Ctrl+Shift+R**, and sign in again. Restarting clears staff sessions but preserves saved tickets and passwords.
 
 1. Select **Create ticket** beneath your signed-in name/email.
 2. **Created by** uses your staff account automatically. It is read-only and verified on the server, not taken from the student demo account.
@@ -200,7 +226,7 @@ Student requests cannot self-assign an owner tag. Staff classification changes r
 
 ### Open and work a ticket
 
-Restart the app after updating this feature, refresh `/staff.html` with **Ctrl+Shift+R**, and sign in again. Select a ticket number or **Open ticket** in any of the four views. This is a service-management-style form in the existing FIU design, not a ServiceNow integration.
+Restart the app after updating this feature, refresh `/pages/staff.html` with **Ctrl+Shift+R**, and sign in again. Select a ticket number or **Open ticket** in any of the four views. This is a service-management-style form in the existing FIU design, not a ServiceNow integration.
 
 - **Read-only:** ticket number, requester name/email, and opened time. Staff do not overwrite requester identity.
 - **Editable fields:** title, description, resolution notes, and Category, Status, Priority, and Assigned to dropdowns. Priority defaults to Normal for older tickets; available choices are Low, Normal, High, and Urgent.
@@ -239,7 +265,7 @@ Open another terminal with **Terminal → New Terminal**, leaving the app's term
 npm.cmd test
 ```
 
-At the last verification, the summary reported **91 tests passed, 0 failed**. This includes staff attachment selection/removal, upload/download integrity and limits, validation/access rejection, rollback, draft recovery and logout-during-read protection; remembered staff email across logout/reload and account changes, failed attempts and unavailable storage without password persistence; email/phone format rules, conditional contact fields and contact persistence, staff-only owner tagging/search/removal; workspace field/journal persistence, server-owned note authors, requester-preview privacy, conflict/retry protection, draft recovery and logout/expiry cleanup; automatic category tags and legacy fallbacks; staff creation validation and assignments; live search and all four queue views; the local-only password exception; sample data preservation/backups; staff password/session checks; the 15-second idle timer; and the previous chat/upload tests. The count can grow as the project changes; the important result is zero failures and a successful exit.
+At the last verification, the summary reported **108 tests passed, 0 failed**. This includes keyword matching, phrase precedence, multiple topics, bounded repeated links, safe destinations, new-tab/access labels, plain-text rendering, unchanged escalation and the search API; the root homepage and reorganized asset paths, staff bookmark redirect, private-file access rejection, guide links and backend startup/data paths; staff attachment selection/removal, upload/download integrity and limits, validation/access rejection, rollback, draft recovery and logout-during-read protection; remembered staff email across logout/reload and account changes, failed attempts and unavailable storage without password persistence; email/phone format rules, conditional contact fields and contact persistence, staff-only owner tagging/search/removal; workspace field/journal persistence, server-owned note authors, requester-preview privacy, conflict/retry protection, draft recovery and logout/expiry cleanup; automatic category tags and legacy fallbacks; staff creation validation and assignments; live search and all four queue views; the local-only password exception; sample data preservation/backups; staff password/session checks; the 15-second idle timer; and the previous chat/upload tests. The count can grow as the project changes; the important result is zero failures and a successful exit.
 
 Some tests deliberately simulate an unavailable account service and print `We could not check your account. Please try again.` with status `503`. During the automated test run, those messages are expected only when the final summary still reports zero failures. Do not ignore that error if it appears in the app during normal use.
 
@@ -248,6 +274,10 @@ The attachment rollback test deliberately blocks its temporary ticket file and c
 ## 6. Manual testing checklist
 
 Use sample information only. You can create several tickets, so the next ticket number may differ from examples.
+
+Folder reorganization checks on September 15 used automated local HTTP requests and source-link checks, not a new browser/visual test. The page content and styling are unchanged apart from their file paths. Restart and hard-refresh before trying the manual flows below.
+
+Keyword-link checks on September 15 passed the 108-test suite and a desktop Chrome check at localhost: the minimized launcher opened, submitting `sprint planning and tutorials` returned an answer with two clickable destinations and the correct access labels, and the chat remained usable. The updated server was restarted before this check. Responsive keyword-link layout and authentication/download behavior on the real FIU site still need teammate verification; no test data was submitted there.
 
 Popup checks verified in Chrome on September 10, 2026: minimized on load, opening, draft retention, topic shortcuts, Escape handling, and support-form access. Desktop and a 320 × 568 viewport were checked; this is browser viewport testing, not a physical-phone test.
 
@@ -264,6 +294,9 @@ Staff creation attachments were also verified with isolated API and real-event-h
 | Topic shortcut | Minimize the chat, then select **Sprint minutes** on the page. | The popup opens with that question and its answer. |
 | Keyboard | Press **Escape** inside the chat. Reopen it, open the support form, and press **Escape** again. | The first Escape minimizes the chat; the second closes only the support form. |
 | Reviewed answer | Ask `Where can I find the sprint meeting minutes templates?` | A reviewed answer appears with a Capstone source link. |
+| Keyword destinations | Send `sprint planning and tutorials`. | **Related site links** offers the Sprint Planning DOCX and Tutorials page. Links open in a new tab; the template is labeled Sign-in required. |
+| Keyword variants and specificity | Send `TUTORIAL`, `stand-up`, `colours`, then `showcase judge`. | Reviewed destinations appear; showcase judge links to Become a Judge rather than the general showcase checklist. |
+| Unknown keyword | Ask an attendance-policy question. | No invented policy or attendance link appears. Support escalation remains available. |
 | Related choices | Ask `Which FIU logo and colors should I use?` | Related topics appear; selecting one shows its answer and source. |
 | Unsupported question | Ask `Where can I park my car?` | The assistant says it cannot find the answer and offers **Create support request**. |
 | Further help | Under a reviewed answer, select **I still need help**. | The support form opens with your question included. |
@@ -358,6 +391,7 @@ Stop the old server, download and extract a new ZIP into a **new folder**, then 
 | --- | --- |
 | `npm.ps1 cannot be loaded because running scripts is disabled` | Use `npm.cmd install`, `npm.cmd start`, and `npm.cmd test` in Windows PowerShell. You do not need to change the machine's execution policy. |
 | `ENOENT` or `Could not read package.json` | You are in the wrong folder, or the source was not fully downloaded. Open the folder containing `package.json` and confirm `Test-Path .\package.json` returns **True**. Check for a second nested folder after ZIP extraction. |
+| Missing root index or old asset paths after updating | The homepage is now root `index.html`, with assets in `css/` and `js/`. Download the complete current source, stop/start the app with `npm.cmd start`, and hard-refresh. Do not mix the old `public/` layout with the new one. Static hosting alone cannot provide the backend APIs. |
 | `node`, `npm.cmd`, or `git` is not recognized | Install the corresponding tool, then fully reopen VS Code and create a fresh terminal. Git is needed only for cloning/updating through Git. |
 | Repository is missing, access denied, or clone fails | Check the exact repository URL and your network connection. The repository is public, so viewing or downloading does not require an invitation. Ask the owner if the URL or visibility has changed. Pushing changes still requires collaborator access. Never paste passwords or access tokens into this guide or a bug report. |
 | Browser cannot reach `localhost:3000` | Confirm `npm.cmd start` is still running without an error. Also try `http://127.0.0.1:3000`. Use one hostname consistently during a sample-account test. |
@@ -387,7 +421,7 @@ $env:PORT = "3001"
 npm.cmd start
 ```
 
-Then open [localhost:3001](http://localhost:3001) and [localhost:3001/staff.html](http://localhost:3001/staff.html). After stopping the server, return to the default port in that terminal with:
+Then open [localhost:3001](http://localhost:3001) and [localhost:3001/pages/staff.html](http://localhost:3001/pages/staff.html). After stopping the server, return to the default port in that terminal with:
 
 ```powershell
 Remove-Item Env:PORT -ErrorAction SilentlyContinue
@@ -417,7 +451,7 @@ Do not include passwords, cookies, tokens, real student records, or the contents
 
 ## 10. Keep this guide current
 
-Update this document in the **same change** as anything that affects installation, commands, ports, environment variables, login, storage, interface labels, or test behavior. The project guidance in [AGENTS.md](AGENTS.md) reinforces this requirement for future coding work.
+Update this document in the **same change** as anything that affects installation, commands, ports, environment variables, login, storage, interface labels, or test behavior. The project guidance in [AGENTS.md](../AGENTS.md) reinforces this requirement for future coding work.
 
 Before sharing a new version:
 

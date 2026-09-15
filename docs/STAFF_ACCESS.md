@@ -13,7 +13,7 @@ Implemented and tested locally on September 14, 2026. This extends the existing 
 | Raul Alvarenga | ralva037@fiu.edu |
 | Anthony Feliz | afeli016@fiu.edu |
 
-The roster lives server-side in `lib/staff-auth.js`. Emails are trimmed and compared case-insensitively. A matching email alone does not grant access: its configured password must also match. Display names always come from the approved roster, not user-submitted names.
+The roster lives server-side in `server/lib/staff-auth.js`. Emails are trimmed and compared case-insensitively. A matching email alone does not grant access: its configured password must also match. Display names always come from the approved roster, not user-submitted names.
 
 ## One-time password setup (and password resets)
 
@@ -51,7 +51,7 @@ The server rejects that account in `NODE_ENV=production`, from non-loopback netw
 
 ### Signing in and reviewing work
 
-1. Open `/staff.html`. Ticket data stays hidden until the server confirms a staff session.
+1. Open `/pages/staff.html`. Ticket data stays hidden until the server confirms a staff session.
 2. Sign in with the configured email/password. The queue shows the roster name and email, your assigned count, and unassigned count.
 3. **All tickets** is the initial view, grouped by current assignee with Unassigned first. Choose **My tickets** for everything currently assigned to the signed-in email, **All resolved** for resolved team tickets grouped by assignee, or **My resolved** for resolved tickets currently assigned to that email. To find work to claim, use **All tickets → Unassigned only** (optionally set Status to Open).
 4. **Claim ticket** assigns an unassigned ticket to the signed-in staff member. **Assign to** supports any of the six staff members or **Unassigned**. A stale assignment update is rejected instead of silently overriding another staff member's change.

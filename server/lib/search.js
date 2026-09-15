@@ -1,3 +1,5 @@
+const { findKeywordLinks } = require("./keyword-links");
+
 const STOP_WORDS = new Set([
   "a", "about", "an", "and", "are", "can", "do", "for", "from", "how", "i", "in", "is", "it",
   "me", "my", "of", "on", "our", "please", "the", "this", "to", "we", "what", "where", "which", "with"
@@ -98,6 +100,7 @@ function publicEntry(entry, score) {
 }
 
 function searchKnowledge(entries, question) {
+  const links = findKeywordLinks(entries, question);
   const ranked = entries
     .map((entry) => ({ entry, score: scoreEntry(entry, question) }))
     .filter((item) => item.score > 0)
@@ -105,7 +108,7 @@ function searchKnowledge(entries, question) {
 
   const top = ranked[0];
   if (!top || top.score < 0.4) {
-    return { status: "unmatched", matches: [] };
+    return { status: "unmatched", matches: [], links };
   }
 
   const second = ranked[1];
@@ -113,11 +116,12 @@ function searchKnowledge(entries, question) {
   if (top.score < 0.43 || closeSecond) {
     return {
       status: "choices",
+      links,
       matches: ranked.slice(0, 3).map((item) => publicEntry(item.entry, item.score))
     };
   }
 
-  return { status: "matched", matches: [publicEntry(top.entry, top.score)] };
+  return { status: "matched", matches: [publicEntry(top.entry, top.score)], links };
 }
 
 module.exports = { normalize, scoreEntry, searchKnowledge, tokenize };

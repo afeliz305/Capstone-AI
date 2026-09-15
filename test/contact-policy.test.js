@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { validEmail, normalizePhone, normalizeContact, contactFor } = require("../public/contact-policy");
+const { validEmail, normalizePhone, normalizeContact, contactFor } = require("../js/shared/contact-policy");
 
 test("contact emails accept common formats and reject malformed addresses", () => {
   for (const email of ["student@fiu.edu", " Demo.Test+capstone@example.edu ", "a_b@example.co.uk"]) assert.equal(validEmail(email), true, email);

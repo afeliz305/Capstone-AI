@@ -5,13 +5,13 @@ const os = require("node:os");
 const path = require("node:path");
 const { once } = require("node:events");
 const { randomUUID } = require("node:crypto");
-const { STAFF, setStaffPassword, createStaffAuth } = require("../lib/staff-auth");
-const { filterTickets, createIdleRedirect } = require("../public/staff-view");
+const { STAFF, setStaffPassword, createStaffAuth } = require("../server/lib/staff-auth");
+const { filterTickets, createIdleRedirect } = require("../js/staff/staff-view");
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), "capstone-staff-test-"));
 const ticketFile = path.join(directory, "tickets.json");
 const staffFile = path.join(directory, "staff-credentials.json");
 process.env.CAPSTONE_DATA_FILE = ticketFile;
-const { createServer } = require("../server");
+const { createServer } = require("../server/server");
 const password = "Fictional test password only 2026";
 test.before(async () => { for (const member of STAFF) await setStaffPassword(member.email, password, { file: staffFile }); });
 test.after(() => {
@@ -137,7 +137,7 @@ test("staff creation supports every displayed topic, preserves records, and owns
   const { call, signIn } = await app(t);
   const user = await signIn();
   const before = (await call("/api/tickets", { cookie: user.cookie })).data;
-  const html = fs.readFileSync(path.join(__dirname, "../public/staff.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../pages/staff.html"), "utf8");
   const select = html.match(/<select id="staff-ticket-topic"[^>]*>([\s\S]*?)<\/select>/)[1];
   const topics = [...select.matchAll(/<option>([^<]+)<\/option>/g)].map(match => match[1]);
   assert.deepEqual(topics.slice(0, 3), ["Workflow and improvements", "Testing and updates", "Implementation and testing"]);

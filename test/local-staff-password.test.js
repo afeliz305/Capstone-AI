@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
-const { STAFF, setStaffPassword, createStaffAuth } = require("../lib/staff-auth");
+const { STAFF, setStaffPassword, createStaffAuth } = require("../server/lib/staff-auth");
 const shortPassword = "demo1234";
 const regularPassword = "Fictional strong test 2026";
 
@@ -41,7 +41,7 @@ test("short staff passwords require explicit local-only setup and preserve other
   const accounts = JSON.parse(text).accounts;
   assert.deepEqual(accounts[STAFF[0].email], before);
   assert.equal(accounts[STAFF[5].email].localTestOnly, true);
-  assert.match(await fs.readFile(path.join(__dirname, "../public/staff.html"), "utf8"), /id="staff-password"[^>]*minlength="8"/);
+  assert.match(await fs.readFile(path.join(__dirname, "../pages/staff.html"), "utf8"), /id="staff-password"[^>]*minlength="8"/);
 });
 
 test("local-only passwords and sessions reject remote or non-localhost requests", async (t) => {

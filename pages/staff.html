@@ -5,25 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Local support-request queue for the Capstone AI Chat prototype.">
     <title>Support Queue · Capstone AI Chat</title>
-    <link rel="stylesheet" href="/styles.css">
-    <link rel="stylesheet" href="/staff.css">
-    <script src="/staff-view.js" defer></script>
-    <script src="/contact-policy.js" defer></script>
-    <script src="/widget/attachment-policy.js" defer></script>
-    <script src="/ticket-workspace.js" defer></script>
-    <script src="/staff.js" defer></script>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/staff.css">
+    <script src="../js/staff/staff-view.js" defer></script>
+    <script src="../js/shared/contact-policy.js" defer></script>
+    <script src="../js/shared/attachment-policy.js" defer></script>
+    <script src="../js/staff/ticket-workspace.js" defer></script>
+    <script src="../js/staff/staff.js" defer></script>
   </head>
   <body class="staff-page">
     <header class="site-header">
-      <a class="brand" href="/" aria-label="Return to Capstone Assistant">
-        <img class="brand-fiu" src="/assets/FIU_mark_white.svg" alt="FIU" width="79" height="38">
+      <a class="brand" href="../index.html" aria-label="Return to Capstone Assistant">
+        <img class="brand-fiu" src="../css/images/FIU_mark_white.svg" alt="FIU" width="79" height="38">
         <span class="brand-copy">
           <strong>Knight Foundation School of Computing &amp; Information Sciences</strong>
           <span>CAPSTONE SUPPORT · PROTOTYPE</span>
         </span>
       </a>
       <nav aria-label="Staff navigation">
-        <a href="/">Student assistant</a>
+        <a href="../index.html">Student assistant</a>
         <button class="refresh-button" id="refresh-tickets" type="button" hidden>Refresh queue</button>
         <button class="refresh-button" id="staff-logout" type="button" hidden>Sign out</button>
       </nav>
@@ -45,7 +45,7 @@
         </form>
         <p class="staff-setup-note" id="staff-remember-email-note">Your last signed-in email is remembered on this browser. This app never saves your password in browser storage.</p>
         <p class="staff-setup-note">Use a separate password for this prototype, not your FIU password. First time on this computer? Run <code>npm.cmd run staff:password</code> in the project terminal to set one.</p>
-        <a class="staff-back" href="/">Back to the student assistant</a>
+        <a class="staff-back" href="../index.html">Back to the student assistant</a>
       </section>
       <section class="staff-access-card staff-denied" id="staff-denied" aria-labelledby="staff-denied-title" hidden>
         <p class="eyebrow">STAFF ACCESS ONLY</p>
@@ -53,11 +53,11 @@
         <p id="staff-denied-message" role="alert">Your account is not authorized for the staff queue.</p>
         <p>Returning to the student assistant in <strong id="staff-return-seconds">15</strong> seconds without a response.</p>
         <div class="staff-denied-actions">
-          <a class="staff-primary" href="/">Back to the student assistant</a>
+          <a class="staff-primary" href="../index.html">Back to the student assistant</a>
           <button class="staff-secondary" id="staff-retry" type="button">Try signing in again</button>
         </div>
       </section>
-      <noscript>JavaScript is required to sign in. <a href="/">Return to the student assistant</a>.</noscript>
+      <noscript>JavaScript is required to sign in. <a href="../index.html">Return to the student assistant</a>.</noscript>
     </main>
 
     <main class="staff-shell" id="staff-workspace" hidden>

@@ -54,7 +54,7 @@
   });
   const redirect = createIdleRedirect({
     onTick: (seconds) => { $("#staff-return-seconds").textContent = seconds; },
-    onTimeout: () => window.location.replace("/")
+    onTimeout: () => window.location.replace("../index.html")
   });
 
   function element(tag, className, text) {

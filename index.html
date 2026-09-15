@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="A site-grounded support assistant for FIU KFSCIS Capstone.">
     <title>Capstone Assistant · FIU KFSCIS</title>
-    <link rel="stylesheet" href="/styles.css">
-    <link rel="stylesheet" href="/widget/capstone-chat.css">
-    <script src="/widget/attachment-policy.js" defer></script>
-    <script src="/contact-policy.js" defer></script>
-    <script src="/widget/capstone-chat.js" defer></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/capstone-chat.css">
+    <script src="js/shared/attachment-policy.js" defer></script>
+    <script src="js/shared/contact-policy.js" defer></script>
+    <script src="js/chat/capstone-chat.js" defer></script>
   </head>
   <body>
     <header class="site-header">
       <a class="brand" href="https://capstone.cs.fiu.edu/" target="_blank" rel="noreferrer" aria-label="Open the FIU KFSCIS Capstone site">
-        <img class="brand-fiu" src="/assets/FIU_mark_white.svg" alt="FIU" width="79" height="38">
+        <img class="brand-fiu" src="css/images/FIU_mark_white.svg" alt="FIU" width="79" height="38">
         <span class="brand-copy">
           <strong>Knight Foundation School of Computing &amp; Information Sciences</strong>
           <span>CAPSTONE</span>
@@ -23,7 +23,7 @@
       <nav aria-label="Prototype navigation">
         <a href="https://capstone.cs.fiu.edu/resources" target="_blank" rel="noreferrer">Resources</a>
         <a href="https://capstone.cs.fiu.edu/tutorials" target="_blank" rel="noreferrer">Tutorials</a>
-        <a class="staff-link" href="/staff.html">Staff queue</a>
+        <a class="staff-link" href="pages/staff.html">Staff queue</a>
       </nav>
     </header>
 
@@ -31,20 +31,20 @@
       <aside class="side-nav" aria-label="Capstone sections">
         <p class="nav-label">SUPPORT</p>
         <button type="button" class="active" data-open-chat aria-controls="assistant" aria-expanded="false" aria-haspopup="dialog">
-          <svg class="ui-icon" aria-hidden="true"><use href="/assets/icons.svg#chat"></use></svg> Capstone Assistant
+          <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#chat"></use></svg> Capstone Assistant
         </button>
         <a href="https://capstone.cs.fiu.edu/portal" target="_blank" rel="noreferrer">
-          <svg class="ui-icon" aria-hidden="true"><use href="/assets/icons.svg#home"></use></svg> My Dashboard
+          <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#home"></use></svg> My Dashboard
         </a>
         <p class="nav-label">REFERENCE</p>
         <a href="https://capstone.cs.fiu.edu/resources" target="_blank" rel="noreferrer">
-          <svg class="ui-icon" aria-hidden="true"><use href="/assets/icons.svg#file"></use></svg> Resources
+          <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#file"></use></svg> Resources
         </a>
         <a href="https://capstone.cs.fiu.edu/tutorials" target="_blank" rel="noreferrer">
-          <svg class="ui-icon" aria-hidden="true"><use href="/assets/icons.svg#play"></use></svg> Tutorials
+          <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#play"></use></svg> Tutorials
         </a>
         <a href="https://capstone.cs.fiu.edu/projects" target="_blank" rel="noreferrer">
-          <svg class="ui-icon" aria-hidden="true"><use href="/assets/icons.svg#grid"></use></svg> Projects
+          <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#grid"></use></svg> Projects
         </a>
         <div class="scope-note">
           <span class="status-dot" aria-hidden="true"></span>
@@ -78,17 +78,17 @@
           </div>
           <div class="topic-cards">
             <button type="button" data-question="Where can I find the sprint meeting minutes templates?">
-              <span class="topic-icon" aria-hidden="true"><svg class="ui-icon"><use href="/assets/icons.svg#file"></use></svg></span>
+              <span class="topic-icon" aria-hidden="true"><svg class="ui-icon"><use href="css/images/icons.svg#file"></use></svg></span>
               <strong>Sprint minutes</strong>
               <span>Planning, standup, review, and retro templates</span>
             </button>
             <button type="button" data-question="How should our team prepare for the showcase?">
-              <span class="topic-icon" aria-hidden="true"><svg class="ui-icon"><use href="/assets/icons.svg#screen"></use></svg></span>
+              <span class="topic-icon" aria-hidden="true"><svg class="ui-icon"><use href="css/images/icons.svg#screen"></use></svg></span>
               <strong>Showcase prep</strong>
               <span>Poster, slides, demo, and presentation checklist</span>
             </button>
             <button type="button" data-question="Which FIU logo and colors should I use?">
-              <span class="topic-icon" aria-hidden="true"><svg class="ui-icon"><use href="/assets/icons.svg#layers"></use></svg></span>
+              <span class="topic-icon" aria-hidden="true"><svg class="ui-icon"><use href="css/images/icons.svg#layers"></use></svg></span>
               <strong>Brand &amp; templates</strong>
               <span>Official colors, logo rules, and downloads</span>
             </button>
@@ -96,7 +96,7 @@
         </section>
 
         <section class="trust-card" aria-label="Assistant boundaries">
-          <div class="trust-mark" aria-hidden="true"><svg class="ui-icon"><use href="/assets/icons.svg#check"></use></svg></div>
+          <div class="trust-mark" aria-hidden="true"><svg class="ui-icon"><use href="css/images/icons.svg#check"></use></svg></div>
           <div>
             <strong>Answers stay grounded in Capstone content</strong>
             <p>Every answer includes its source. The assistant does not read grades, private messages, or student-directory data.</p>
@@ -106,20 +106,20 @@
     </div>
 
     <button type="button" class="chat-launcher" id="chat-launcher" aria-controls="assistant" aria-expanded="false" aria-haspopup="dialog">
-      <svg class="ui-icon" aria-hidden="true"><use href="/assets/icons.svg#chat"></use></svg>
+      <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#chat"></use></svg>
       <span>Chat with Capstone</span>
     </button>
 
     <section class="chat-panel" id="assistant" role="dialog" aria-modal="false" aria-labelledby="chat-title" tabindex="-1" hidden>
       <header class="chat-header">
-        <div class="assistant-avatar" aria-hidden="true"><svg class="ui-icon"><use href="/assets/icons.svg#chat"></use></svg></div>
+        <div class="assistant-avatar" aria-hidden="true"><svg class="ui-icon"><use href="css/images/icons.svg#chat"></use></svg></div>
         <div>
           <h2 id="chat-title">Capstone Assistant</h2>
           <p><span class="status-dot" aria-hidden="true"></span> Ready · site knowledge only</p>
         </div>
         <div class="chat-header-actions">
-          <button type="button" class="icon-button" id="clear-chat" aria-label="Clear conversation" title="Clear conversation"><svg class="ui-icon" aria-hidden="true"><use href="/assets/icons.svg#refresh"></use></svg></button>
-          <button type="button" class="icon-button" id="minimize-chat" aria-label="Minimize chat" title="Minimize chat (Escape)"><svg class="ui-icon" aria-hidden="true"><use href="/assets/icons.svg#minimize"></use></svg></button>
+          <button type="button" class="icon-button" id="clear-chat" aria-label="Clear conversation" title="Clear conversation"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#refresh"></use></svg></button>
+          <button type="button" class="icon-button" id="minimize-chat" aria-label="Minimize chat" title="Minimize chat (Escape)"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#minimize"></use></svg></button>
         </div>
       </header>
 
@@ -139,7 +139,7 @@
       <form class="chat-composer" id="chat-form">
         <label class="sr-only" for="chat-input">Ask a question about the Capstone site</label>
         <textarea id="chat-input" name="question" rows="2" placeholder="Ask about Capstone…" required></textarea>
-        <button type="submit" aria-label="Send question"><svg class="ui-icon" aria-hidden="true"><use href="/assets/icons.svg#send"></use></svg></button>
+        <button type="submit" aria-label="Send question"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#send"></use></svg></button>
         <p>Press Enter to send · Shift+Enter for a new line</p>
       </form>
     </section>

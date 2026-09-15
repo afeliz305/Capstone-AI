@@ -1,5 +1,5 @@
 const path = require("node:path");
-const { seedSampleTickets } = require("../lib/sample-tickets");
+const { seedSampleTickets } = require("../server/lib/sample-tickets");
 
 if (process.env.NODE_ENV === "production") {
   console.error("Sample ticket generation is disabled in production.");

@@ -1,6 +1,7 @@
 [
   {
     "id": "getting-started",
+    "linkKeywords": ["getting started", "orientation", "intake", "team setup", "onboarding"],
     "title": "Getting started with Capstone",
     "sourceTitle": "Dashboard · Start here",
     "url": "https://capstone.cs.fiu.edu/portal",
@@ -14,6 +15,7 @@
   },
   {
     "id": "minutes-overview",
+    "linkKeywords": ["meeting minutes", "minutes", "scrum templates", "sprint templates", "backlog grooming", "resources"],
     "title": "Scrum meeting-minutes templates",
     "sourceTitle": "Dashboard · Resources",
     "url": "https://capstone.cs.fiu.edu/portal",
@@ -27,6 +29,7 @@
   },
   {
     "id": "sprint-planning",
+    "linkKeywords": ["sprint planning", "planning minutes"],
     "title": "Sprint Planning template",
     "sourceTitle": "Dashboard · Resources",
     "url": "https://capstone.cs.fiu.edu/static/templates/Sprint_Planning_Minutes_Template.docx",
@@ -40,6 +43,7 @@
   },
   {
     "id": "daily-scrum",
+    "linkKeywords": ["daily scrum", "standup", "stand up"],
     "title": "Daily Scrum template",
     "sourceTitle": "Dashboard · Resources",
     "url": "https://capstone.cs.fiu.edu/static/templates/Daily_Scrum_Minutes_Template.docx",
@@ -53,6 +57,7 @@
   },
   {
     "id": "review-retrospective",
+    "linkKeywords": ["sprint review", "sprint retrospective", "retrospective", "retro"],
     "title": "Sprint Review and Retrospective",
     "sourceTitle": "Dashboard · Resources",
     "url": "https://capstone.cs.fiu.edu/portal",
@@ -66,6 +71,7 @@
   },
   {
     "id": "showcase-prep",
+    "linkKeywords": ["showcase preparation", "showcase checklist", "showcase", "pitch"],
     "title": "Showcase preparation checklist",
     "sourceTitle": "Student Resources",
     "url": "https://capstone.cs.fiu.edu/resources",
@@ -79,6 +85,7 @@
   },
   {
     "id": "showcase-materials",
+    "linkKeywords": ["poster", "slides", "slide deck", "presentation materials", "demo video"],
     "title": "Poster, slides, and demo materials",
     "sourceTitle": "Student Resources",
     "url": "https://capstone.cs.fiu.edu/resources",
@@ -92,6 +99,7 @@
   },
   {
     "id": "brand-logo",
+    "linkKeywords": ["logo", "branding"],
     "title": "Choosing the correct FIU logo",
     "sourceTitle": "Dashboard · Brand & Templates",
     "url": "https://capstone.cs.fiu.edu/portal",
@@ -105,6 +113,7 @@
   },
   {
     "id": "brand-colors",
+    "linkKeywords": ["colors", "font", "typography", "fiu blue", "fiu gold"],
     "title": "Official colors and typography",
     "sourceTitle": "Dashboard · Brand & Templates",
     "url": "https://capstone.cs.fiu.edu/portal",
@@ -118,6 +127,7 @@
   },
   {
     "id": "tutorials",
+    "linkKeywords": ["tutorials", "workspace tour", "zoom room"],
     "title": "Capstone tutorials",
     "sourceTitle": "Tutorials",
     "url": "https://capstone.cs.fiu.edu/tutorials",
@@ -131,6 +141,7 @@
   },
   {
     "id": "projects-archive",
+    "linkKeywords": ["project archive", "past projects", "project gallery", "projects"],
     "title": "Project gallery and archive",
     "sourceTitle": "Projects",
     "url": "https://capstone.cs.fiu.edu/projects",
@@ -144,6 +155,7 @@
   },
   {
     "id": "canvas-assignments",
+    "linkKeywords": ["canvas", "assignments", "submission"],
     "title": "Canvas assignments",
     "sourceTitle": "My Dashboard",
     "url": "https://capstone.cs.fiu.edu/portal",
@@ -157,6 +169,7 @@
   },
   {
     "id": "grades-privacy",
+    "linkKeywords": ["privacy", "grades", "private student information"],
     "title": "Grades and private student information",
     "sourceTitle": "Capstone Privacy",
     "url": "https://capstone.cs.fiu.edu/privacy",
@@ -183,6 +196,7 @@
   },
   {
     "id": "sponsor-project",
+    "linkKeywords": ["sponsor", "sponsoring", "propose project", "mentor"],
     "title": "Proposing or sponsoring a project",
     "sourceTitle": "Engage with Capstone",
     "url": "https://capstone.cs.fiu.edu/engage",
@@ -196,6 +210,7 @@
   },
   {
     "id": "judge-showcase",
+    "linkKeywords": ["showcase judge", "judge", "judging"],
     "title": "Becoming a showcase judge",
     "sourceTitle": "Become a Judge",
     "url": "https://capstone.cs.fiu.edu/judge",

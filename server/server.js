@@ -6,10 +6,19 @@ const { createSessionService } = require("./lib/session");
 const { prepareAttachments, createAttachmentStore } = require("./lib/attachments");
 const { createStaffAuth, memberFor, normalizeEmail } = require("./lib/staff-auth");
 const { TICKET_TOPICS, revisionOf, applyTicketWork, requesterView } = require("./lib/ticket-work");
-const { normalizeContact } = require("./public/contact-policy");
+const { normalizeContact } = require("../js/shared/contact-policy");
 
-const root = __dirname;
-const publicDirectory = path.join(root, "public");
+const root = path.resolve(__dirname, "..");
+// The homepage lives at the repository root. Never serve that directory broadly:
+// backend source, documentation, credentials, and local data must stay private.
+const publicFiles = new Set([
+  "index.html", "pages/staff.html",
+  "css/styles.css", "css/staff.css", "css/capstone-chat.css",
+  "css/images/FIU_mark_white.svg", "css/images/icons.svg", "css/fonts/mulish-var.woff2",
+  "js/shared/contact-policy.js", "js/shared/attachment-policy.js",
+  "js/chat/capstone-chat.js", "js/staff/staff.js",
+  "js/staff/staff-view.js", "js/staff/ticket-workspace.js"
+]);
 const knowledgeFile = path.join(root, "data", "capstone-knowledge.json");
 const ticketFile = process.env.CAPSTONE_DATA_FILE
   ? path.resolve(process.env.CAPSTONE_DATA_FILE)
@@ -328,13 +337,19 @@ async function handleApi(request, response, url, sessions, staffAuth) {
 }
 
 async function serveStatic(response, pathname) {
-  const requestedPath = pathname === "/" ? "/index.html" : pathname;
-  const filePath = path.resolve(publicDirectory, `.${requestedPath}`);
-  if (!filePath.startsWith(`${publicDirectory}${path.sep}`)) {
-    response.writeHead(403);
-    response.end("Forbidden");
+  if (pathname === "/staff.html") {
+    // Preserve existing bookmarks while using the new page/asset locations.
+    response.writeHead(302, { Location: "/pages/staff.html", "Cache-Control": "no-store" });
+    response.end();
     return;
   }
+  const requestedPath = pathname === "/" ? "index.html" : pathname.slice(1);
+  if (!publicFiles.has(requestedPath)) {
+    response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8", "X-Content-Type-Options": "nosniff" });
+    response.end("Not found");
+    return;
+  }
+  const filePath = path.join(root, requestedPath);
 
   try {
     const content = await fs.readFile(filePath);

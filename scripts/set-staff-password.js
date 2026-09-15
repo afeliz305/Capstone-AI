@@ -1,6 +1,6 @@
 const readline = require("node:readline");
 const { Writable } = require("node:stream");
-const { STAFF, memberFor, setStaffPassword } = require("../lib/staff-auth");
+const { STAFF, memberFor, setStaffPassword } = require("../server/lib/staff-auth");
 
 async function main() {
   if (!process.stdin.isTTY) throw new Error("Run this command in your own interactive terminal. Passwords are not accepted as command-line arguments.");
@@ -35,7 +35,7 @@ async function main() {
     const confirmation = await hidden("Confirm password: ");
     if (password !== confirmation) throw new Error("Passwords did not match. Nothing was changed.");
     await setStaffPassword(member.email, password, { localTestOnly });
-    console.log(`Password saved for ${member.name}. You can now sign in at http://localhost:3000/staff.html.`);
+    console.log(`Password saved for ${member.name}. You can now sign in at http://localhost:3000/pages/staff.html.`);
   } finally { terminal.close(); }
 }
 main().catch((error) => { console.error(error.message); process.exitCode = 1; });

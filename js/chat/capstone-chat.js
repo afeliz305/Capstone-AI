@@ -103,11 +103,42 @@
     return message;
   }
 
+  function isCapstoneUrl(value) {
+    try {
+      const url = new URL(value);
+      return url.origin === "https://capstone.cs.fiu.edu" && !url.username && !url.password;
+    } catch { return false; }
+  }
+
+  function addKeywordLinks(container, links = []) {
+    const safeLinks = links.filter(link => isCapstoneUrl(link.url) && link.keywords?.length).slice(0, 4);
+    if (!safeLinks.length) return;
+    const group = createElement("nav", "keyword-links");
+    group.setAttribute("aria-label", "Related Capstone site links");
+    group.append(createElement("div", "keyword-links-heading", "RELATED SITE LINKS"));
+    for (const link of safeLinks) {
+      const anchor = createElement("a", "keyword-link");
+      anchor.href = link.url;
+      anchor.target = "_blank";
+      anchor.rel = "noopener noreferrer";
+      const access = link.access === "authenticated" ? "Sign-in required" : "Public page";
+      anchor.setAttribute("aria-label", `${link.keywords.join(", ")}: ${link.title}. ${access}. Opens in a new tab.`);
+      anchor.append(
+        createElement("strong", "keyword-link-words", `${link.keywords.join(" · ")} ↗`),
+        createElement("span", "keyword-link-title", link.title),
+        createElement("span", "keyword-link-meta", `${link.sourceTitle || link.section} · ${access}`)
+      );
+      group.append(anchor);
+    }
+    container.append(group);
+  }
+
   function addSourceCard(container, match) {
+    if (!isCapstoneUrl(match.url)) return;
     const source = createElement("a", "source-card");
     source.href = match.url;
     source.target = "_blank";
-    source.rel = "noreferrer";
+    source.rel = "noopener noreferrer";
     const label = createElement("span", "source-kicker", `${match.access === "authenticated" ? "SIGN-IN REQUIRED" : "CAPSTONE SOURCE"} · ${match.section}`);
     const title = createElement("strong", "", match.sourceTitle || match.title);
     const action = createElement("span", "source-action", "Open source ↗");
@@ -274,13 +305,17 @@
     message.append(feedback);
   }
 
-  function renderAnswer(match) {
+  function renderAnswer(match, links = []) {
     const message = addAssistantText(match.answer);
-    addSourceCard(message, match);
+    addKeywordLinks(message, links);
+    if (!links.some(link => link.id === match.id && link.url === match.url && isCapstoneUrl(link.url) && link.keywords?.length)) {
+      addSourceCard(message, match);
+    }
     addFeedback(message);
+    scrollToLatest();
   }
 
-  function renderChoices(matches) {
+  function renderChoices(matches, links = []) {
     const message = addAssistantText(
       "I found a few related Capstone topics. Which one best matches what you need?",
       "Choosing a topic lets me use its reviewed answer instead of guessing."
@@ -289,26 +324,30 @@
     matches.forEach((match) => {
       const button = createActionButton(match.title, "result-choice", () => {
         choices.querySelectorAll("button").forEach((item) => { item.disabled = true; });
-        renderAnswer(match);
+        renderAnswer(match, links.filter(link => link.id === match.id));
       });
       const meta = createElement("span", "", `${match.section} · ${match.access === "authenticated" ? "sign-in required" : "public"}`);
       button.append(meta);
       choices.append(button);
     });
     message.append(choices);
+    addKeywordLinks(message, links);
+    scrollToLatest();
   }
 
-  function renderUnmatched() {
+  function renderUnmatched(links = []) {
     const message = addAssistantText(
       "I couldn’t find that answer in the approved Capstone content.",
       "Try adding a detail such as “showcase,” “sprint,” “template,” or “tutorial.” If you still need help, create a support request."
     );
+    addKeywordLinks(message, links);
     const actions = createElement("div", "message-actions");
     actions.append(
       createActionButton("Try another question", "secondary-action", () => input.focus()),
       createActionButton("Create support request", "primary-action", () => openSupportDialog())
     );
     message.append(actions);
+    scrollToLatest();
   }
 
   async function search(question) {
@@ -324,9 +363,9 @@
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Search is unavailable.");
       loading.remove();
-      if (result.status === "matched") renderAnswer(result.matches[0]);
-      else if (result.status === "choices") renderChoices(result.matches);
-      else renderUnmatched();
+      if (result.status === "matched") renderAnswer(result.matches[0], result.links);
+      else if (result.status === "choices") renderChoices(result.matches, result.links);
+      else renderUnmatched(result.links);
       return result;
     } catch (error) {
       loading.remove();
@@ -334,7 +373,7 @@
         "The local knowledge search is temporarily unavailable.",
         error.message || "Please try again or create a support request."
       );
-      return { status: "error", matches: [] };
+      return { status: "error", matches: [], links: [] };
     } finally {
       form.querySelector("button[type='submit']").disabled = false;
       input.disabled = false;
@@ -484,7 +523,7 @@
         const question = String(value?.question || "").trim();
         if (question.length < 2) throw new Error("A question is required.");
         const result = await submitQuestion(question);
-        return { status: result.status, matches: result.matches.map((match) => ({ title: match.title, url: match.url })) };
+        return { status: result.status, matches: result.matches.map((match) => ({ title: match.title, url: match.url })), links: result.links || [] };
       }
     }, { signal: controller.signal })).catch(() => {});
   }

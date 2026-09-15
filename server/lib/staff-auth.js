@@ -14,7 +14,7 @@ const STAFF = Object.freeze([
 ].map(Object.freeze));
 const credentialsFile = process.env.CAPSTONE_STAFF_CREDENTIALS_FILE
   ? path.resolve(process.env.CAPSTONE_STAFF_CREDENTIALS_FILE)
-  : path.join(__dirname, "../data/staff-credentials.json");
+  : path.join(__dirname, "../../data/staff-credentials.json");
 const COOKIE = "capstone_staff_session";
 const SESSION_MS = 60 * 60 * 1000;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;

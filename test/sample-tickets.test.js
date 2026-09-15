@@ -3,9 +3,9 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
-const { STAFF } = require("../lib/staff-auth");
-const { planSampleTickets, seedSampleTickets } = require("../lib/sample-tickets");
-const { filterTickets } = require("../public/staff-view");
+const { STAFF } = require("../server/lib/staff-auth");
+const { planSampleTickets, seedSampleTickets } = require("../server/lib/sample-tickets");
+const { filterTickets } = require("../js/staff/staff-view");
 
 test("adds twelve resolved examples and five open unassigned tickets with unique IDs", () => {
   const existing = [{ id: "CAP-1007", status: "in-review", details: "Preserve this ticket", attachments: [{ id: "original-document" }] }];

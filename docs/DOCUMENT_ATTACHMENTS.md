@@ -15,7 +15,7 @@ The local prototype accepts optional PDF, Word (.docx), and UTF-8 text (.txt) do
 
 `POST /api/tickets` and the authenticated staff route `POST /api/staff/tickets` accept JSON with the existing account/session/origin checks. Both accept an optional `attachments` array of `{ name, size, data }`, where `data` is canonical base64. Server-generated IDs and MIME metadata replace any client-supplied IDs/types. These two routes have a 14 MB JSON body limit to accommodate encoding overhead; other mutation routes retain their 128 KB limit. Staff identity is still derived from the validated session, and file validation completes before any file is saved.
 
-Files are written under random UUID names to `data/attachments/`, outside `public`. The JSON queue stores only `{ id, name, size, type }` metadata. Both `data/tickets.json` and `data/attachments/` are excluded from Git, so teammates have separate files/queues. Keep them together for any intentional local-data backup. Changing status does not remove files.
+Files are written under random UUID names to `data/attachments/`, outside the server's explicitly allowed static files. The JSON queue stores only `{ id, name, size, type }` metadata. Both `data/tickets.json` and `data/attachments/` are excluded from Git, so teammates have separate files/queues. Keep them together for any intentional local-data backup. Changing status does not remove files.
 
 When `CAPSTONE_DATA_FILE` is set for a test/custom queue, files are stored in an `attachments` subdirectory beside that JSON file. No `.env` loader or additional dependency is needed. Automated tests use isolated temporary directories; they do not modify the user's queue.
 

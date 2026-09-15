@@ -32,6 +32,14 @@
 .source-card strong { font-size: 14px; font-weight: 800; }
 .source-kicker { color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .04em; }
 .source-action { color: var(--info); font-size: 14px; font-weight: 700; }
+.keyword-links { margin-top: 12px; display: grid; gap: 8px; }
+.keyword-links-heading { color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .04em; }
+.keyword-link { min-width: 0; min-height: 44px; padding: 10px 12px; display: grid; gap: 3px; border: 1px solid var(--line); border-left: 3px solid var(--fiu-gold); border-radius: 0 11px 11px 0; color: var(--ink); background: var(--surface); text-decoration: none; overflow-wrap: anywhere; }
+.keyword-link:hover { background: var(--warning-bg); }
+.keyword-link:focus-visible { outline: 2px solid var(--fiu-gold); outline-offset: 2px; }
+.keyword-link-words { color: var(--info); font-size: 15px; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
+.keyword-link-title { font-size: 14px; font-weight: 700; }
+.keyword-link-meta { color: var(--muted); font-size: 12px; }
 .feedback-row { margin-top: 14px; padding-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-top: 1px solid var(--line); }
 .feedback-row > span:first-child { width: 100%; color: var(--muted); font-size: 14px; }
 .feedback-button { min-height: 40px; padding: 7px 12px; border: 1px solid var(--action); border-radius: var(--control-radius); color: #fff; background: var(--action); font-size: 14px; font-weight: 700; }

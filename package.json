@@ -4,7 +4,7 @@
   "private": true,
   "description": "Zero-token, site-grounded support assistant for the FIU KFSCIS Capstone portal.",
   "scripts": {
-    "start": "node server.js",
+    "start": "node server/server.js",
     "test": "node --test",
     "staff:password": "node scripts/set-staff-password.js",
     "tickets:seed": "node scripts/seed-tickets.js"

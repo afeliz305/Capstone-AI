@@ -4,8 +4,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const { randomUUID } = require("node:crypto");
-const { requesterView } = require("../lib/ticket-work");
-const helpers = require("../public/staff-view");
+const { requesterView } = require("../server/lib/ticket-work");
+const helpers = require("../js/staff/staff-view");
 const members = [{ name: "Alex Example", email: "alex@example.edu" }, { name: "Blair Example", email: "blair@example.edu" }];
 const email = members[0].email;
 const records = [
@@ -44,9 +44,9 @@ test("assignee grouping puts unassigned first, keeps legacy owners, and preserve
   assert.deepEqual(helpers.groupTicketsByAssignee([], members), []);
 });
 
-const html = fs.readFileSync(path.join(__dirname, "../public/staff.html"), "utf8");
-const script = fs.readFileSync(path.join(__dirname, "../public/staff.js"), "utf8");
-const workspaceScript = fs.readFileSync(path.join(__dirname, "../public/ticket-workspace.js"), "utf8");
+const html = fs.readFileSync(path.join(__dirname, "../pages/staff.html"), "utf8");
+const script = fs.readFileSync(path.join(__dirname, "../js/staff/staff.js"), "utf8");
+const workspaceScript = fs.readFileSync(path.join(__dirname, "../js/staff/ticket-workspace.js"), "utf8");
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
 // Exercise the real staff event handlers against a DOM double, not a browser.
@@ -110,7 +110,7 @@ async function mount({ createResponse, workspaceResponse, authResponse, localSto
       const input = JSON.parse(options.body);
       creations.push(input);
       if (createResponse) return createResponse(input);
-      data = { ...input, attachments: (input.attachments || []).map(({ name, size }) => ({ id: randomUUID(), name, size, type: "text/plain" })), contact: require("../public/contact-policy").normalizeContact(input, email), id: "CAP-" + (9000 + creations.length), name: members[0].name, email, createdBy: email, identitySource: "staff-session", status: "open", createdAt: "2026-09-14T12:00:00Z" };
+      data = { ...input, attachments: (input.attachments || []).map(({ name, size }) => ({ id: randomUUID(), name, size, type: "text/plain" })), contact: require("../js/shared/contact-policy").normalizeContact(input, email), id: "CAP-" + (9000 + creations.length), name: members[0].name, email, createdBy: email, identitySource: "staff-session", status: "open", createdAt: "2026-09-14T12:00:00Z" };
       tickets.unshift(structuredClone(data));
     }
     else if (url.startsWith("/api/tickets/") && url.endsWith("/work") && options.method === "PATCH") {
@@ -137,7 +137,7 @@ async function mount({ createResponse, workspaceResponse, authResponse, localSto
     } else throw new Error("Unexpected test request: " + url);
     return { ok: true, status: 200, json: async () => data };
   };
-  const context = vm.createContext({ document, fetch, FileReader: class { readAsDataURL(file) { readFile(this, file); } }, window: { get localStorage() { return typeof localStorage === "function" ? localStorage() : localStorage; }, CapstoneAttachmentPolicy: require("../public/widget/attachment-policy"), CapstoneContactPolicy: require("../public/contact-policy"), CapstoneStaffView: { ...helpers, createIdleRedirect: redirectFactory }, crypto: { randomUUID }, confirm, addEventListener() {}, setInterval() {} } });
+  const context = vm.createContext({ document, fetch, FileReader: class { readAsDataURL(file) { readFile(this, file); } }, window: { get localStorage() { return typeof localStorage === "function" ? localStorage() : localStorage; }, CapstoneAttachmentPolicy: require("../js/shared/attachment-policy"), CapstoneContactPolicy: require("../js/shared/contact-policy"), CapstoneStaffView: { ...helpers, createIdleRedirect: redirectFactory }, crypto: { randomUUID }, confirm, addEventListener() {}, setInterval() {} } });
   vm.runInContext(workspaceScript, context);
   vm.runInContext(script, context);
   await flush();
@@ -341,7 +341,7 @@ function selectStaffDocuments(ui, files) {
 
 test("staff document picker adds and removes files, submits bytes, and exposes saved downloads", async () => {
   assert.match(html, /id="staff-ticket-attachments"[^>]*type="file"[^>]*accept="\.pdf,\.docx,\.txt"[^>]*multiple/);
-  assert.ok(html.indexOf('/widget/attachment-policy.js') < html.indexOf('/staff.js'));
+  assert.ok(html.indexOf('../js/shared/attachment-policy.js') < html.indexOf('../js/staff/staff.js'));
   const ui = await mount(); fillStaffTicket(ui);
   const list = ui.elements.get("#staff-attachment-list");
   const first = staffDocument(); const second = staffDocument("second.txt");

@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { normalizeNewTicket } = require("../server");
+const { normalizeNewTicket } = require("../server/server");
 
 test("creates a normalized local support ticket", () => {
   const ticket = normalizeNewTicket({

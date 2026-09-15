@@ -4,15 +4,16 @@ const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 
-const html = readFileSync(path.join(__dirname, "../public/index.html"), "utf8");
-const script = readFileSync(path.join(__dirname, "../public/widget/capstone-chat.js"), "utf8");
+const html = readFileSync(path.join(__dirname, "../index.html"), "utf8");
+const script = readFileSync(path.join(__dirname, "../js/chat/capstone-chat.js"), "utf8");
 
 // A small DOM double exercises the real widget event handlers without adding
 // browser dependencies. Responsive layout is checked separately in Chrome.
 function mount(fetchResult = async () => ({ ok: true, json: async () => ({ status: "unmatched", matches: [] }) })) {
   const document = { activeElement: null };
   class Element {
-    constructor() {
+    constructor(tag = "div") {
+      this.tagName = tag.toUpperCase();
       this.listeners = {};
       this.attributes = {};
       this.children = [];
@@ -76,8 +77,8 @@ function mount(fetchResult = async () => ({ ok: true, json: async () => ({ statu
     "[data-open-chat]": [sidebar],
     "[data-question]": [topic]
   }[selector] || []);
-  document.createElement = () => new Element();
-  vm.runInNewContext(script, { document, FormData: TestFormData, fetch: fetchResult, window: { setTimeout: callback => callback(), CapstoneContactPolicy: require("../public/contact-policy"), CapstoneAttachmentPolicy: require("../public/widget/attachment-policy") } });
+  document.createElement = (tag) => new Element(tag);
+  vm.runInNewContext(script, { document, URL, FormData: TestFormData, fetch: fetchResult, window: { setTimeout: callback => callback(), CapstoneContactPolicy: require("../js/shared/contact-policy"), CapstoneAttachmentPolicy: require("../js/shared/attachment-policy") } });
   return {
     panel, launcher, input, log, sidebar, topic, document,
     minimize: document.querySelector("#minimize-chat"),
@@ -99,6 +100,64 @@ test("chat starts hidden in HTML and opens only when requested", () => {
   assert.equal(ui.launcher.attributes["aria-expanded"], "true");
   assert.equal(ui.sidebar.attributes["aria-expanded"], "true");
   assert.equal(ui.document.activeElement, ui.input);
+});
+
+function descendants(element) {
+  return element.children.flatMap(child => [child, ...descendants(child)]);
+}
+
+test("chat renders clickable keyword links with source labels and safe new-tab behavior", async () => {
+  const { searchKnowledge } = require("../server/lib/search");
+  const result = searchKnowledge(require("../data/capstone-knowledge.json"), "tutorials");
+  const ui = mount(async () => ({ ok: true, json: async () => result }));
+  await ui.topic.emit("click");
+  const links = descendants(ui.log).filter(node => node.className === "keyword-link");
+  assert.equal(links.length, 1);
+  assert.equal(links[0].tagName, "A");
+  assert.equal(links[0].href, "https://capstone.cs.fiu.edu/tutorials");
+  assert.equal(links[0].target, "_blank");
+  assert.equal(links[0].rel, "noopener noreferrer");
+  assert.match(links[0].children[0].textContent, /tutorials/);
+  assert.match(links[0].children[2].textContent, /Public page/);
+  assert.match(links[0].attributes["aria-label"], /Opens in a new tab/);
+  assert.equal(descendants(ui.log).filter(node => node.className === "source-card").length, 0);
+});
+
+test("related choices include direct keyword links and keep them on the chosen answer", async () => {
+  const { searchKnowledge } = require("../server/lib/search");
+  const result = searchKnowledge(require("../data/capstone-knowledge.json"), "sprint planning");
+  const ui = mount(async () => ({ ok: true, json: async () => result }));
+  await ui.topic.emit("click");
+  const before = descendants(ui.log).filter(node => node.className === "keyword-link");
+  assert.equal(before.length, 1);
+  assert.match(before[0].href, /Sprint_Planning_Minutes_Template\.docx$/);
+  assert.match(before[0].children[2].textContent, /Sign-in required/);
+  const choice = descendants(ui.log).find(node => node.className === "result-choice" && node.textContent === "Sprint Planning template");
+  choice.emit("click");
+  assert.equal(descendants(ui.log).filter(node => node.className === "keyword-link").length, 2);
+  assert.equal(ui.document.activeElement, ui.input);
+});
+
+test("keyword labels are plain text and unsafe links are not rendered", async () => {
+  const ui = mount(async () => ({ ok: true, json: async () => ({
+    status: "unmatched", matches: [], links: [
+      { id: "unsafe", url: "javascript:alert(1)", title: "Bad", keywords: ["bad"] },
+      { id: "safe", url: "https://capstone.cs.fiu.edu/resources", title: "Resources", keywords: ["<img src=x onerror=alert(1)>"], access: "public" }
+    ]
+  }) }));
+  await ui.topic.emit("click");
+  const links = descendants(ui.log).filter(node => node.className === "keyword-link");
+  assert.equal(links.length, 1);
+  assert.match(links[0].children[0].textContent, /^<img/);
+  assert.equal(links[0].children[0].innerHTML, undefined);
+  assert.ok(descendants(ui.log).some(node => node.textContent === "Create support request"));
+});
+
+test("unsupported questions retain escalation without inventing keyword links", async () => {
+  const ui = mount();
+  await ui.topic.emit("click");
+  assert.equal(descendants(ui.log).filter(node => node.className === "keyword-link").length, 0);
+  assert.ok(descendants(ui.log).some(node => node.textContent === "Create support request"));
 });
 
 test("minimize and sidebar reopen preserve messages, draft, and scroll position", async () => {

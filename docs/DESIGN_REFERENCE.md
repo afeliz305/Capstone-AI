@@ -31,8 +31,8 @@ Secondary text and navigation labels are slightly larger where needed for readab
 
 ## Assets and attribution
 
-- `public/assets/FIU_mark_white.svg`: unaltered FIU mark from the portal's [public brand asset](https://capstone.cs.fiu.edu/static/brand/FIU_mark_white.svg?v=p4-557b80cc). Used for this FIU Capstone prototype, not as a claim of production approval. FIU branding remains FIU's; confirm usage with the project owner before public release.
-- `public/assets/mulish-var.woff2`: the portal's [self-hosted Mulish variable font](https://capstone.cs.fiu.edu/static/fonts/mulish-var.woff2). Bundled locally so the demo needs no third-party font request. Its SIL Open Font License is included in `public/assets/Mulish-OFL.txt`, from the [Google Fonts Mulish license](https://github.com/google/fonts/blob/main/ofl/mulish/OFL.txt).
-- `public/assets/icons.svg`: simple outline interface icons authored for this prototype.
+- `css/images/FIU_mark_white.svg`: unaltered FIU mark from the portal's [public brand asset](https://capstone.cs.fiu.edu/static/brand/FIU_mark_white.svg?v=p4-557b80cc). Used for this FIU Capstone prototype, not as a claim of production approval. FIU branding remains FIU's; confirm usage with the project owner before public release.
+- `css/fonts/mulish-var.woff2`: the portal's [self-hosted Mulish variable font](https://capstone.cs.fiu.edu/static/fonts/mulish-var.woff2). Bundled locally so the demo needs no third-party font request. Its SIL Open Font License is included in `docs/licenses/Mulish-OFL.txt`, from the [Google Fonts Mulish license](https://github.com/google/fonts/blob/main/ofl/mulish/OFL.txt).
+- `css/images/icons.svg`: simple outline interface icons authored for this prototype.
 
 No proprietary Proxima Nova font files or browser-extension fonts are bundled. The shared font stack uses the locally bundled Mulish fallback, as supported by the reference site's own brand tokens.

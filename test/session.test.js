@@ -4,14 +4,14 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const { once } = require("node:events");
-const { createSessionService } = require("../lib/session");
+const { createSessionService } = require("../server/lib/session");
 
 // Tests never write to the user's local support queue.
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), "capstone-session-test-"));
 const ticketFile = path.join(directory, "tickets.json");
 process.env.CAPSTONE_DATA_FILE = ticketFile;
-const { createServer } = require("../server");
-const { createStaffAuth, setStaffPassword } = require("../lib/staff-auth");
+const { createServer } = require("../server/server");
+const { createStaffAuth, setStaffPassword } = require("../server/lib/staff-auth");
 const staffFile = path.join(directory, "staff-credentials.json");
 test.before(() => setStaffPassword("afeli016@fiu.edu", "Fixture password for tests only", { file: staffFile }));
 test.after(() => {

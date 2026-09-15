@@ -2,7 +2,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { randomUUID } = require("node:crypto");
 const { TextDecoder } = require("node:util");
-const policy = require("../public/widget/attachment-policy");
+const policy = require("../../js/shared/attachment-policy");
 
 function invalid(message, statusCode = 400) { return Object.assign(new Error(message), { statusCode }); }
 

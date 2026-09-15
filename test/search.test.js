@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { searchKnowledge, tokenize } = require("../lib/search");
+const { searchKnowledge, tokenize } = require("../server/lib/search");
 
 const knowledge = JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "data", "capstone-knowledge.json"), "utf8")

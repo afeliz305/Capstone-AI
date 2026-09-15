@@ -1,7 +1,7 @@
-/* Measured from capstone.cs.fiu.edu/portal. See DESIGN_REFERENCE.md. */
+/* Measured from capstone.cs.fiu.edu/portal. See docs/DESIGN_REFERENCE.md. */
 @font-face {
   font-family: "Mulish";
-  src: url("/assets/mulish-var.woff2") format("woff2");
+  src: url("fonts/mulish-var.woff2") format("woff2");
   font-weight: 200 1000;
   font-style: normal;
   font-display: swap;
