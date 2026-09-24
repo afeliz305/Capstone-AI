@@ -1,30 +1,11 @@
-# Capstone AI Chat project guidance
+# Capstone - AI workspace
 
-## Project boundary
+This outer folder is an organizing container, not the app server root. Keep this project separate from HelpDesk INC.
 
-This is the standalone Capstone AI Chat project. Do not place its files inside HelpDesk INC or change that project's files for Capstone work.
-
-## Folder layout and serving boundary
-
-- Keep `index.html` at the root; additional HTML pages belong in `pages/`.
-- Stylesheets belong in `css/`, images in `css/images/`, and fonts in `css/fonts/`.
-- Browser scripts belong in `js/chat/`, `js/staff/`, or `js/shared/`; server code belongs in `server/` and `server/lib/`.
-- Guides belong in `docs/`. Keep this instruction file and the GitHub entry-point `README.md` at the root.
-- The npm start command runs `server/server.js`. Keep private `data/` paths and ignored files unchanged during organization work.
-- The Node server uses an explicit static-file allowlist. Update it and its route tests when adding public assets; never serve the entire repository root.
-- A root index is not a static-only version. Login, search, tickets, and uploads still require the backend. Do not expose the whole checkout through a generic file server.
-
-## Keep teammate documentation current
-
-The user explicitly requested an ongoing guide for teammates to download, run, and test this project in VS Code.
-
-- Treat `docs/TEAM_SETUP_GUIDE.md` as the canonical teammate onboarding/testing document.
-- For changes affecting requirements, installation, scripts, ports, environment variables, authentication, ticket storage, UI labels used by the guide, or test expectations, update the guide in the same change.
-- Keep README startup instructions and links consistent with the guide. Avoid personal machine paths in teammate instructions.
-- Recheck the documented commands and relevant sample flows. Update the last-verified date and tested versions only for checks actually completed; report untested platforms honestly.
-- Document Windows PowerShell commands with `npm.cmd` and preserve the missing-`package.json` troubleshooting guidance.
-- Preserve the distinction between the local sample account and real FIU authentication, local tickets and professor email, and a recorded privacy preference and actual authorization.
-- Keep test tickets, real student data, cookies, credentials, and `.env` files out of Git. Use fictional data for verification.
-- When a source backup is requested, include the matching guide and application changes together; otherwise do not infer permission to push or deploy.
-
-Do not claim the document updates automatically in the background. Maintain it as part of future project work.
+- `Capstone - AI/` is the generated, upload-ready website. The default is an explicitly labeled browser-only test queue; `package:ocelot:php` builds the optional PHP shared queue instead. Its `index.html` is at that folder's root. This is the only folder to upload into Ocelot's `public_html`.
+- `DEVELOPMENT/` contains the editable source, local Node app, documents, tests, scripts, private local data, and generated archives. Read [DEVELOPMENT/AGENTS.md](DEVELOPMENT/AGENTS.md) before editing it. Run npm commands from `DEVELOPMENT`, where `package.json` lives.
+- Keep `.git`, `.gitignore`, this guidance, and the short README at the outer root. Preserve Git history. Keep both private runtime data and generated output ignored.
+- Do not edit the upload folder as source. Rebuild it with `npm.cmd run package:ocelot` from `DEVELOPMENT`; the packager preserves the previous release under `DEVELOPMENT/dist/archive/ocelot/`.
+- Supabase is a separate explicit mode: `demo:supabase` builds an isolated candidate on port 3004 without changing the upload folder; `package:ocelot:supabase` prepares the shared version after live acceptance. Follow `docs/SUPABASE_SETUP.md`. Never claim a local SQL/unit test proves a hosted save. Keep secret keys/passwords out of all bundles; only the publishable key and project URL may be embedded.
+- Keep `DEVELOPMENT/docs/TEAM_SETUP_GUIDE.md`, `DEVELOPMENT/docs/OCELOT_UPLOAD_GUIDE.md`, and `DEVELOPMENT/docs/DEPLOYMENT_AND_INTEGRATION_PLAN.md` current with relevant changes. Do not claim background automatic document updates.
+- Never upload the outer workspace or `DEVELOPMENT`. Never delete or publish runtime tickets, credentials, attachments, or old packages during organization work. Remote cleanup/deployment and Git pushes require user direction.

@@ -1,0 +1,8 @@
+# Defense in depth for accidental Apache uploads. The recommended upload bundle
+# excludes private files entirely. These rules require AllowOverride permission;
+# they do not start Node or create an API backend.
+Options -Indexes
+RewriteEngine On
+RewriteRule (^|/)\. - [F,L]
+RewriteRule ^(?:data|server|scripts|test|docs|node_modules|lib|dist|coverage)(?:/|$) - [F,L,NC]
+RewriteRule ^(?:package(?:-lock)?\.json|server\.js|AGENTS\.md|README\.md|.*\.seed-backup-.*|.*\.tmp)$ - [F,L,NC]

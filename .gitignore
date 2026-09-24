@@ -9,3 +9,11 @@ data/*.tmp
 !.env.example
 coverage/
 dist/
+UPLOAD_TO_OCELOT/
+/Capstone - AI/
+/DEVELOPMENT/data/tickets.json
+/DEVELOPMENT/data/attachments/
+/DEVELOPMENT/data/staff-credentials.json
+/DEVELOPMENT/data/*.seed-backup-*
+/DEVELOPMENT/data/*.tmp
+/DEVELOPMENT/server/supabase.local.json

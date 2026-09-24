@@ -1,0 +1,7 @@
+# Preserve binary assets byte-for-byte on Windows and other platforms.
+*.pdf binary
+*.png binary
+*.woff2 binary
+
+# The SSH helper executes on Linux and must not acquire Windows line endings.
+*.sh text eol=lf

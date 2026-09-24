@@ -1,0 +1,197 @@
+# Capstone - AI — shared testing, site integration, and future go-live
+
+September 24 branding update: project/workspace/upload name **Capstone - AI**, public repository **afeliz305/Capstone-AI**, original generic SVG chat launcher. [The rename checklist](PROJECT_RENAME.md) documents the intended new Ocelot URL and storage continuity. No hosted deployment or migration was performed. Older incident reports and verification records below refer to the former **Capstone AI Chat** deployment and artwork, not the renamed URL. Supabase hosted saving is still unverified.
+
+Updated: September 18, 2026
+
+Status: **Prototype / browser-only release retained. Supabase source integration and SQL migrations implemented locally; dashboard setup and live acceptance pending. Ocelot PHP writes remain blocked. Not approved for production.**
+
+Architecture reference: [project workflow and technology sheet](PROJECT_WORKFLOW.md), including Supabase as a proposed shared PostgreSQL/SQL, Auth, and Storage backend. This is a documented target design only; Supabase is not connected and this diagram does not authorize provisioning, migration, or deployment.
+
+Supabase setup update (September 18): the owner created project `mkpkjmqjbfhkazxgpggg` at `https://mkpkjmqjbfhkazxgpggg.supabase.co` and supplied its publishable key. The read-only Auth settings check returned HTTP 200. The Data API returned `PGRST205` for `capstone_tickets` and `tickets`; no ticket write/read-back test has run. The key is stored only in an ignored local preparation configuration, not connected to the website. A repeatable `npm.cmd run supabase:check` helper and [setup guide](SUPABASE_SETUP.md) record the remaining work. Schema, private attachments, verified staff identity, RLS policies, migration, and cross-device tests remain pending/unverified. The current demo and existing records are unchanged; the live Ocelot PHP health check still returns 503. Privileged credentials must never be placed in chat, public code, or the upload folder. Shared data must not rely on the demo email selector for authorization.
+
+## 1. Agreed purpose
+
+September 18 implementation update: `js/shared/supabase-api.js` adapts the existing UI to Supabase Auth, PostgreSQL RPCs and private Storage. Explicit Supabase packaging bundles the SDK and only the public connection values. The staged local preview is separate on port 3004; no current upload folder, hosted release or existing ticket store is replaced. Database-enforced staff provisioning, atomic/idempotent ticket finalization, exact attachment metadata checks, stale-edit conflicts and staff-only records are covered by isolated PostgreSQL tests. Anonymous requester sign-in and provisioned staff accounts must be enabled through the owner's dashboard; no secrets or account passwords are requested in chat. This supersedes the earlier preparation-only implementation status, not the still-failing hosted checks. Follow [Supabase setup](SUPABASE_SETUP.md). GitHub backup/Ocelot upload remain conditional on a successful live acceptance test.
+
+Ocelot is intended to give the project group one website link without requiring GitHub, VS Code, Node, or a local installation. On September 18, after PHP private writes remained blocked, the default package was changed to an explicitly labeled browser-only demo. It gives each browser its own queue, **not a shared queue across teammates**. Shared server persistence remains a future deployment decision. GitHub is the source backup/collaboration tool, not a requirement for opening the hosted demo.
+
+The project owner confirmed that **no real student information will be used during this phase**. Questions, requester details, ticket descriptions, work notes, comments, and documents must be fictional. Existing staff roster names/emails are demo identity labels, not evidence that the person entering an address owns it. No professor email or real FIU account integration is enabled.
+
+Future official integration into the Capstone portal is a separate release decision. This document records that work without making every production requirement a prerequisite for the current fictional-data demonstration. It does not authorize changes to the official portal, institution-wide authentication, or FIU hosting configuration.
+
+## 2. Shared testing versus official operation
+
+| Area | Ocelot group testing now | Required before official go-live |
+| --- | --- | --- |
+| Users and data | Project group; fictional tickets and trusted sample documents only | Approved audience, data handling, consent, retention, and access rules |
+| Staff entry | Temporary email-only mode for the six listed addresses; identity is unverified | Institution-approved identity verification and staff role provisioning; remove email-only access |
+| Hosting | Static browser demo on existing Ocelot webspace; upload/interactive verification pending | Supported backend, approved hosting/origin, HTTPS, maintenance owner, and recovery plan |
+| Ticket storage | Separate IndexedDB queue per browser/site address; exportable JSON backup; no automatic import/sync | Approved shared private storage, concurrency controls, backup/restore, retention/deletion, and auditing |
+| Official portal | Separate prototype; no source-code or login integration | Portal owner provides an approved insertion point and identity/backend integration contract |
+| Escalation | Staff queue only; no outbound professor email | Approved recipients, notification service, delivery monitoring, and a defined response workflow |
+| Release decision | Functional acceptance by the project group | Documented owner, technical, security/privacy, accessibility, and operations sign-off |
+
+### Current evidence, not a declaration of readiness
+
+- Local demo convenience: `npm.cmd run demo` (or `scripts/Start Capstone Demo.cmd`) rebuilds browser mode and starts/reuses this project's loopback preview on port 3003. It refuses conflicting processes instead of stopping them or changing the address. All 155 tests passed; live local HTTP checks returned 200 for both pages, scripts, and Roary's image. Interactive browser verification remains separate. This is local startup support, not an Ocelot deployment, ticket migration, or change to shared-backend readiness. See [the demo guide](LOCAL_DEMO.md).
+
+- September 18: the default `package:ocelot` now bundles the reviewed zero-token search engine and explicit browser ticket transport, with no PHP endpoints in the package. It acknowledges changes after an IndexedDB transaction completes, preserves workspace revision/deduplication behavior, and provides browser ticket/document export. Browser storage is inspectable by the device user; no staff identity or internal-note confidentiality is guaranteed. The first browser queue is empty. Node/PHP records remain untouched and are not synchronized. No live upload was performed. Browser-control tooling was unavailable, so actual browser persistence and visual/hosted verification remain pending despite passing bundled-API tests against isolated transactional fixtures.
+- `package:ocelot:php` preserves the optional shared server-file version, and `npm.cmd start` preserves the local Node version. PHP still fails closed on unsafe/unwritable private storage; no public ticket-file workaround or automatic browser fallback was added. The evidence below about server storage is historical/conditional, not proof of a shared queue in the new browser build.
+
+- The combined local suite passed 141 automated tests on September 17 with Node 24.15.0, npm 11.12.1, and PHP 8.4.25. Twelve helper tests use mocked SSH and cover safe confirmation/cancellation, account validation, and refusing to treat SSH success as PHP readiness; the shell script passed local syntax validation. Packaging checks cover the transparent Roary asset, correct PNG serving, stable output, recoverable archives, failed-build preservation, and unsafe/concurrent target rejection. PHP checks cover two-process shared persistence/concurrent creates, restart survival, search parity for reviewed intents, attachments, auth boundaries, workspace conflicts/retries, and private preview fields. The optional PHP integration check skips when no `CAPSTONE_PHP_BIN` is configured. These are fictional local fixtures, not proof of Ocelot operation or PHP 7.2.24 runtime execution.
+- Staff passwords are temporarily disabled through `server/config.json` (`staffLoginMode: "email-demo"`). The backend still checks roster membership and issues a session. Anyone knowing an approved address can view and change all tickets and download documents. Warnings are displayed in the interface.
+- The owner connected to Ocelot using FileZilla SFTP and an SSH terminal. In that terminal, `node` and `npm` were not found. PHP 7.2.24 and SQLite-related modules were reported.
+- The owner successfully ran the SSH helper on September 17 at approximately 19:13 server time: `.capstone-chat-private` was created outside `public_html`, mode 700, owned by afeli016 (UID 53930, group user). Home is 711 and `public_html` is 755. A fresh live health request returned HTTP 503 with `Private ticket storage is not writable by PHP.` Source inspection identifies this as failed chmod or is_writable, without distinguishing the exact operation/directory. PHP execution and SSH base-folder creation are confirmed; web PHP identity/restrictions, private writes, successful sign-in/ticket saving, and multi-browser persistence remain blocked/unverified. This supersedes the earlier missing-folder/probe-404 evidence.
+- The Windows guided helper preserves existing storage and never uploads website files or saves passwords. Its base-folder preparation has now completed; do not rerun it to resolve the continuing PHP access failure. A different runtime identity is possible but not proven. A [draft hosting-support request](OCELOT_UPLOAD_GUIDE.md#if-preparation-succeeds-but-php-still-cannot-use-storage) asks for the effective web PHP identity, approved private storage/permission policy, or an approved isolated/database alternative. No email or hosting changes were made by the assistant. Once functional, routine uploads at the same app path retain storage and need a health check, not repeated setup.
+- A PHP backend is retained under `server/php/`; the original Node app remains usable. `package:ocelot:php` explicitly creates the optional empty-queue PHP release; the default `package:ocelot` now creates the browser demo. `package:upload` remains the two-part Node package. No remote installation was performed. PHP uses a private home-level locked file store, not SQLite. Actual host locking and permissions remain acceptance items.
+- After the owner reported a post-upload 404 on September 16, read-only HTTP checks returned 404 for the new `Capstone-AI-Test` homepage/API address, 500 for the older `Capstone%20-%20AI` homepage, stylesheet, and API address, and 200 for the account's main web address. The screenshot showed the older folder name and recursive 755 on files and directories. The exact uploaded layout and server error log are still needed; a missing/mismatched path and a folder-level Apache configuration problem are working hypotheses, not confirmed causes. Public folder/file permission instructions were added to the upload guide. No remote files, permissions, or protection rules were changed.
+- A subsequent FileZilla screenshot confirmed that `public_html/Capstone - AI` contains development folders (`data`, `dist`, `server`, `test`, etc.) and older duplicate root files, rather than the clean PHP release. The exact cause of the 500 still requires the server error log. At the user's request, the outer local workspace is now split into a generated **Capstone - AI** website and **DEVELOPMENT** for source, docs, tests, private local data, and archives. The former `UPLOAD_TO_OCELOT` wrapper is archived. Only the inner website folder is intended for upload. The remote full-project copy has not been moved, deleted, or repaired; preserve needed records privately and take the old copy out of the public directory before replacing it. Do not merge the clean release into older files.
+
+## 3. Immediate Ocelot testing work
+
+### Current browser-only path
+
+Follow [the default upload guide](OCELOT_UPLOAD_GUIDE.md). Upload only the generated inner **Capstone - AI** folder, hard-refresh, confirm its **Browser-only test queue** notice, and complete the same-browser ticket/attachment/notes/reload/export checklist. Do not run SSH/PHP setup for this mode. A second browser should see a separate empty queue. Private browsing or clearing site storage can erase records. Export backups privately before clearing; restore/import is not yet implemented. No credentials or runtime records are packaged.
+
+The remaining shared-backend checklist in this section is **conditional future work**, not a prerequisite for the temporary browser-only demonstration. It applies only after choosing an approved PHP/Node host and explicitly building/deploying that variant. Shared files need a permitted server process; static HTML alone cannot securely write a shared Ocelot queue. Hosting a backend elsewhere is a possible architecture but requires a separate provider/account/identity/deployment decision; none has been created.
+
+### Optional shared-backend maintainer setup
+
+1. Explicitly build `npm.cmd run package:ocelot:php` and follow [OCELOT_PHP_GUIDE.md](OCELOT_PHP_GUIDE.md): preserve/retire the old full-project copy first, upload only the generated website, and verify PHP health/private storage. The default browser build does not implement this server health endpoint. Never upload `DEVELOPMENT` or the outer workspace.
+2. Confirm the host's permitted execution method and a private storage location outside `public_html`. Verify permissions using fictional test files; do not make the home directory or data directory broadly writable. Establish which account the web process runs as.
+3. Use the implemented PHP test backend if the host permits it and the acceptance checks pass. Alternatively, a host-approved Node runtime and HTTPS proxy could support the original backend. Installing system software or changing the institution's server configuration requires the host administrator.
+4. If adapting a shared backend, preserve the search, session, ticket, attachment, assignment, notes/comments, and conflict contracts. Keep local Node usable. Never silently replace a failed server save with browser storage or claim the explicit browser demo shares tickets.
+5. Use one shared private test store. Keep it outside the public web root and outside replaceable release folders. Select storage supported by the actual host filesystem; installed SQLite modules alone do not establish that a shared/network-mounted database file is suitable. Test simultaneous writes before selecting a storage approach.
+6. Upload only the approved release files. Do not upload `.git`, credential files, runtime tickets, backups, or the whole project into the public directory. Remove any previously exposed private files with the owner's approval and preserve needed data privately. Frontend replacement does not remove old files.
+7. Run the hosted acceptance checks below. Only then share the test site as working. Keep a note of the deployed revision, backend type, test date, known issues, and maintainer contact.
+
+The current intended test addresses, matching the user-requested project name, are [the Ocelot assistant](https://ocelot.aul.fiu.edu/~afeli016/Capstone%20-%20AI/) and [the Ocelot staff queue](https://ocelot.aul.fiu.edu/~afeli016/Capstone%20-%20AI/pages/staff.html). They are **not confirmation that the old remote copy has been replaced or the backend works today**. Earlier 404/500 observations above refer to the paths tested at that time, not a verified new deployment. Moving an already-working PHP instance between names selects a different private store; migrate its data deliberately. Local organization did not alter remote data. Upload steps belong in [OCELOT_UPLOAD_GUIDE.md](OCELOT_UPLOAD_GUIDE.md); local development instructions remain in [TEAM_SETUP_GUIDE.md](TEAM_SETUP_GUIDE.md).
+
+### Hosted test acceptance checklist
+
+The local setup helper's confirmation now accepts `yes` case-insensitively; blank or non-affirmative responses still run no SSH command. The owner's reported lowercase cancellation did not perform remote preparation. This usability correction does not change the pending hosted-storage acceptance status.
+
+- [ ] Chat opens/minimizes and returns reviewed Capstone answers and source links; unsupported questions offer escalation without inventing answers.
+- [ ] The website's own backend returns JSON, with no root/subfolder routing errors or raw `Unexpected token '<'` messages.
+- [ ] An approved email opens the temporary staff queue; an unlisted address is rejected. The email-only warning is visible, and the password field is disabled.
+- [ ] A student support request and a staff-created task each return a ticket ID only after saving on the server.
+- [ ] Two different browsers/devices see the same saved ticket and assignment after refreshing. Neither browser needs a local development server.
+- [ ] A ticket survives closing the browser and restarting the backend. Updating frontend files does not replace the queue or documents.
+- [ ] Simultaneous submissions produce distinct IDs and do not lose records. Competing edits are handled without silently overwriting a teammate's work.
+- [ ] All four queue views, search-as-you-type, category tags, claiming/reassignment, contact validation, owner tags, and resolved views work.
+- [ ] Work notes remain excluded from the requester preview. The preview is clearly staff-only and does not claim that comments were delivered to a requester.
+- [ ] A fictional permitted attachment uploads/downloads intact; invalid files and over-limit requests are rejected. Direct private-file URLs do not expose stored files.
+- [ ] Backend/network failures show errors, retain appropriate drafts, and never claim a ticket was saved when success was not confirmed.
+- [ ] Sign-out ends the session. The last accepted email is remembered only on the same browser/site, without saving a password or token in browser storage.
+- [ ] Mobile-size layout and keyboard navigation are checked by a teammate. Automated local tests do not replace these hosted browser checks.
+
+### Testers' workflow, once the hosted checks pass
+
+1. Open the shared Ocelot link supplied by the maintainer. No GitHub download or software installation is required.
+2. Ask sample site questions and create tickets using fictional requester information. Prefix new test titles with `TEST —` to make them easy to identify.
+3. For staff testing, enter an approved email from the [staff roster](STAFF_ACCESS.md#approved-staff). No password is needed during this phase. This chooses a demo identity, not a verified login.
+4. Try the queue views, assignment, notes/comments, and a harmless sample attachment. Ask another teammate to refresh and confirm the same record appears.
+5. Report the ticket ID, steps, expected/actual results, browser, time, and a screenshot without personal information. Do not repeatedly resubmit an uncertain save until checking the queue.
+
+Do not upload grades, medical/absence records, credentials, real student contact details, or screenshots containing them. The test site is not assumed to be private merely because its link is shared only with the group. Keep quotas and basic request/file validation enabled even with fictional data. Do not delete another teammate's test tickets without agreement; reset the test queue only through an explicitly approved process that preserves needed bug examples.
+
+### Recorded temporary exceptions
+
+- **Browser-only persistence:** deliberate temporary alternative after blocked host approval. It is separate from server records, not an equivalent shared queue. A demo session selector in sessionStorage is not verified identity or a production credential. Before official deployment, remove browser-demo transport, require approved server identity/authorization, and decide whether any fictional records should be migrated (no automatic migration is implemented).
+
+- **Email-only access:** intentional for this testing phase. It must not carry into official operation. Password mode can be restored in the Node variant; the PHP test bundle has no password mode and does not read Node configuration. A verified identity integration is future work. Prototype passwords alone would not deliver institutional SSO, role management, or production approval.
+- **Legacy runtime discovery:** PHP 7.2 is upstream end-of-life. That is recorded as a future release blocker rather than a request to put real student data into the test. Host permission and technical checks still apply to any limited legacy-runtime trial. We have not verified vendor backports. PHP 7.2 reached upstream end of life on November 30, 2020. [PHP unsupported branches](https://www.php.net/eol.php)
+- **Prototype permissions:** every staff demo identity can read all team tickets/documents. Assignment views and the instructor-privacy checkbox are not access restrictions. Do not promise instructor-only access during the demo.
+
+## 4. Information needed from the official site owner
+
+Before implementation in the real portal, obtain decisions and a named contact for:
+
+- The portal framework/CMS, code or extension access, deployment process, approved staging site, and where a widget may be inserted. Browser inspection of CSS is not authorization or a persistent installation method.
+- The chosen hosting/runtime, URL/API prefix, network/proxy restrictions, storage service, quotas, and operations owner.
+- The real student/staff login provider, approved server-side session-validation method, identity attributes, and staff/instructor role source. Do not invent an FIU API or assume another tab's login can be read.
+- Approved knowledge sources and whether authenticated instructions may be shown to all users. Personal records must not enter the answer knowledge base.
+- Who receives escalations, who owns unassigned work, assignment rules, response expectations, and whether requester replies or professor notifications are required at launch.
+- Who may read/edit each kind of ticket, internal note, comment, and attachment; whether instructor-only requests are supported; and who approves retention/deletion.
+- Accessibility, privacy/security review, branding/artwork approval, support contacts, release approval, and long-term maintenance responsibilities.
+
+Record these decisions before choosing a production architecture. They remain open; this document does not assign authority to a specific team member or assume FIU approval.
+
+## 5. Integrate the interface into the official site
+
+The current assistant is HTML/CSS/JavaScript, but the standalone page is **not yet a drop-in production widget**.
+
+1. Extract the launcher, popup, support form, and required scripts into a documented component with a single initialization entry point. Preserve the minimized starting state, keyboard focus behavior, accessible labels, and mobile layout.
+2. Scope CSS, IDs, and event handlers so the widget cannot change the portal's navigation, forms, typography, or other components. Prevent duplicate launchers when portal pages re-render. Test with the portal's actual layout and approved browser list.
+3. Have the portal owner add the component through the site's supported template, CMS, or plugin mechanism. Use a staging environment first; do not rely on Chrome Inspect changes or ask end users to install extensions.
+4. Configure the approved API base path and static-asset locations. The prototype currently assumes same-origin APIs. A same-origin mount is a candidate; a separate origin requires an explicit authentication, cookie, CORS/CSRF, and content-security-policy design. An iframe does not automatically share the portal's authenticated account.
+5. Agree on the portal's security headers and embedding rules instead of broadly disabling them to make the prototype load. Provide a way for the operator to disable the widget without taking the portal offline.
+
+The September 24 **Capstone - AI** launcher uses an original code-drawn speech bubble at `css/images/capstone-chat.svg`. It replaces Roary in the current app and all new packages; old artwork is retained only in ignored local archives and existing Git history. The FIU header mark and site-inspired styling are unchanged and still need owner/institutional review before official go-live. Replacing the mascot is not proof that all branding is cleared.
+
+## 6. Connect accounts and enforce ticket permissions
+
+Use the portal owner's approved server-side identity integration. For the current Node backend, [ACCOUNT_INTEGRATION.md](ACCOUNT_INTEGRATION.md) describes the `resolveAccount` adapter contract. A PHP implementation would need an equivalent trusted integration; the Node adapter is not directly executable in PHP.
+
+The backend must verify the current account on every protected action. It should obtain the stable account ID, display name, email, and authorized roles from trusted validation—not from form fields, a typed email, DOM scraping, or unverified headers. Define provisioning/removal, expired/revoked sessions, logout, account changes, failed identity-provider calls, and recovery. Prefer institutional authentication rather than collecting FIU passwords inside the bot. [OWASP authentication guidance](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)
+
+Before launch, approve a permission matrix for requester, staff, instructor, and administrator actions, and test it on the server. Personal queue filters are not security controls. If instructor-only requests are offered, enforce that restriction before accepting them as private. Project-owner tags are currently staff classifications, not verified roles.
+
+Remove the email-only mode from production and add a release check that rejects demo access or sample-session configuration. Use separate production credentials, storage, and configuration. Do not promote test cookies, password files, or sample tickets. Saved email autofill may remain a convenience, never an authentication mechanism.
+
+## 7. Production storage, documents, and notifications
+
+### Ticket persistence
+
+Select an institution-approved persistent data store and migration plan. The current single-process JSON queue is a prototype implementation, not a claim of production-scale storage. Agree on concurrent users, capacity, recovery objectives, and availability before choosing a database. Test atomic ticket creation, updates, note history, duplicate retries, and attachment consistency against the chosen backend.
+
+Keep all runtime data outside the public web root and source repository. Apply least-privilege service access, protect backups, define retention/deletion, and prove a backup can be restored. Record meaningful audit events without logging passwords, session tokens, or unnecessary ticket contents. Data locations and backups must survive routine code releases. Do not blindly copy the Ocelot test queue into production.
+
+### Documents and requester communication
+
+The prototype accepts up to three PDF/DOCX/TXT files, 5 MB each and 10 MB combined. Existing validation is not malware scanning. Before real use, add the approved upload scanning/quarantine process, quotas, server-side type/content checks, safe private storage, and ticket-level authorization on downloads. Test disallowed, oversized, spoofed, interrupted, and missing-file cases. [Current attachment behavior](DOCUMENT_ATTACHMENTS.md), [OWASP upload guidance](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html)
+
+Work notes and internal resolution notes must remain internal. Additional comments are intended to be requester-visible, but today's **Requester preview** is only a staff preview. Implement a separate authenticated requester view or approved notification flow before claiming comments reach end users.
+
+Professor email is not connected. Obtain the approved sending service, sender, recipient-routing rules, consent/content requirements, and support owner. Keep service credentials out of browser code and Git. Send only the necessary information; prefer a protected ticket link to including private notes or documents. Record delivery attempts, retry safely without duplicate messages, handle failures, and disable real delivery in testing. A ticket must remain saved even if its notification fails; never display “email sent” merely because a ticket was created.
+
+## 8. Knowledge, accessibility, and release validation
+
+Keep responses grounded in owner-reviewed Capstone content and include relevant source links. The current system uses deterministic keyword retrieval and requires no paid AI tokens. Replacing it with a paid model is not part of this deployment plan.
+
+Assign a content owner, review date, and update process for semester changes, broken links, and incorrect guidance. Test known questions, ambiguous questions, unsupported topics, and escalation. Preserve the distinction between general published guidance and individual student cases.
+
+Agree on the institution's required accessibility target; WCAG 2.2 AA is a proposed review baseline, not a declaration of legal compliance or completed conformance. Test keyboard-only use, visible focus, focus return from dialogs, screen-reader labels/status updates, contrast, zoom, and small-screen scrolling. Use both automated checks and human testing on the actual integrated site. [W3C WCAG 2.2](https://www.w3.org/TR/WCAG22/)
+
+Run functional and security regression tests on the selected production backend—not only the local Node suite. Include anonymous and wrong-role access, forged identities, expired sessions, cross-origin requests, unsafe filenames, private-file exposure, concurrent edits, persistence/restarts, unavailable services, and recovery. Test notifications against a non-production destination before authorizing actual delivery.
+
+## 9. Release, rollback, and operations
+
+1. Build a versioned release from reviewed source. Keep test, staging, and production configuration/data separate. Record the runtime, backend type, schema version, artifact/revision, and operator.
+2. Deploy to owner-approved staging; configure identity, storage, HTTPS, roles, and notifications. Record test evidence and obtain the approvals below.
+3. Take a private backup and test the migration/restore procedure. Identify a previous compatible release and a way to disable the widget quickly. Do not overwrite a live data directory with source files.
+4. Deploy during the approved window, run health and permission checks, and conduct a controlled initial rollout. Maintain a support contact and instructions for reporting issues.
+5. Monitor availability, error rates, failed writes, storage use, upload failures, and notification delivery. Set owners and response procedures; do not place secrets or full ticket contents in routine logs.
+6. If access control fails, private data is exposed, or writes are unreliable, disable the affected feature and contact the designated operator. Preserve evidence and recent records. Roll back code/config only when compatible with stored data; do not restore an old database over new tickets without an approved recovery plan.
+7. Schedule knowledge reviews, access-list reviews, dependency/runtime updates, backup restore exercises, and retention cleanup through the project's approved operating process. This document does not create those schedules automatically.
+
+## 10. Official go-live approval checklist
+
+Every item requires a named reviewer, date, and evidence link in the release record. All are currently pending; a working Ocelot demonstration does not count as production approval.
+
+- [ ] Portal owner approves the widget placement, behavior, branding, and content.
+- [ ] Hosting owner approves a supported runtime, private storage, HTTPS configuration, and operations arrangement.
+- [ ] Verified authentication is connected; email-only/demo access is disabled and tested as unavailable.
+- [ ] Requester/staff/instructor permissions are approved and enforced, including internal notes and downloads.
+- [ ] Privacy/data handling, retention, deletion, and any instructor-only promise are reviewed by the appropriate institutional owners.
+- [ ] Upload protections and abuse controls are implemented and tested.
+- [ ] Approved knowledge and fallback/escalation behavior pass the agreed question tests.
+- [ ] Notification delivery and requester-facing comments either work as approved or are explicitly out of launch scope with accurate UI wording.
+- [ ] Accessibility and integrated browser/mobile checks pass the agreed target.
+- [ ] Capacity, concurrency, recovery, and backend outage tests pass on the intended platform.
+- [ ] Test records, probes, credentials, and insecure configuration are excluded from the production release.
+- [ ] Backup/restore and rollback procedures are verified; monitoring and maintenance owners are assigned.
+- [ ] Project owner and technical/review owners record the final go/no-go decision and release version.
+
+**Maintenance rule:** update this document alongside changes affecting hosting, integration, authentication, persistence, testing exceptions, or release readiness. Keep implemented behavior, verified evidence, proposed work, and open decisions distinct. It does not update itself in the background.

@@ -1,0 +1,36 @@
+{
+  "name": "capstone-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Zero-token, site-grounded support assistant for the FIU KFSCIS Capstone portal.",
+  "scripts": {
+    "start": "node server/server.js",
+    "demo": "node scripts/start-demo.js",
+    "demo:supabase": "node scripts/start-supabase-demo.js",
+    "test": "node --test test/*.test.js",
+    "test:branding:ui": "node scripts/smoke-branding-ui.js",
+    "supabase:check": "node scripts/check-supabase.js",
+    "supabase:test": "node scripts/test-supabase-live.js",
+    "test:supabase:ui": "node scripts/smoke-supabase-ui.js",
+    "staff:password": "node scripts/set-staff-password.js",
+    "tickets:seed": "node scripts/seed-tickets.js",
+    "package:upload": "node scripts/package-upload.js",
+    "package:ocelot": "node scripts/package-ocelot.js",
+    "package:ocelot:php": "node scripts/package-ocelot.js --php",
+    "package:ocelot:supabase": "node scripts/package-ocelot.js --supabase",
+    "preview:ocelot": "node scripts/preview-ocelot.js",
+    "ocelot:check": "node scripts/ocelot-setup.js --check",
+    "ocelot:setup": "node scripts/ocelot-setup.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.116.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "esbuild": "0.28.2",
+    "playwright-core": "1.63.0"
+  }
+}
