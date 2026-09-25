@@ -119,6 +119,46 @@ test("Supabase SQL + app adapter: actual PostgreSQL rules, persistence, attachme
     assert.equal(read.id,record.id); assert.equal(read.question,payload.question);
     assert.equal((await (await reopened.fetch("/api/tickets")).json()).some(row=>row.id===record.id),true);
   });
+  await t.test("departed staff lose access and new assignments without deleting Auth, tickets or attachments",async()=>{
+    const departed=randomUUID();
+    await db.query("insert into auth.users values ($1,'ralva037@fiu.edu',now(),false)",[departed]);
+    const binding=await fs.readFile(path.join(root,"server/supabase/002_bind_staff.sql"),"utf8");
+    await db.exec(binding);
+    assert.equal((await rpc(departed,"capstone_staff_session")).staff.email,"ralva037@fiu.edu");
+    const oldPlan=await rpc(departed,"capstone_submit",[{...payload,assignedTo:"ralva037@fiu.edu",attachments:[file]},randomUUID(),true]);
+    await asUser(departed,"insert into storage.objects(bucket_id,name,metadata) values('capstone-attachments',$1,$2)",[oldPlan.attachments[0].path,{size:4,mimetype:"text/plain"}]);
+    await rpc(departed,"capstone_finalize",[oldPlan.id]);
+    const snapshot=async()=>JSON.stringify(await Promise.all([
+      db.query("select * from public.capstone_tickets order by id"),
+      db.query("select * from public.capstone_attachments order by id"),
+      db.query("select * from storage.objects order by id"),
+      db.query("select * from auth.users order by id")
+    ]));
+    const before=await snapshot();
+    const retirement=await fs.readFile(path.join(root,"server/supabase/003_retire_raul.sql"),"utf8");
+    await db.exec(retirement);
+    assert.equal(await snapshot(),before);
+    const session=await rpc(staff,"capstone_staff_session");
+    assert.equal(session.members.length,5);
+    assert.equal(session.members.some(member=>member.email==='ralva037@fiu.edu'),false);
+    for(const name of ['capstone_staff_session','capstone_list']) await assert.rejects(()=>rpc(departed,name),/Unauthorized/);
+    await assert.rejects(()=>rpc(departed,'capstone_get',[oldPlan.id]),/Unauthorized/);
+    await assert.rejects(()=>rpc(departed,'capstone_work',[oldPlan.id,{status:'resolved'},true]),/Unauthorized/);
+    assert.equal((await asUser(departed,'select * from public.capstone_tickets')).rows.length,0);
+    assert.equal((await asUser(departed,'select * from storage.objects')).rows.length,0);
+    await assert.rejects(()=>rpc(staff,'capstone_submit',[{...payload,assignedTo:'ralva037@fiu.edu'},randomUUID(),true]),/active staff/);
+    await assert.rejects(()=>asUser(staff,"update capstone_private.staff_members set active=true where email='ralva037@fiu.edu'"));
+    await db.exec(binding);
+    await db.exec(retirement);
+    await assert.rejects(()=>rpc(departed,'capstone_staff_session'),/Unauthorized/);
+    assert.equal(await snapshot(),before);
+    const preserved=await rpc(staff,'capstone_work',[oldPlan.id,{expectedRevision:0,requestId:randomUUID(),status:'in-review'},true]);
+    assert.equal(preserved.assignedTo,'ralva037@fiu.edu');
+    const reassigned=await rpc(staff,'capstone_work',[oldPlan.id,{expectedRevision:1,requestId:randomUUID(),assignedTo:'afeli016@fiu.edu',expectedAssignee:'ralva037@fiu.edu'},true]);
+    assert.equal(reassigned.assignedTo,'afeli016@fiu.edu');
+    assert.equal(reassigned.createdBy,'ralva037@fiu.edu');
+    await assert.rejects(()=>rpc(staff,'capstone_work',[oldPlan.id,{expectedRevision:2,requestId:randomUUID(),assignedTo:'ralva037@fiu.edu',expectedAssignee:'afeli016@fiu.edu'},true]),/active staff/);
+  });
   await t.test("initial migration refuses to run twice instead of resetting stored tickets",async()=>{
     const before=(await db.query("select count(*) from public.capstone_tickets")).rows[0].count;
     await assert.rejects(()=>db.exec(sql),/already exist/);

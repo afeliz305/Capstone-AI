@@ -113,7 +113,10 @@ function work_ticket($ticket, $input, $staff) {
     if (!in_array($input['priority'] ?? '', ['low','normal','high','urgent'], true)) fail('Choose a valid priority.');
     if (!in_array($input['category'] ?? '', TOPICS, true) && ($input['category'] ?? '') !== $ticket['category']) fail('Choose a category from the list.');
     if (!array_key_exists('assignedTo', $input)) fail('Choose an approved staff member or Unassigned.');
-    $fields = ['status'=>$input['status'], 'priority'=>$input['priority'], 'category'=>$input['category'], 'assignedTo'=>assignee($input['assignedTo']),
+    // Preserve an existing former staff assignment while editing notes/history.
+    // Any new assignment must still belong to the current approved roster.
+    $assignedTo = $input['assignedTo'] === ($ticket['assignedTo'] ?? null) ? $input['assignedTo'] : assignee($input['assignedTo']);
+    $fields = ['status'=>$input['status'], 'priority'=>$input['priority'], 'category'=>$input['category'], 'assignedTo'=>$assignedTo,
         'question'=>text_field($input, 'question', 500, true), 'details'=>text_field($input, 'details', 3000, true), 'resolution'=>text_field($input, 'resolution', 3000)];
     if (array_key_exists('projectOwnerTicket', $input)) {
         if (!is_bool($input['projectOwnerTicket'])) fail('Project-owner classification must be true or false.');

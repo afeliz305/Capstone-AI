@@ -4,7 +4,7 @@ This is the **DEVELOPMENT** folder, not the upload website. Run npm commands her
 
 Standalone proof of concept for a zero-token, site-grounded support assistant for the FIU KFSCIS Capstone portal.
 
-The assistant will answer from a reviewed local knowledge base, cite the relevant Capstone page, and route unresolved questions to a local demo support queue. It will not depend on the HelpDesk INC project or call a paid AI API.
+The assistant answers from reviewed Capstone site content and the supplied Fall 2026 CIS 4951 RVC syllabus, cites sources/pages, and offers contextual follow-up questions. Guided dashboard topics explain course rules; actual student project, task, attendance and grade records are not connected. Unresolved questions can create a prototype support ticket; the syllabus directs course questions to Canvas Inbox. The app remains separate from HelpDesk INC and calls no paid AI API. See [syllabus search, date conflicts and dashboard integration requirements](docs/SYLLABUS_AND_DASHBOARD.md).
 
 See [CAPSTONE_AI_PROJECT_PLAN.md](docs/CAPSTONE_AI_PROJECT_PLAN.md) for the approved project direction, scope, architecture, and delivery phases.
 
@@ -12,7 +12,13 @@ See [CAPSTONE_AI_PROJECT_PLAN.md](docs/CAPSTONE_AI_PROJECT_PLAN.md) for the appr
 
 ## Teammates: start here
 
-**Shared Supabase testing:** source integration and SQL setup scripts are implemented, but the owner must complete [one-time dashboard setup](docs/SUPABASE_SETUP.md) and live acceptance before upload. Use Node 22+, run `npm.cmd install`, then `npm.cmd run demo:supabase` for an isolated candidate on port 3004. Only after confirming live ticket/file persistence, run `npm.cmd run package:ocelot:supabase`. The default `demo` and `package:ocelot` still select browser-only mode. No existing data is migrated automatically.
+**Uploaded website verified:** the owner uploaded this Supabase release to [Ocelot](https://ocelot.aul.fiu.edu/~afeli016/Capstone%20-%20AI/). All 21 public files match the prepared build; live chat, contextual answers and syllabus viewing work. Ocelot-origin ticket save/read-back/download remains the next manual test. See [current hosted verification](docs/OCELOT_SUPABASE_UPLOAD.md). No GitHub push occurred; the preparation note below describes the earlier packaging step.
+
+**Current Ocelot group-test package:** the sibling **Capstone - AI** folder now contains the Supabase shared version, including the syllabus viewing buttons. Live staff read/download/edit/preview/reload checks passed on the existing fictional test ticket. Follow the [Supabase FileZilla upload checklist](docs/OCELOT_SUPABASE_UPLOAD.md) and [remaining acceptance checks](docs/SUPABASE_SETUP.md#current-upload-preparation). Rebuild with `npm.cmd run package:ocelot:supabase`; the default browser-only packaging instructions farther below describe a separate alternative, not this prepared release. No Ocelot upload or GitHub push has occurred.
+
+**Supabase staff passwords:** signed-in staff can select **Change password** in the queue header to verify their current password and set a new one. This changes only their own app account; it is not FIU password reset or forgotten-password recovery. [Instructions](docs/SUPABASE_SETUP.md#change-your-staff-password). Email-only demo variants remain unchanged.
+
+**Shared Supabase testing:** the selected project has its initial setup and Anthony's staff access configured; remaining teammate provisioning and broader acceptance are recorded in [the setup guide](docs/SUPABASE_SETUP.md). Do not rerun the initial migration on that project. Use Node 22+, run `npm.cmd install`, then `npm.cmd run demo:supabase` for an isolated candidate on port 3004. The default `demo` and `package:ocelot` still select browser-only mode and replace the current upload folder, so do not use them to prepare the shared release. No existing data is migrated automatically.
 
 **For a local presentation:** double-click [Start Capstone Demo.cmd](scripts/Start Capstone Demo.cmd) or run `npm.cmd run demo` here. It rebuilds the browser demo and starts <http://127.0.0.1:3003/Capstone%20-%20AI/>. Use the [short demo guide](docs/LOCAL_DEMO.md). No PHP setup or manual folder switching is needed; existing server/browser tickets are preserved.
 
@@ -24,7 +30,7 @@ Follow the maintained [VS Code setup and testing guide](docs/TEAM_SETUP_GUIDE.md
 
 ## Project folders
 
-**Uploading to Ocelot?** From the outer workspace, transfer only the inner **Capstone - AI** website folder. Do not upload `DEVELOPMENT` or the entire outer workspace. Rebuild the website with `npm.cmd run package:ocelot` from this development folder; previous packages are preserved in `dist/archive/`.
+**Uploading to Ocelot?** From the outer workspace, transfer only the inner **Capstone - AI** website folder. Do not upload `DEVELOPMENT` or the entire outer workspace. Rebuild the shared website with `npm.cmd run package:ocelot:supabase` from this development folder; previous packages are preserved in `dist/archive/`.
 
 The homepage is **`index.html` at the project root**. Other files are organized by purpose:
 
@@ -94,7 +100,7 @@ The prototype uses deterministic local retrieval and does not require an API key
 - Attendance ticket topic and optional document attachments (PDF, DOCX, TXT)
 - automatic ticket name/email from a server-verified account, with a clearly labeled local sample session
 - staff queue with four visible views, assignee grouping, search, filtering, and status updates
-- temporary email-only demo sign-in for the six approved accounts, with a switch to restore password checks, personal assignment views, and claim/reassignment controls
+- temporary email-only demo sign-in for the five approved accounts, with a switch to restore password checks, personal assignment views, and claim/reassignment controls
 - staff-created tickets for workflow improvements, testing/updates, and implementation/testing, with optional initial assignment
 - automatic category tags on every staff-queue card, including existing tickets, searchable using the top search bar
 - selectable ticket workspaces with editable fields, priority/status/category/assignee dropdowns, and separate internal work notes and requester-facing comments
@@ -122,7 +128,7 @@ For an explicitly local, fictional-data test, `npm.cmd run staff:password -- you
 
 An invalid sign-in shows **Unauthorized access**, a return link, and a 15-second inactivity countdown. **Try signing in again** cancels the redirect. Staff sessions expire after one hour or on server restart; **Sign out** ends the session immediately. See [staff access details](docs/STAFF_ACCESS.md).
 
-The staff sign-in page remembers the last email accepted by the backend on this browser at this site address and app folder, and prefills it after logout or a later visit. In email-only mode, that is a selected demo identity, not a verified email owner. You can edit it to switch accounts; only a successful sign-in replaces the saved email. This does not sign you in automatically or save passwords/session tokens in browser storage. A notice explains when browser storage is blocked. Restart the app after this update and refresh with **Ctrl+Shift+R**. See the [remembered email checks](docs/TEAM_SETUP_GUIDE.md#remembered-staff-email).
+The staff sign-in page remembers the last email accepted by the backend on this browser at this site address and app folder, and prefills it after logout or a later visit. In email-only mode, that is a selected demo identity, not a verified email owner. You can edit it to switch accounts; only a successful sign-in replaces the saved email. This email preference alone never grants access. Separately, Supabase staff login offers an unchecked **Remember me for 7 days** option: after verified login it saves session tokens, never passwords, with a browser-enforced seven-day deadline. Use it only on personal computers; Sign out clears the remembered session. Local preview and Ocelot require separate logins. Restart the preview after changes and refresh with **Ctrl+Shift+R**. See [remembered sessions](docs/SUPABASE_SETUP.md#remember-me-for-7-days) and [remembered email checks](docs/TEAM_SETUP_GUIDE.md#remembered-staff-email).
 
 ## Preferred contact and project-owner tags
 

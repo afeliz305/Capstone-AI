@@ -30,6 +30,8 @@
   let selectedAttachments = [];
   const conversation = [];
   let lastQuestion = "";
+  let lastTopic = "";
+  let searchSequence = 0;
   let currentSession = null;
   let accountBusy = false;
   let submittingTicket = false;
@@ -69,8 +71,12 @@
     return element;
   }
 
-  function scrollToLatest() {
-    log.scrollTop = log.scrollHeight;
+  function scrollToLatest(answer) {
+    // Keep the answer's beginning visible when citations/follow-up chips make a
+    // response taller than the popup. Never scroll the surrounding host page.
+    if (answer?.getBoundingClientRect && !chatPanel.hidden) {
+      log.scrollTop = Math.max(0, log.scrollTop + answer.getBoundingClientRect().top - log.getBoundingClientRect().top - 12);
+    } else log.scrollTop = log.scrollHeight;
   }
 
   function addUserMessage(text) {
@@ -135,12 +141,16 @@
   }
 
   function addSourceCard(container, match) {
-    if (!isCapstoneUrl(match.url)) return;
+    let href;
+    if (isCapstoneUrl(match.url)) href = match.url;
+    else if (/^pages\/syllabus\.html#(?:syllabus-[a-z0-9-]+|canvas-assignments|contact-help|sprint-planning|dashboard-personal)$/.test(match.url)) href = new URL(match.url, api.baseUrl).href;
+    if (!href) return;
     const source = createElement("a", "source-card");
-    source.href = match.url;
+    source.href = href;
     source.target = "_blank";
     source.rel = "noopener noreferrer";
-    const label = createElement("span", "source-kicker", `${match.access === "authenticated" ? "SIGN-IN REQUIRED" : "CAPSTONE SOURCE"} · ${match.section}`);
+    const kind = match.sourceKind === "syllabus" ? "SYLLABUS · pages " + match.sourcePages : match.sourceKind === "prototype" ? "PROTOTYPE LIMITATION" : match.access === "authenticated" ? "SIGN-IN REQUIRED" : "CAPSTONE SOURCE";
+    const label = createElement("span", "source-kicker", `${kind} · ${match.section}`);
     const title = createElement("strong", "", match.sourceTitle || match.title);
     const action = createElement("span", "source-action", "Open source ↗");
     source.append(label, title, action);
@@ -307,13 +317,22 @@
   }
 
   function renderAnswer(match, links = []) {
+    lastTopic = match.id;
     const message = addAssistantText(match.answer);
     addKeywordLinks(message, links);
     if (!links.some(link => link.id === match.id && link.url === match.url && isCapstoneUrl(link.url) && link.keywords?.length)) {
       addSourceCard(message, match);
     }
+    const followUps = createElement("div", "follow-up-questions");
+    followUps.setAttribute("aria-label", "Suggested follow-up questions");
+    followUps.append(createElement("p", "message-note", "Keep exploring this topic:"));
+    const prompts = match.followUps?.length ? match.followUps : ["What are the course deadlines?", "Where do I submit my course work?", "How do I contact the professor?"];
+    prompts.filter(question => typeof question === "string" && question.length <= 500).slice(0, 5).forEach(question => {
+      followUps.append(createActionButton(question, "follow-up-button", () => submitQuestion(question, match.id)));
+    });
+    message.append(followUps);
     addFeedback(message);
-    scrollToLatest();
+    scrollToLatest(message);
   }
 
   function renderChoices(matches, links = []) {
@@ -324,7 +343,9 @@
     const choices = createElement("div", "result-choices");
     matches.forEach((match) => {
       const button = createActionButton(match.title, "result-choice", () => {
+        if (input.disabled) return;
         choices.querySelectorAll("button").forEach((item) => { item.disabled = true; });
+        addUserMessage("Tell me about " + match.title);
         renderAnswer(match, links.filter(link => link.id === match.id));
       });
       const meta = createElement("span", "", `${match.section} · ${match.access === "authenticated" ? "sign-in required" : "public"}`);
@@ -333,13 +354,14 @@
     });
     message.append(choices);
     addKeywordLinks(message, links);
-    scrollToLatest();
+    scrollToLatest(message);
   }
 
-  function renderUnmatched(links = []) {
+  function renderUnmatched(links = [], scopeNote) {
+    lastTopic = "";
     const message = addAssistantText(
       "I couldn’t find that answer in the approved Capstone content.",
-      "Try adding a detail such as “showcase,” “sprint,” “template,” or “tutorial.” If you still need help, create a support request."
+      scopeNote || "Try a course topic, sprint number, or syllabus question. For course questions, contact the instructor through Canvas Inbox. You can also create a prototype support request."
     );
     addKeywordLinks(message, links);
     const actions = createElement("div", "message-actions");
@@ -348,10 +370,11 @@
       createActionButton("Create support request", "primary-action", () => openSupportDialog())
     );
     message.append(actions);
-    scrollToLatest();
+    scrollToLatest(message);
   }
 
-  async function search(question) {
+  async function search(question, contextId) {
+    const sequence = ++searchSequence;
     lastQuestion = question;
     addUserMessage(question);
     const loading = addLoadingMessage();
@@ -360,15 +383,17 @@
     chatPanel.focus({ preventScroll: true });
 
     try {
-      const response = await api.fetch(`/api/search?q=${encodeURIComponent(question)}`);
+      const response = await api.fetch(`/api/search?q=${encodeURIComponent(question)}${contextId ? "&context=" + encodeURIComponent(contextId) : ""}`);
       const result = await api.readJson(response);
+      if (sequence !== searchSequence) return { status:"cancelled", matches:[], links:[] };
       if (!response.ok) throw new Error(result.error || "Search is unavailable.");
       loading.remove();
       if (result.status === "matched") renderAnswer(result.matches[0], result.links);
       else if (result.status === "choices") renderChoices(result.matches, result.links);
-      else renderUnmatched(result.links);
+      else renderUnmatched(result.links, result.scopeNote);
       return result;
     } catch (error) {
+      if (sequence !== searchSequence) return { status:"cancelled", matches:[], links:[] };
       loading.remove();
       addAssistantText(
         "The local knowledge search is temporarily unavailable.",
@@ -376,6 +401,7 @@
       );
       return { status: "error", matches: [], links: [] };
     } finally {
+      if (sequence === searchSequence) {
       form.querySelector("button[type='submit']").disabled = false;
       input.disabled = false;
       // A response arriving after minimization must not reopen the widget or
@@ -383,19 +409,21 @@
       if (!chatPanel.hidden && !supportDialog.open && chatPanel.contains(document.activeElement)) {
         input.focus({ preventScroll: true });
       }
+      }
     }
   }
 
-  function submitQuestion(question) {
-    const value = String(question || "").trim();
+  function submitQuestion(question, contextId = lastTopic) {
+    if (input.disabled) return Promise.resolve({ status:"busy", matches:[], links:[] });
+    const value = String(question || "").trim().slice(0, 500);
     if (!value) return Promise.resolve({ status: "unmatched", matches: [] });
     openChat();
     input.value = "";
-    return search(value);
+    return search(value, contextId);
   }
 
   document.querySelectorAll("[data-question]").forEach((button) => {
-    button.addEventListener("click", () => submitQuestion(button.dataset.question));
+    button.addEventListener("click", () => submitQuestion(button.dataset.question, ""));
   });
 
   form?.addEventListener("submit", (event) => {
@@ -411,10 +439,14 @@
   });
 
   clearButton?.addEventListener("click", () => {
+    searchSequence++;
     const messages = log.querySelectorAll(".user-message, .assistant-message, .result-choices, .feedback-row");
     messages.forEach((message, index) => { if (index > 0) message.remove(); });
     conversation.length = 0;
     lastQuestion = "";
+    lastTopic = "";
+    input.disabled = false;
+    form.querySelector("button[type='submit']").disabled = false;
     input.value = "";
     input.focus();
   });

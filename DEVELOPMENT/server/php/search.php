@@ -26,6 +26,7 @@ function link_tokens($value) {
 function keyword_links($entries, $question) {
     $query = link_tokens($question); $candidates = [];
     foreach ($entries as $order => $entry) {
+        if (isset($entry['navigationUrl'])) { $entry['url'] = $entry['navigationUrl']; $entry['sourceTitle'] = $entry['navigationSourceTitle']; $entry['access'] = $entry['navigationAccess']; }
         $url = parse_url($entry['url']);
         if (!$url || ($url['scheme'] ?? '') !== 'https' || ($url['host'] ?? '') !== 'capstone.cs.fiu.edu' || isset($url['user']) || isset($url['pass']) || (isset($url['port']) && $url['port'] !== 443)) continue;
         foreach ($entry['linkKeywords'] ?? [] as $keyword) {
@@ -50,8 +51,38 @@ function keyword_links($entries, $question) {
     }
     return array_slice(array_values($links), 0, 4);
 }
-function search_knowledge($question) {
+function public_knowledge_entry($entry, $score) {
+    return array_merge(array_intersect_key($entry, array_flip(['id','title','sourceTitle','url','section','access','answer','sourceKind','sourcePages'])), ['followUps'=>array_slice($entry['followUps'] ?? [], 0, 5), 'score'=>round($score, 3)]);
+}
+function course_matches($entries, $question, $contextId) {
+    $text = normalized($question); $byId = [];
+    foreach ($entries as $entry) $byId[$entry['id']] = $entry;
+    $topics = ['attendance'=>'syllabus-attendance','syllabus'=>'syllabus-overview','deadlines'=>'syllabus-deadlines','grades'=>'syllabus-grading','grading'=>'syllabus-grading','grade scale'=>'syllabus-grade-scale','late work'=>'syllabus-late-work','my dashboard'=>'dashboard-personal','my project'=>'dashboard-personal'];
+    if (isset($topics[$text], $byId[$topics[$text]])) return [$byId[$topics[$text]]];
+    if (preg_match('/\bwho (?:is|are) (?:my|our) (?:product owner|team|teammates)\b|\b(?:what are|show|check) my (?:deadlines|assignments)\b|^what should i do next$/', $text) && isset($byId['dashboard-personal'])) return [$byId['dashboard-personal']];
+    if (preg_match('/\b(?:grade|grades|grading)\b/', $text) && preg_match('/\b(?:calculated|calculation|weight|weights|policy)\b/', $text) && isset($byId['syllabus-grading'])) return [$byId['syllabus-grading']];
+    $personal = '/\b(?:my|our) (?:current |actual |recorded |personal )?(?:grade|grades|attendance|progress|tasks|task list|project status|assigned project|completion|team members)\b|\b(?:what is|show|check) (?:on )?my (?:dashboard|project)\b|\bwho is on my team\b|\bwhat is due for me\b|\bhow (?:am i|is my team) doing\b|\bhow many .* (?:have i|did i) (?:miss|missed|attend|attended|complete|completed)\b/';
+    if (preg_match($personal, $text) && isset($byId['dashboard-personal'])) return [$byId['dashboard-personal']];
+    $exact = [];
+    foreach ($entries as $entry) if (isset($entry['sourceKind'])) foreach ($entry['intents'] ?? [] as $intent) if (normalized($intent) === $text) { $exact[] = $entry; break; }
+    if ($exact) return $exact;
+    preg_match_all('/\bsprint\s+([1-5])\b/', $text, $numbers);
+    $numbered = [];
+    foreach (array_unique($numbers[1]) as $number) if (isset($byId['syllabus-sprint-'.$number])) $numbered[] = $byId['syllabus-sprint-'.$number];
+    if ($numbered) return $numbered;
+    if (preg_match('/^(?:and |also )?(?:when is (?:it|that|this) due|when is the deadline|what is the deadline|how many points(?: is (?:it|that|this))?|what is (?:it|that) worth|tell me more|what does that mean|what should i do|what do i need to do)$/', $text) && isset($byId[$contextId])) return [$byId[$contextId]];
+    if ($contextId && preg_match('/^(?:and |also )?(?:where (?:do i |should i )?(?:submit|post|upload)(?: (?:it|that|this))?|how (?:is it|is that|am i) graded)$/', $text)) {
+        $target = strpos($text, 'graded') !== false ? 'syllabus-grading' : 'canvas-assignments';
+        if (isset($byId[$target])) return [$byId[$target]];
+    }
+    return [];
+}
+function search_knowledge($question, $contextId = '') {
     $entries = require __DIR__ . '/knowledge.php';
+    if (preg_match('/\b(?:spring|summer)\s+20\d\d\b|\b(?:fall\s+)?(?:202[0-5]|202[7-9]|20[3-9]\d)\b/i', $question)) return ['question'=>$question,'status'=>'unmatched','matches'=>[],'links'=>[],'scopeNote'=>"The imported syllabus covers CIS 4951 RVC, Fall 2026 only. Ask the instructor for the other term's requirements."];
+    $direct = course_matches($entries, $question, $contextId);
+    if ($direct) return ['question'=>$question, 'status'=>count($direct) > 1 ? 'choices' : 'matched', 'matches'=>array_map(function ($entry) { return public_knowledge_entry($entry, 1); }, array_slice($direct, 0, 3)), 'links'=>$direct[0]['id'] === 'dashboard-personal' ? [] : keyword_links($entries, $question)];
+    if (preg_match('/^(?:when is (?:it|that|this) due|when is the deadline|what is the deadline|how many points(?: is (?:it|that|this))?|what is (?:it|that) worth|tell me more|what does that mean)$/', normalized($question))) return ['question'=>$question, 'status'=>'unmatched','matches'=>[],'links'=>[],'scopeNote'=>"Which assignment or sprint do you mean? Try 'Sprint 2' or 'Final deliverables', then ask your follow-up."];
     $query = search_tokens($question); $ranked = []; $normal = normalized($question);
     foreach ($entries as $order => $entry) {
         if (!$query) break;
@@ -72,6 +103,6 @@ function search_knowledge($question) {
     if (!$ranked || $ranked[0]['score'] < .4) return ['question'=>$question, 'status'=>'unmatched','matches'=>[],'links'=>$links];
     $choices = $ranked[0]['score'] < .43 || (isset($ranked[1]) && $ranked[1]['score'] >= .24 && $ranked[0]['score'] - $ranked[1]['score'] < .11);
     $matches = [];
-    foreach (array_slice($ranked, 0, $choices ? 3 : 1) as $item) $matches[] = array_merge(array_intersect_key($item['entry'], array_flip(['id','title','sourceTitle','url','section','access','answer'])), ['score'=>round($item['score'], 3)]);
+    foreach (array_slice($ranked, 0, $choices ? 3 : 1) as $item) $matches[] = public_knowledge_entry($item['entry'], $item['score']);
     return ['question'=>$question,'status'=>$choices ? 'choices' : 'matched','matches'=>$matches,'links'=>$links];
 }

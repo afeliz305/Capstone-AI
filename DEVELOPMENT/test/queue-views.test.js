@@ -49,8 +49,17 @@ const script = fs.readFileSync(path.join(__dirname, "../js/staff/staff.js"), "ut
 const workspaceScript = fs.readFileSync(path.join(__dirname, "../js/staff/ticket-workspace.js"), "utf8");
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
+test("former staff assignments are shown as historical, disabled choices in the quick menu", async () => {
+  const ui = await mount();
+  const formerOptions = ui.elements.get('#ticket-grid').querySelectorAll('option').filter(option => option.value === 'former@example.edu');
+  assert.equal(formerOptions.length, 1);
+  assert.equal(formerOptions[0].disabled, true);
+  assert.equal(formerOptions[0].selected, true);
+  assert.match(formerOptions[0].textContent, /former staff/);
+});
+
 // Exercise the real staff event handlers against a DOM double, not a browser.
-async function mount({ createResponse, workspaceResponse, authResponse, localStorage, baseUrl = "http://localhost/", readFile = (reader, file) => { reader.result = "data:text/plain;base64," + file.data; reader.onload(); }, confirm = () => false, redirectFactory = helpers.createIdleRedirect, initialTickets = records } = {}) {
+async function mount({ createResponse, workspaceResponse, authResponse, localStorage, storageMode, baseUrl = "http://localhost/", readFile = (reader, file) => { reader.result = "data:text/plain;base64," + file.data; reader.onload(); }, confirm = () => false, redirectFactory = helpers.createIdleRedirect, initialTickets = records } = {}) {
   class Element {
     constructor(tag = "div") { this.tag = tag; this.children = []; this.listeners = {}; this.attributes = {}; this.dataset = {}; this.value = ""; this.textContent = ""; this.checked = false; this.disabled = false; }
     append(...nodes) { this.children.push(...nodes); }
@@ -142,6 +151,9 @@ async function mount({ createResponse, workspaceResponse, authResponse, localSto
     const response = await fetch(new URL(url).pathname.slice(prefix.length), options);
     return { headers: { get: () => "application/json" }, ...response };
   } });
+  if (storageMode) api.storageMode = storageMode;
+  let endSession;
+  if (storageMode === "supabase") api.onSessionEnded = listener => { endSession = listener; };
   const context = vm.createContext({ document, URL, FileReader: class { readAsDataURL(file) { readFile(this, file); } }, window: { CapstoneApi: api, get localStorage() { return typeof localStorage === "function" ? localStorage() : localStorage; }, CapstoneAttachmentPolicy: require("../js/shared/attachment-policy"), CapstoneContactPolicy: require("../js/shared/contact-policy"), CapstoneStaffView: { ...helpers, createIdleRedirect: redirectFactory }, crypto: { randomUUID }, confirm, addEventListener() {}, setInterval() {} } });
   vm.runInContext(workspaceScript, context);
   vm.runInContext(script, context);
@@ -150,7 +162,7 @@ async function mount({ createResponse, workspaceResponse, authResponse, localSto
     const visit = node => [...(predicate(node) ? [node] : []), ...node.children.flatMap(visit)];
     return visit(elements.get("#ticket-grid"));
   };
-  return { elements, buttons, find, requests, creations, workRequests, button: view => buttons.find(button => button.dataset.view === view), visible: () => find(node => node.className === "ticket-id").map(node => node.textContent), count: view => Number(buttons.find(button => button.dataset.view === view).querySelector("[data-view-count]").textContent) };
+  return { elements, buttons, find, requests, creations, workRequests, endSession:()=>endSession?.(), button: view => buttons.find(button => button.dataset.view === view), visible: () => find(node => node.className === "ticket-id").map(node => node.textContent), count: view => Number(buttons.find(button => button.dataset.view === view).querySelector("[data-view-count]").textContent) };
 }
 
 function memoryEmailStorage(value) {
@@ -161,6 +173,140 @@ function memoryEmailStorage(value) {
 
 const authResult = (status, data) => ({ ok: status === 200, status, json: async () => data });
 const signedOutSession = url => url === "/api/staff/session" ? authResult(401, { error: "Sign in required" }) : null;
+
+function fillPasswordForm(ui, confirm = "fictional-new-password") {
+  ui.elements.get("#change-password-current").value = "fictional-old-password";
+  ui.elements.get("#change-password-new").value = "fictional-new-password";
+  ui.elements.get("#change-password-confirm").value = confirm;
+}
+function assertPasswordsCleared(ui) {
+  for (const field of ["current","new","confirm"]) {
+    assert.equal(ui.elements.get("#change-password-"+field).value, "");
+    assert.equal(ui.elements.get("#change-password-"+field).type, "password");
+    assert.equal(ui.elements.get("#toggle-change-password-"+field).attributes["aria-pressed"], "false");
+  }
+}
+test("sign-in password Show/Hide is accessible, preserves the value and makes no request or stored preference", async () => {
+  const localStorage=memoryEmailStorage(),ui=await mount({localStorage,authResponse:signedOutSession});
+  const input=ui.elements.get("#staff-password"),toggle=ui.elements.get("#toggle-staff-password");
+  input.value="fictional-visibility-test";
+  assert.equal(ui.elements.get("#staff-password-control").hidden,false);
+  assert.equal(input.type,"password");assert.equal(toggle.disabled,false);
+  toggle.emit("click");
+  assert.equal(input.type,"text");assert.equal(toggle.textContent,"Hide");
+  assert.equal(toggle.attributes["aria-label"],"Hide password");assert.equal(toggle.attributes["aria-pressed"],"true");
+  toggle.emit("click");
+  assert.equal(input.type,"password");assert.equal(toggle.textContent,"Show");
+  assert.equal(toggle.attributes["aria-label"],"Show password");assert.equal(toggle.attributes["aria-pressed"],"false");
+  assert.equal(input.value,"fictional-visibility-test");
+  assert.deepEqual(ui.requests,["/api/staff/session"]);assert.deepEqual([...localStorage.saved],[]);
+  for(const id of ["staff-password","change-password-current","change-password-new","change-password-confirm"]) {
+    assert.match(html,new RegExp('id="toggle-'+id+'" type="button"[^>]*aria-controls="'+id+'"'));
+  }
+});
+test("change-password visibility toggles are independent and reset on cancel and submission",async()=>{
+  const ui=await mount({storageMode:"supabase",authResponse:url=>url==="/api/staff/password"?authResult(400,{error:"Test rejection"}):null});
+  ui.elements.get("#change-staff-password").emit("click");fillPasswordForm(ui);
+  for(const field of ["current","new","confirm"]) {
+    ui.elements.get("#toggle-change-password-"+field).emit("click");
+    assert.equal(ui.elements.get("#change-password-"+field).type,"text");
+    if(field==="current") assert.equal(ui.elements.get("#change-password-new").type,"password");
+    if(field==="new") assert.equal(ui.elements.get("#change-password-confirm").type,"password");
+  }
+  ui.elements.get("#cancel-change-password").emit("click");assertPasswordsCleared(ui);
+  ui.elements.get("#change-staff-password").emit("click");fillPasswordForm(ui);
+  ui.elements.get("#toggle-change-password-new").emit("click");
+  await ui.elements.get("#change-password-form").emit("submit");assertPasswordsCleared(ui);
+});
+test("password visibility is disabled in email-only mode and reset after a rejected login",async()=>{
+  const demo=await mount({authResponse:url=>url==="/api/staff/session"?authResult(401,{loginMode:"email-demo"}):null});
+  assert.equal(demo.elements.get("#staff-password-control").hidden,true);
+  assert.equal(demo.elements.get("#toggle-staff-password").disabled,true);
+  demo.elements.get("#toggle-staff-password").emit("click");
+  assert.equal(demo.elements.get("#staff-password").type,"password");
+  const ui=await mount({redirectFactory:()=>({start(){},stop(){},respond(){}}),authResponse:url=>url==="/api/staff/login"?authResult(401,{error:"Test rejection"}):signedOutSession(url)});
+  ui.elements.get("#staff-password").value="fictional-password";
+  ui.elements.get("#toggle-staff-password").emit("click");
+  await ui.elements.get("#staff-login-form").emit("submit");
+  assert.equal(ui.elements.get("#staff-password").type,"password");
+  assert.equal(ui.elements.get("#staff-password").value,"");
+  assert.equal(ui.elements.get("#toggle-staff-password").textContent,"Show");
+});
+test("change password is available only for signed-in Supabase staff; cancel clears secrets", async () => {
+  for (const storageMode of [undefined,"browser-demo","php"]) {
+    const ui = await mount({ storageMode });
+    assert.equal(ui.elements.get("#change-staff-password").hidden, true);
+    ui.elements.get("#change-staff-password").emit("click");
+    assert.ok(!ui.elements.get("#staff-password-dialog").open);
+  }
+  const signedOut = await mount({ storageMode:"supabase", authResponse:signedOutSession });
+  assert.equal(signedOut.elements.get("#change-staff-password").hidden, true);
+  const ui = await mount({ storageMode:"supabase" });
+  assert.equal(ui.elements.get("#change-staff-password").hidden, false);
+  ui.elements.get("#change-staff-password").emit("click");
+  assert.equal(ui.elements.get("#staff-password-dialog").open, true);
+  assert.equal(ui.elements.get("#change-password-email").value, email);
+  fillPasswordForm(ui);
+  ui.elements.get("#cancel-change-password").emit("click");
+  assertPasswordsCleared(ui);
+  assert.equal(ui.elements.get("#staff-password-dialog").open, false);
+  assert.equal(ui.elements.get("#change-staff-password").focused, true);
+});
+test("change password validates confirmation and shows verified success without storing secrets", async () => {
+  const localStorage = memoryEmailStorage(); let calls=0;
+  const ui = await mount({storageMode:"supabase",localStorage,authResponse:(url,options)=>{
+    if(url!=="/api/staff/password") return;
+    calls++;
+    assert.deepEqual(JSON.parse(options.body),{currentPassword:"fictional-old-password",newPassword:"fictional-new-password",confirmPassword:"fictional-new-password"});
+    return authResult(200,{ok:true});
+  }});
+  ui.elements.get("#change-staff-password").emit("click");
+  fillPasswordForm(ui,"different");
+  await ui.elements.get("#change-password-form").emit("submit");
+  assert.equal(calls,0);assert.match(ui.elements.get("#change-password-status").textContent,/do not match/);
+  fillPasswordForm(ui);
+  await ui.elements.get("#change-password-form").emit("submit");
+  assert.equal(calls,1);assertPasswordsCleared(ui);
+  assert.match(ui.elements.get("#change-password-status").textContent,/Password updated/);
+  assert.equal(ui.elements.get("#save-change-password").disabled,true);
+  assert.equal(ui.elements.get("#cancel-change-password").textContent,"Done");
+  assert.deepEqual([...localStorage.saved],[["capstone-ai-chat:last-staff-email",email]]);
+  ui.elements.get("#cancel-change-password").emit("click");
+  ui.elements.get("#change-staff-password").emit("click");
+  assert.equal(ui.elements.get("#save-change-password").disabled,false);
+  assert.equal(ui.elements.get("#change-password-status").textContent,"");
+});
+test("password errors clear fields, allow retry, and never report an unconfirmed success", async () => {
+  for(const response of [authResult(400,{error:"Your current password is incorrect."}),authResult(503,{error:"No password change was confirmed."}),authResult(200,{})]) {
+    const ui=await mount({storageMode:"supabase",authResponse:url=>url==="/api/staff/password"?response:null});
+    ui.elements.get("#change-staff-password").emit("click");fillPasswordForm(ui);
+    await ui.elements.get("#change-password-form").emit("submit");
+    assertPasswordsCleared(ui);
+    assert.doesNotMatch(ui.elements.get("#change-password-status").textContent,/Password updated/);
+    assert.equal(ui.elements.get("#save-change-password").disabled,false);
+    assert.equal(ui.elements.get("#staff-password-dialog").open,true);
+  }
+});
+test("password request blocks duplicates, cancel and logout until settled; expired access clears the dialog", async () => {
+  let release;
+  const ui=await mount({storageMode:"supabase",redirectFactory:()=>({start(){},stop(){},respond(){}}),authResponse:url=>url==="/api/staff/password"?new Promise(resolve=>{release=resolve;}):null});
+  ui.elements.get("#change-staff-password").emit("click");fillPasswordForm(ui);
+  const request=ui.elements.get("#change-password-form").emit("submit");
+  await flush();assertPasswordsCleared(ui);
+  assert.equal(ui.elements.get("#staff-logout").disabled,true);
+  await ui.elements.get("#change-password-form").emit("submit");
+  await ui.elements.get("#staff-logout").emit("click");
+  ui.elements.get("#cancel-change-password").emit("click");
+  let prevented=false;ui.elements.get("#staff-password-dialog").emit("cancel",{preventDefault(){prevented=true;}});
+  assert.equal(prevented,true);assert.equal(ui.elements.get("#staff-password-dialog").open,true);
+  assert.equal(ui.requests.filter(url=>url==="/api/staff/password").length,1);
+  assert.equal(ui.requests.includes("/api/staff/logout"),false);
+  release(authResult(401,{error:"Your session has ended."}));await request;
+  assertPasswordsCleared(ui);
+  assert.equal(ui.elements.get("#staff-password-dialog").open,false);
+  assert.equal(ui.elements.get("#staff-denied").hidden,false);
+  assert.equal(ui.elements.get("#change-staff-password").hidden,true);
+});
 
 test("email-only mode hides password, warns before and after sign-in, and remembers the selected email", async () => {
   const localStorage = memoryEmailStorage();
@@ -194,6 +340,38 @@ test("server password mode restores the required field and removes demo warnings
   assert.equal(ui.elements.get("#staff-password").required, true);
   assert.equal(ui.elements.get("#staff-password-setup").hidden, false);
   assert.equal(ui.elements.get("#staff-login-demo-warning").hidden, true);
+});
+
+test("Remember me is opt-in, Supabase-only, submitted explicitly and reset after success/logout", async () => {
+  const payloads=[];
+  for (const storageMode of [undefined,"browser","supabase"]) {
+    const ui=await mount({storageMode,authResponse:(url,options)=>url==="/api/staff/login"?
+      (payloads.push(JSON.parse(options.body)),authResult(200,{staff:members[0],members,loginMode:"password"})):signedOutSession(url)});
+    const checkbox=ui.elements.get("#staff-remember-session");
+    assert.equal(checkbox.checked,false);
+    assert.equal(checkbox.disabled,storageMode!=="supabase");
+    assert.equal(ui.elements.get("#staff-remember-session-control").hidden,storageMode!=="supabase");
+    checkbox.checked=true;
+    ui.elements.get("#staff-password").value="fictional-login";
+    await ui.elements.get("#staff-login-form").emit("submit");
+    assert.equal(payloads.at(-1).rememberMe,storageMode==="supabase"?true:undefined);
+    assert.equal(checkbox.checked,false);
+    await ui.elements.get("#staff-logout").emit("click");
+    assert.equal(checkbox.checked,false);
+  }
+});
+
+test("remembered-session expiry removes the private queue and open credential fields",async()=>{
+  const ui=await mount({storageMode:"supabase"});
+  await ui.elements.get("#change-staff-password").emit("click");
+  ui.elements.get("#change-password-current").value="fictional-secret";
+  ui.endSession();
+  assert.equal(ui.elements.get("#staff-workspace").hidden,true);
+  assert.equal(ui.elements.get("#staff-login").hidden,false);
+  assert.equal(ui.elements.get("#staff-password-dialog").open,false);
+  assert.equal(ui.elements.get("#change-password-current").value,"");
+  assert.match(ui.elements.get("#staff-login-status").textContent,/remembered sign-in has ended/);
+  assert.deepEqual(ui.visible(),[]);
 });
 
 test("last successful staff email survives logout and reload without saving passwords or granting access", async () => {

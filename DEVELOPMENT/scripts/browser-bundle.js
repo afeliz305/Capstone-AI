@@ -1,6 +1,8 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { STAFF } = require("../server/lib/staff-auth");
+const { mergeKnowledge } = require("../server/lib/knowledge");
+const syllabus = require("../js/shared/syllabus-data");
 
 // Explicit, dependency-free bundle: only reviewed knowledge and pure app code.
 // Never reads runtime tickets, passwords, sessions, or stored attachments.
@@ -13,7 +15,7 @@ async function browserBundle(root, readSource = file => fs.readFile(path.join(ro
   };
   const modules = [];
   for (const [id, file] of Object.entries(sources)) modules.push(JSON.stringify(id) + ": function(module, exports, require) {\n" + await readSource(file) + "\n}");
-  const knowledge = JSON.parse(await readSource("data/capstone-knowledge.json"));
+  const knowledge = mergeKnowledge(JSON.parse(await readSource("data/capstone-knowledge.json")), syllabus.entries);
   return `(function () { "use strict";
 const modules = {${modules.join(",\n")}};
 const STAFF = ${JSON.stringify(STAFF)};

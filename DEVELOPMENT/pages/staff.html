@@ -26,6 +26,7 @@
       <nav aria-label="Staff navigation">
         <a href="../index.html">Student assistant</a>
         <button class="refresh-button" id="refresh-tickets" type="button" hidden>Refresh queue</button>
+        <button class="refresh-button" id="change-staff-password" type="button" aria-haspopup="dialog" aria-controls="staff-password-dialog" hidden>Change password</button>
         <button class="refresh-button" id="staff-logout" type="button" hidden>Sign out</button>
       </nav>
     </header>
@@ -40,7 +41,17 @@
           <label for="staff-email">Staff email</label>
           <input id="staff-email" type="email" autocomplete="username" maxlength="254" aria-describedby="staff-remember-email-note" required>
           <label id="staff-password-label" for="staff-password" hidden>Prototype password</label>
-          <input id="staff-password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required hidden disabled>
+          <div class="password-control" id="staff-password-control" hidden>
+            <input id="staff-password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required hidden disabled>
+            <button class="staff-secondary password-toggle" id="toggle-staff-password" type="button" aria-label="Show password" aria-controls="staff-password" aria-pressed="false" disabled>Show</button>
+          </div>
+          <div id="staff-remember-session-control" hidden>
+            <label class="staff-remember-session" for="staff-remember-session">
+              <input id="staff-remember-session" type="checkbox" aria-describedby="staff-remember-session-note" disabled>
+              <span>Remember me for 7 days</span>
+            </label>
+            <p id="staff-remember-session-note">Only on your personal computer. Keeps a sign-in session for up to 7 days, never your password. Sign out to end it sooner.</p>
+          </div>
           <p class="staff-login-status" id="staff-login-status" role="status" aria-live="polite"></p>
           <button class="staff-primary" type="submit">Sign in</button>
         </form>
@@ -115,6 +126,41 @@
 
       <section class="ticket-grid" id="ticket-grid" aria-label="Support tickets"></section>
     </main>
+
+    <dialog class="staff-ticket-dialog staff-password-dialog" id="staff-password-dialog" aria-labelledby="change-password-title" aria-describedby="change-password-note">
+      <form id="change-password-form">
+        <div class="staff-ticket-heading">
+          <p class="eyebrow">YOUR STAFF ACCOUNT</p>
+          <h2 id="change-password-title">Change password</h2>
+          <p id="change-password-note">Changes only your Capstone - AI staff password, not your FIU password. Use a unique password with 8–128 characters. Supabase may require a stronger password. This app never saves your password.</p>
+        </div>
+        <fieldset id="change-password-fields">
+          <legend class="sr-only">Password change</legend>
+          <label for="change-password-email">Staff email</label>
+          <input id="change-password-email" type="email" autocomplete="username" readonly>
+          <label for="change-password-current">Current password</label>
+          <div class="password-control">
+            <input id="change-password-current" type="password" autocomplete="current-password" maxlength="128" required autofocus>
+            <button class="staff-secondary password-toggle" id="toggle-change-password-current" type="button" aria-label="Show current password" aria-controls="change-password-current" aria-pressed="false">Show</button>
+          </div>
+          <label for="change-password-new">New password</label>
+          <div class="password-control">
+            <input id="change-password-new" type="password" autocomplete="new-password" minlength="8" maxlength="128" required aria-describedby="change-password-note">
+            <button class="staff-secondary password-toggle" id="toggle-change-password-new" type="button" aria-label="Show new password" aria-controls="change-password-new" aria-pressed="false">Show</button>
+          </div>
+          <label for="change-password-confirm">Confirm new password</label>
+          <div class="password-control">
+            <input id="change-password-confirm" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+            <button class="staff-secondary password-toggle" id="toggle-change-password-confirm" type="button" aria-label="Show confirmed password" aria-controls="change-password-confirm" aria-pressed="false">Show</button>
+          </div>
+        </fieldset>
+        <p class="staff-ticket-status" id="change-password-status" role="status" aria-live="polite"></p>
+        <div class="staff-ticket-actions">
+          <button class="staff-secondary" id="cancel-change-password" type="button">Cancel</button>
+          <button class="staff-primary" id="save-change-password" type="submit">Update password</button>
+        </div>
+      </form>
+    </dialog>
 
     <dialog class="staff-ticket-dialog" id="staff-ticket-dialog" aria-labelledby="staff-ticket-title" aria-describedby="staff-ticket-note">
       <form id="staff-ticket-form">

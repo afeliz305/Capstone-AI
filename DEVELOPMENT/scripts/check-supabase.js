@@ -42,13 +42,17 @@ async function checkSupabase(config, { fetchImpl = fetch } = {}) {
     : table.data?.code === "PGRST205" ? "not_available_in_api"
     : table.status === 401 || table.status === 403 ? "access_not_verified"
     : "not_verified";
-  const health = table.ok ? await get("/rest/v1/rpc/capstone_health") : null;
+  // A healthy installation denies anonymous SELECT on staff-only ticket tables.
+  // Probe the deliberately public, read-only health RPC independently; never
+  // weaken ticket permissions merely to make a metadata check return HTTP 200.
+  const health = await get("/rest/v1/rpc/capstone_health");
   const schemaReady = health?.ok && health.data?.schemaVersion === 1 && health.data?.privateAttachments === true;
   return {
     project: url, connection: "publishable_key_accepted",
     emailSignInEnabled: auth.data.external?.email === true,
     anonymousSignInEnabled: auth.data.external?.anonymous_users === true,
     ticketTable: tableState, tableHttpStatus: table.status,
+    healthHttpStatus: health.status,
     schemaReady: Boolean(schemaReady),
     readyForLiveTest: Boolean(schemaReady && auth.data.external?.anonymous_users === true),
     ticketWriteTest: "not_run",

@@ -52,7 +52,7 @@ The current temporary mode accepts an approved email without a password and labe
 
 - Replace or integrate local staff password provisioning with institutional identity and role management. Preserve server-side protection for listing, updates, and downloads.
 - Enforce student/instructor ticket access rules, rather than relying on the privacy checkbox.
-- Add ticket-level/instructor-only authorization, malware scanning, quotas, and retention. The current six staff accounts can access all team tickets and their attachments. See [document upload notes](DOCUMENT_ATTACHMENTS.md).
+- Add ticket-level/instructor-only authorization, malware scanning, quotas, and retention. The current five staff accounts can access all team tickets and their attachments. See [document upload notes](DOCUMENT_ATTACHMENTS.md).
 - Agree on HTTPS, session cookie scope, trusted proxy/origin handling, logout/expiry behavior, and CSRF protection with the portal owner. The Node prototype now supports an explicit `CAPSTONE_PUBLIC_ORIGIN` and app-folder cookie paths; the actual proxy and identity integration still require configuration and deployment testing.
 - Replace local JSON storage as appropriate, define retention/consent, and configure professor email delivery separately.
 - Keep real account data, tickets, secrets, and session credentials out of GitHub. Only sample/test data belongs in the demo.
@@ -60,3 +60,6 @@ The current temporary mode accepts an approved email without a password and labe
 ## Verification
 
 `npm.cmd test` covers manual fallback, sample-session isolation, identity spoofing, server-side revalidation, account changes, logout, adapter failures, persistence, cross-origin rejection, and sample-session restrictions. Tests use temporary storage and do not alter the demo's local ticket queue.
+# Dashboard personalization status (September 24, 2026)
+
+The new guided chat covers project, task, deadline, progress, attendance and grade **questions**, but does not have access to actual FIU/Canvas student records. Syllabus policies and user-selected sprint guidance are not personal account data. Existing name/email autofill and Supabase staff authentication do not supply this access. See [the read-only dashboard integration requirements](SYLLABUS_AND_DASHBOARD.md#personal-dashboard-records-not-connected); no student-record adapter has been implemented or authorized from a website link alone.

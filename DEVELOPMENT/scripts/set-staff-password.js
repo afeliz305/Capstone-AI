@@ -29,7 +29,7 @@ async function main() {
       STAFF.forEach((staff, index) => console.log(`${index + 1}. ${staff.name} (${staff.email})`));
       member = STAFF[Number(await ask("Staff number: ")) - 1];
     }
-    if (!member) throw new Error("Choose one of the six staff accounts.");
+    if (!member) throw new Error("Choose an account from the approved staff list.");
     console.log(`Account: ${member.name} (${member.email})`);
     const password = await hidden(`New prototype password (${localTestOnly ? 8 : 12}–128 characters; typing is hidden): `);
     const confirmation = await hidden("Confirm password: ");

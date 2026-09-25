@@ -1,6 +1,7 @@
 .staff-page { background: var(--canvas); }
 .staff-demo-warning { padding: 14px; border: 1px solid var(--warning); border-radius: var(--control-radius); color: var(--warning); background: var(--warning-bg); font-size: 14px; line-height: 1.5; }
-.staff-page .site-header nav { display: flex; }
+.staff-page .site-header { flex-wrap: wrap; }
+.staff-page .site-header nav { display: flex; flex-wrap: wrap; max-width: 100%; gap: 10px; }
 .staff-access { width: min(480px,calc(100% - 32px)); margin: 48px auto; }
 .staff-access-card { padding: 28px; border: 1px solid var(--line); border-top: 4px solid var(--fiu-gold); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
 .staff-access-card h1 { margin: 0 0 10px; font-size: 26px; line-height: 1.25; }
@@ -8,6 +9,17 @@
 #staff-login-form { display: grid; gap: 8px; margin: 22px 0; }
 #staff-login-form label { font-size: 14px; font-weight: 800; }
 #staff-login-form input { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; margin-bottom: 8px; border: 1px solid var(--line); border-radius: var(--control-radius); font-size: 16px; }
+.password-control { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: stretch; gap: 8px; min-width: 0; }
+.password-control[hidden] { display: none; }
+#staff-login-form .password-control { margin-bottom: 8px; }
+#staff-login-form .password-control input { margin-bottom: 0; }
+.password-toggle { min-width: 64px; }
+.password-toggle:focus-visible { outline: 2px solid var(--fiu-gold); outline-offset: 2px; }
+#staff-remember-session-control[hidden] { display: none; }
+#staff-login-form .staff-remember-session { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
+#staff-login-form #staff-remember-session { flex: 0 0 18px; width: 18px; height: 18px; min-height: 18px; padding: 0; margin: 0; accent-color: var(--action); }
+#staff-remember-session:focus-visible { outline: 2px solid var(--fiu-gold); outline-offset: 3px; }
+.staff-access-card #staff-remember-session-note { margin: 0 0 8px; font-size: 13px; line-height: 1.5; color: var(--info); }
 .staff-primary, .staff-secondary { min-height: 44px; padding: 10px 14px; border: 1px solid var(--action); border-radius: var(--control-radius); text-decoration: none; text-align: center; font-size: 14px; font-weight: 800; }
 .staff-primary { color: #fff; background: var(--action); }
 .staff-primary:hover { background: var(--action-hover); }
@@ -99,6 +111,12 @@ button.ticket-id:focus-visible { outline: 2px solid var(--fiu-gold); outline-off
 .status-resolved { color: var(--success); background: var(--success-bg); }
 .staff-ticket-dialog { width: min(640px,calc(100% - 32px)); max-height: calc(100dvh - 32px); padding: 24px; border: 1px solid var(--line); border-top: 4px solid var(--fiu-gold); border-radius: var(--radius); color: var(--ink); background: var(--surface); box-shadow: var(--shadow); }
 .staff-ticket-dialog::backdrop { background: rgba(8,30,63,.5); }
+.staff-password-dialog { width: min(480px,calc(100% - 32px)); }
+#change-password-fields { display: grid; gap: 8px; min-width: 0; margin: 0; padding: 0; border: 0; }
+#change-password-fields label { margin-top: 8px; font-size: 14px; font-weight: 800; }
+#change-password-fields input { width: 100%; min-width: 0; min-height: 44px; margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--control-radius); color: var(--ink); background: var(--surface); font: 400 16px/1.4 var(--font-sans); }
+#change-password-fields input[readonly] { background: var(--tint); }
+#change-password-status[data-success="true"] { color: var(--success); }
 .staff-ticket-heading h2 { margin: 0; font-size: 24px; }
 .staff-ticket-heading > p:last-child { margin: 8px 0 20px; color: var(--muted); font-size: 16px; }
 #staff-ticket-fields { display: grid; gap: 8px; min-width: 0; margin: 0; padding: 0; border: 0; }

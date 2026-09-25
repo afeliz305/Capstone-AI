@@ -46,7 +46,8 @@ test("browser mode uses no network, normalizes staff email, rejects unknown staf
   const login = await h.request("/staff/login", "POST", { email: " AFELI016@fiu.edu " });
   assert.equal(login.data.staff.name, "Anthony Feliz");
   assert.equal(login.data.loginMode, "email-demo");
-  assert.equal(login.data.members.length, 6);
+  assert.equal(login.data.members.length, 5);
+  assert.equal(login.data.members.some(member => member.email === "ralva037@fiu.edu"), false);
   const reopened = h.window.CapstoneBrowserDemo.create({ baseUrl, store: h.store });
   assert.equal((await reopened.fetch("/api/staff/session")).status, 200);
   const expired = h.window.CapstoneBrowserDemo.create({ baseUrl, store: h.store, now: () => Date.now() + 3600001 });
@@ -56,6 +57,7 @@ test("browser mode uses no network, normalizes staff email, rejects unknown staf
   await h.request("/staff/logout", "POST", {});
   assert.equal((await h.request("/tickets")).status, 401);
   assert.equal(h.networkCalls(), 0);
+  assert.equal((await h.request("/staff/login", "POST", { email: "ralva037@fiu.edu" })).status, 401);
 });
 test("browser student/staff tickets persist through adapter recreation with documents and validated contact", async () => {
   const h = await harness();
@@ -114,9 +116,12 @@ test("browser workspace preserves conflict checks, save deduplication and reques
 });
 test("browser lookup matches the reviewed Node knowledge engine, including unknown topics", async () => {
   const h = await harness();
-  const entries = JSON.parse(await fs.readFile(path.join(root, "data/capstone-knowledge.json"), "utf8"));
+  const entries = require("../server/lib/knowledge").mergeKnowledge(JSON.parse(await fs.readFile(path.join(root, "data/capstone-knowledge.json"), "utf8")), require("../js/shared/syllabus-data").entries);
   for (const question of ["attendance", "showcase judge", "quantum pizza robot", ...entries.flatMap(entry => entry.intents || [])]) {
     assert.deepEqual((await h.request("/search?q=" + encodeURIComponent(question))).data, { question, ...searchKnowledge(entries, question) });
+  }
+  for (const question of ["When is it due?", "Where do I submit it?", "How is it graded?"]) {
+    assert.deepEqual((await h.request("/search?q="+encodeURIComponent(question)+"&context=syllabus-sprint-2")).data, {question,...searchKnowledge(entries,question,"syllabus-sprint-2")});
   }
   assert.equal(h.networkCalls(), 0);
 });

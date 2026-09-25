@@ -35,10 +35,11 @@ async function filesFor(input) {
   }));
 }
 
-function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, uuid = () => crypto.randomUUID() }) {
+function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, staffSessions, uuid = () => crypto.randomUUID() }) {
   const base = new URL(baseUrl);
   const pending = new Map(); // In-memory idempotency IDs, not ticket persistence.
   let guestStart;
+  let changingPassword = false;
   function routeUrl(route) {
     if (!/^\/api\//.test(route)) throw fail("Invalid API route.");
     const target = new URL(route.slice(1), base);
@@ -52,7 +53,7 @@ function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, uuid 
   }
   async function staffSession() {
     const { data, error } = await staffClient.auth.getSession(); serviceError(error);
-    if (!data.session) throw fail("Sign in with your staff email and Supabase password.", 401);
+    if (!data.session) throw fail("Sign in with your staff email and password.", 401);
     return rpc(staffClient, "capstone_staff_session");
   }
   async function requester() {
@@ -66,6 +67,54 @@ function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, uuid 
       return result.data.session;
     })().finally(() => { guestStart = null; });
     return guestStart;
+  }
+  async function changePassword(input) {
+    if (changingPassword) throw fail("A password change is already in progress.", 409);
+    const { currentPassword, newPassword, confirmPassword } = input;
+    if (typeof currentPassword !== "string" || !currentPassword || currentPassword.length > 128) throw fail("Enter your current password.");
+    if (typeof newPassword !== "string" || newPassword.length < 8 || newPassword.length > 128 || !newPassword.trim()) throw fail("Use a new password with 8–128 characters.");
+    if (newPassword !== confirmPassword) throw fail("The new passwords do not match.");
+    if (newPassword === currentPassword) throw fail("Choose a new password different from your current password.");
+    changingPassword = true;
+    try {
+      const session = await staffSession(); // Verify active, provisioned staff before any credential write.
+      const auth = await staffClient.auth.getSession(); serviceError(auth.error);
+      const userId = auth.data.session?.user.id;
+      if (!userId) throw fail("Your session has ended. Sign in again.", 401);
+      // A fresh sign-in verifies the current password even when the hosted
+      // 'require current password' setting is off. Never accept a target email/ID.
+      const verified = await staffClient.auth.signInWithPassword({ email:session.staff.email, password:currentPassword });
+      if (verified.error) {
+        if (verified.error.code === "invalid_credentials") throw fail("Your current password is incorrect.");
+        if (verified.error.status === 429) throw fail("Too many attempts. Wait a few minutes before trying again.", 429);
+        throw fail("Could not verify your current password. No password change was attempted. Check your connection and try again.", 503);
+      }
+      if (verified.data?.user?.id !== userId) {
+        await staffClient.auth.signOut({ scope:"local" });
+        throw fail("Your account changed. Sign in again before changing your password.", 401);
+      }
+      await staffSession(); // The fresh identity must still be bound to active staff.
+      const result = await staffClient.auth.updateUser({ password:newPassword, current_password:currentPassword });
+      if (result.error) {
+        const messages = {
+          weak_password:"Choose a stronger password that meets this project's password requirements.",
+          same_password:"Choose a new password different from your current password.",
+          current_password_mismatch:"Your current password is incorrect.",
+          current_password_required:"Enter your current password.",
+          reauthentication_needed:"Sign out and sign in again, then retry the password change.",
+          session_not_found:"Your session has ended. Sign in again.",
+          user_not_found:"Your session has ended. Sign in again."
+        };
+        if (result.error.status === 429) throw fail("Too many attempts. Wait a few minutes before trying again.", 429);
+        if (messages[result.error.code]) throw fail(messages[result.error.code], ["session_not_found","user_not_found"].includes(result.error.code) ? 401 : 400);
+        throw fail("No password change was confirmed. Check your connection, then try signing in with your new password before retrying.", 503);
+      }
+      if (result.data?.user?.id !== userId) throw fail("No password change was confirmed. Try signing in with your new password before retrying.", 503);
+      return { ok:true };
+    } catch (error) {
+      if (error.statusCode) throw error;
+      throw fail("No password change was confirmed. Check your connection, then try signing in with your new password before retrying.", 503);
+    } finally { changingPassword = false; }
   }
   async function submit(input, staffCreated) {
     const files = await filesFor(input.attachments);
@@ -109,23 +158,43 @@ function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, uuid 
       const method = options.method || "GET";
       const input = options.body ? JSON.parse(options.body) : {};
       if (!input || typeof input !== "object" || Array.isArray(input)) throw fail("Invalid request.");
+      if (changingPassword && method === "POST" && ["/api/staff/login","/api/staff/logout"].includes(pathname)) throw fail("Wait for the password change to finish.", 409);
       if (method === "GET" && pathname === "/api/health") return reply(await rpc(guestClient,"capstone_health"));
       if (method === "GET" && pathname === "/api/search") {
         const question=(target.searchParams.get("q")||"").trim().slice(0,500);
         if (!question) throw fail("A question is required.");
-        return reply({ question, ...searchKnowledge(knowledge,question) });
+        return reply({ question, ...searchKnowledge(knowledge,question,target.searchParams.get("context")) });
       }
       if (method === "GET" && pathname === "/api/session") return reply({ status:"guest",account:null,identityContext:"supabase-requester-v1",demoAvailable:false });
       if (method === "POST" && pathname === "/api/staff/login") {
         await staffClient.auth.signOut({ scope:"local" });
+        staffSessions?.beginLogin();
         if (typeof input.email!=="string" || typeof input.password!=="string" || !input.password) throw fail("Enter your staff email and password.",401);
-        const result = await staffClient.auth.signInWithPassword({ email:input.email.trim().toLowerCase(), password:input.password });
-        if (result.error) throw fail("Sign-in failed. Check your Supabase staff account email and password.",401);
-        try { return reply(await staffSession()); }
-        catch(error) { await staffClient.auth.signOut({ scope:"local" }); throw error; }
+        try {
+          const result = await staffClient.auth.signInWithPassword({ email:input.email.trim().toLowerCase(), password:input.password });
+          if (result.error) throw fail("Sign-in failed. Check your Supabase staff account email and password.",401);
+          const session = await staffSession(); // Never remember an unprovisioned account.
+          if (input.rememberMe === true && staffSessions) {
+            try { session.rememberedUntil = staffSessions.remember(); }
+            catch (error) { throw fail(error.message, 409); }
+          }
+          return reply(session);
+        } catch(error) {
+          try { await staffClient.auth.signOut({ scope:"local" }); }
+          finally { staffSessions?.clear(); }
+          throw error;
+        }
       }
-      if (method === "POST" && pathname === "/api/staff/logout") { const result=await staffClient.auth.signOut({ scope:"local" }); serviceError(result.error); pending.clear(); return reply({ ok:true }); }
+      if (method === "POST" && pathname === "/api/staff/logout") {
+        let result;
+        try { result=await staffClient.auth.signOut({ scope:"local" }); }
+        catch { result={ error:true }; }
+        finally { staffSessions?.clear(); pending.clear(); }
+        if (!staffSessions) serviceError(result.error);
+        return reply({ ok:true, ...(result.error ? { warning:"Signed out on this browser. Supabase could not confirm server-side sign-out; reconnect before using a shared computer." } : {}) });
+      }
       if (method === "GET" && pathname === "/api/staff/session") return reply(await staffSession());
+      if (method === "POST" && pathname === "/api/staff/password") return reply(await changePassword(input));
       if (method === "POST" && ["/api/tickets","/api/staff/tickets"].includes(pathname)) return reply(await submit(input,pathname.includes("/staff/")),201);
       await staffSession();
       if (method === "GET" && pathname === "/api/tickets") return reply(await rpc(staffClient,"capstone_list"));
@@ -152,6 +221,6 @@ function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, uuid 
     link.href=href; link.download=filename; document.body.append(link); link.click(); link.remove();
     setTimeout(()=>URL.revokeObjectURL(href),60000);
   }
-  return { baseUrl:base.href,storageMode:"supabase",url:route=>{routeUrl(route);return "#private-document";},fetch:request,readJson:response=>response.json(),download };
+  return { baseUrl:base.href,storageMode:"supabase",onSessionEnded:staffSessions?.onEnded,url:route=>{routeUrl(route);return "#private-document";},fetch:request,readJson:response=>response.json(),download };
 }
 module.exports={createSupabaseApi,filesFor};

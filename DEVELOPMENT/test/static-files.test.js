@@ -50,6 +50,27 @@ test("root homepage and staff page serve with all referenced local assets in the
   assert.equal((await (await fetch(base + "/api/health")).json()).status, "ok");
 });
 
+test("homepage and persistent chat header open the reviewed syllabus in a separate tab", async () => {
+  const html = await (await fetch(base + "/")).text();
+  for (const id of ["view-syllabus-home", "view-syllabus-chat"]) {
+    const link = html.match(new RegExp(`<a[^>]+id="${id}"[^>]*>[\\s\\S]*?<\\/a>`))?.[0];
+    assert.ok(link, id);
+    assert.match(link, /href="pages\/syllabus\.html"/);
+    assert.match(link, /target="_blank"/);
+    assert.match(link, /rel="noopener noreferrer"/);
+    assert.match(link, /View syllabus/);
+    assert.match(link, /reviewed reference, opens in a new tab/);
+    assert.doesNotMatch(link, /data-question|onclick=/);
+    for (const appRoot of [base + "/", base + "/Capstone%20-%20AI/"]) {
+      assert.equal(new URL("pages/syllabus.html", appRoot).href, appRoot + "pages/syllabus.html");
+    }
+  }
+  assert.match(html, /<header class="chat-header">[\s\S]*?id="view-syllabus-chat"[\s\S]*?<\/header>/);
+  const response = await fetch(base + "/pages/syllabus.html");
+  assert.equal(response.status, 200);
+  assert.match(await response.text(), /not a replacement official syllabus/);
+});
+
 test("generic chat launcher is accessible, self-contained, and excludes the retired mascot", async () => {
   const html = await (await fetch(base + "/")).text();
   assert.match(html, /<title>Capstone - AI · Site support<\/title>/);

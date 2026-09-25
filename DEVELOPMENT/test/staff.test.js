@@ -42,14 +42,14 @@ async function app(t, options = {}) {
   return { call, signIn, createTicket };
 }
 
-test("all six staff accounts require passwords and display server-owned names", async (t) => {
+test("all five staff accounts require passwords and display server-owned names", async (t) => {
   const { signIn } = await app(t);
   for (const member of STAFF) {
     const result = await signIn(" " + member.email.toUpperCase() + " ");
     assert.equal(result.status, 200);
     assert.deepEqual(result.data.staff, member);
     assert.match(result.headers.get("set-cookie"), /HttpOnly; SameSite=Strict; Path=\/api; Max-Age=3600/);
-    assert.equal(result.data.members.length, 6);
+    assert.equal(result.data.members.length, 5);
   }
   const persisted = fs.readFileSync(staffFile, "utf8");
   assert.ok(!persisted.includes(password));
@@ -59,7 +59,7 @@ test("all six staff accounts require passwords and display server-owned names", 
 
 test("incorrect, missing, or unlisted credentials get unauthorized access; repeated guesses are limited", async (t) => {
   const { signIn, call } = await app(t);
-  for (const [email, pass] of [[STAFF[0].email, "wrong password 2026"], ["outsider@fiu.edu", password], [STAFF[0].email, ""]]) {
+  for (const [email, pass] of [[STAFF[0].email, "wrong password 2026"], ["ralva037@fiu.edu", password], ["outsider@fiu.edu", password], [STAFF[0].email, ""]]) {
     const denied = await signIn(email, pass);
     assert.equal(denied.status, 401);
     assert.match(denied.data.error, /Unauthorized access/);

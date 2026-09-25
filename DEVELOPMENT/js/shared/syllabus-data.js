@@ -1,0 +1,148 @@
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) module.exports = factory();
+  else root.CapstoneSyllabus = factory();
+})(typeof window !== "undefined" ? window : this, function () {
+  "use strict";
+  // Human-reviewed facts, not a PDF prompt/instruction import. No student data,
+  // meeting credentials, Zoom join URL, or raw PDF is distributed in the app.
+  const sourceFile = "Fall-Term-2026-CIS-4951-RVC-Capstone-II.pdf";
+  const course = "CIS 4951 RVC · Fall 2026";
+  const questions = {
+    submit:"Where do I submit my course work?", grading:"How are sprints graded?",
+    late:"What is the late work policy?", attendance:"What is the attendance policy?",
+    dates:"What are the course deadlines?", contact:"How do I contact the professor?",
+    ai:"What is the AI disclosure policy?", final:"What are the final deliverables?"
+  };
+  function entry(id, title, pages, answer, keywords, intents, followUps = []) {
+    return { id, title, sourceTitle:course + " syllabus", sourceKind:"syllabus", sourceFile,
+      sourcePages:pages, url:"pages/syllabus.html#"+id, section:course,
+      access:"public", audience:["student"], answer, content:"", keywords, intents, followUps };
+  }
+  const entries = [
+    entry("syllabus-overview", "Capstone II syllabus overview", "1-7, 16, 25-26",
+      "This syllabus covers CIS 4951, section RVC, Fall 2026 (Capstone II), taught by Masoud Sadjadi. It is a two-credit, fully online course with five two-week sprints on one team project. Expect 5-6 hours of work per week. Prerequisites are CIS 3950 and senior standing. There are no regular class meetings or proctored exams. The December showcase has separate section-specific attendance rules.",
+      ["syllabus","capstone ii","capstone 2","course overview","credits","prerequisite","senior standing","workload","hours per week","exams"],
+      ["show me the syllabus","what is this course","how many hours per week","are there exams"],
+      [questions.dates,questions.attendance,"What are the learning outcomes?"]),
+    entry("canvas-assignments", "Where to submit course work", "7",
+      "For CIS 4951 RVC, Fall 2026, all course work is submitted on capstone.cs.fiu.edu, NOT uploaded to Canvas. Your team channel, sprint posts and project hold the work. Canvas holds assignment information and grades; assignments are set to 'No Submission'. Follow your current course/sprint page for the exact post or artifact. This course-specific syllabus corrects the older generic prototype guidance about uploading to Canvas.",
+      ["canvas","assignment","submit","submission","upload","no submission","post","coursework"],
+      [questions.submit,"where do i submit my work","why does canvas say no submission","should i upload to canvas"],
+      ["What should I do for Sprint 2?",questions.late,questions.contact]),
+    entry("contact-help", "Contacting the instructor and team", "1-2, 5",
+      "For course, assignment, grade or problem questions, use Canvas Inbox -> Compose -> this course -> Masoud Sadjadi. The syllabus asks students NOT to email course questions. Use your Capstone team channel for team questions; the team leader raises Product Owner questions there. For urgent matters only, text (305) 710-6598 and identify yourself. The prototype support form saves a test ticket; it does not send a Canvas message or email the professor.",
+      ["contact","professor","instructor","email","canvas inbox","support","help","urgent","product owner","team channel"],
+      [questions.contact,"how do i contact the instructor","i still need help","how do i contact my product owner"],
+      ["When are office hours?",questions.late,"How should our team communicate?"]),
+    entry("syllabus-office-hours", "Office hours", "1",
+      "Masoud Sadjadi's office hours are Monday-Friday, 1:00-2:00 PM Eastern on Zoom, with no appointment needed, or by appointment. The listed office is CASE 382 or online. Use the Zoom link in your original course syllabus; this public reference intentionally does not reproduce meeting access credentials.",
+      ["office hours","appointment","zoom","meet professor","masoud sadjadi"],["when are office hours","how can i meet the professor"],[questions.contact]),
+    entry("syllabus-attendance", "RVC attendance and stand-ups", "3, 5, 10-11",
+      "There are no regular class sessions to attend, even if registration lists a room/time. Your team schedules two stand-ups per week; participation contributes to the individual portion of each sprint, not a separate registrar attendance grade. Every team presents at the Capstone Showcase. In-person attendance is strongly encouraged but NOT required for RVC; U01 requires it. The syllabus narrative says December 4, 2026 for that showcase, but its Canvas Schedule table says December 3: confirm this conflict with the instructor. The December 11 Capstone 1 Virtual Showcase is online for everyone. I cannot see your personal attendance record.",
+      ["attendance","attend","class","classroom","online","rvc","u01","standups","stand-ups","absent","absence","missed meeting"],
+      [questions.attendance,"do i have to attend in person","are there class meetings","how often are standups"],
+      [questions.grading,"What happens at the Capstone Showcase?",questions.contact]),
+    entry("syllabus-late-work", "Late work and weekend grace", "5, 11-16",
+      "Normal coursework is due Friday at 11:59 PM Eastern. Work posted by Sunday at 11:59 PM Eastern earns full credit, with no request or explanation needed; grading is Monday morning. There is NO weekend grace for Showcase Preparation, the December 4 showcase event (date conflict noted in the syllabus), the December 11 virtual showcase event, or the December 14 Final Deliverable. The three virtual-showcase evaluations are due Sunday December 13. Week-one wizards have the listed August 30 grace but cannot be made up after placement. If the weekend is not enough, contact the instructor through Canvas Inbox.",
+      ["late","grace","weekend","extension","penalty","deadline","sunday","friday","11:59","eastern"],
+      [questions.late,"can i submit late","is there a weekend grace period","what time is work due"],
+      [questions.dates,questions.contact,"What dates conflict in the syllabus?"]),
+    entry("syllabus-grading", "Points and the 60/40 grading split", "7-10, 12-16",
+      "The course totals 1,000 points, with no curve and no extra credit. The five sprints are worth 50, 75, 100, 125 and 150 points; all count and none is dropped. Each sprint and the week-two casting assignment are 60% team artifact and 40% individual participation. Stand-up participation is included inside the sprint grade. The individual share is based on your own posts and participation. This explains the rule, not your actual score.",
+      ["grading","grade","points","score","60","40","participation","artifact","curve","extra credit","dropped"],
+      [questions.grading,"how does the 60 40 split work","how many points is the course","is there extra credit"],
+      ["What is the grade scale?",questions.attendance,"What is my grade?"]),
+    entry("syllabus-grade-scale", "Course grade scale", "12, 16",
+      "The syllabus uses total points out of 1,000: A 930-1000; A- 900-929; B+ 870-899; B 830-869; B- 800-829; C+ 770-799; C 700-769; D 600-699; F below 600. This is the published course scale, not a current-grade calculation or prediction. Check Canvas for your recorded grades and ask the instructor through Canvas Inbox about discrepancies.",
+      ["grade scale","letter","a","b","c","d","f","passing","930","700","600"],
+      ["what is the grade scale","how many points for an a","what is a passing grade"],
+      [questions.grading,"What is my grade?",questions.contact]),
+    entry("syllabus-deadlines", "Fall 2026 course deadlines", "7-8, 12-18, 23-24",
+      "Published Fall 2026 schedule (not your completion status):\nAugust 28: four onboarding wizards, 150 points total.\nSeptember 4: Cast the Problem & Semester Plan, 60 points.\nSeptember 18 / October 2 / October 16 / October 30 / November 13: Sprints 1-5, worth 50 / 75 / 100 / 125 / 150 points.\nNovember 20: Provenance & Ethics Clearance, 40 points.\nShowcase Preparation: December 2 in the narrative, but December 1 in the Canvas Schedule table, 20 points.\nCapstone Showcase: December 4 in the narrative, but December 3 in the Canvas Schedule table, 100 points. Confirm BOTH conflicts with the instructor.\nDecember 11: virtual judging event; three evaluations due December 13, 30 points.\nDecember 14: final team deliverable, 100 points, no grace.\nNormal Friday work has Sunday 11:59 PM Eastern grace; the fixed December publications/events and final deliverable do not. These are syllabus dates, not a live Canvas feed.",
+      ["deadlines","dates","due dates","schedule","calendar","assignments","semester","upcoming"],
+      [questions.dates,"show the assignment schedule","what assignments are due","what are the deadlines"],
+      ["When is Sprint 2 due?",questions.late,"What dates conflict in the syllabus?"]),
+    entry("syllabus-date-conflicts", "December date conflicts: instructor confirmation needed", "8, 15, 18, 23",
+      "The PDF contradicts itself. Showcase Preparation is December 2, 2026 in the narrative/grading/topic tables, but December 1 in the Canvas Schedule table on page 18. The Capstone Showcase is December 4 in the narrative/grading/topic tables, but December 3 on page 18. I cannot resolve either conflict. Ask the instructor in Canvas Inbox and check the current course announcement before relying on a date. December 11 is the virtual judging EVENT; December 13 is the evaluation SUBMISSION date, not a conflicting event date.",
+      ["conflict","conflicting","contradiction","december 1","december 2","december 3","december 4","canvas schedule","different dates"],
+      ["what dates conflict in the syllabus","why are the showcase dates different"],[questions.contact,questions.dates]),
+    entry("syllabus-onboarding", "Week-one onboarding wizards", "7-9, 12-13, 19",
+      "Complete the Orientation Wizard (30 points), Intake Wizard (20), Project Review & Bid Wizard (60), and Team Formation Wizard (40): 150 points total, published due August 28, 2026 with grace through August 30. Teams and projects are announced August 31. These wizards cannot be made up after placement; students who do not complete them are placed last from their intake onto remaining options. This is a course rule, not a statement that your own wizards are complete.",
+      ["onboarding","orientation","intake","bid","team formation","wizards","week one","week 1","placement"],
+      ["what are the week one wizards","when are teams announced","how does team placement work"],["How do I get started with Capstone?","What is the semester plan?",questions.contact]),
+    entry("syllabus-semester-plan", "Cast the Problem and Semester Plan", "8-10, 13, 19",
+      "Week two's Cast the Problem & Semester Plan is worth 60 points, due September 4, 2026 at 11:59 PM Eastern with grace through September 6. Meet your Product Owner, describe the problem in your own degree discipline's terms and plan all five sprints. Scoring is 60% team artifact and 40% individual participation. The same team and project continue through the semester.",
+      ["semester plan","casting","cast problem","week two","week 2","product owner","discipline"],
+      ["what is the semester plan","what do we do in week two"],["What should I do for Sprint 1?",questions.grading,questions.submit]),
+    entry("syllabus-ai", "AI use and the four-line disclosure", "5-6, 12",
+      "AI tools are expected; concealing their use is not allowed. Every submission needs a four-line record: (1) tools used and for what; (2) what you kept; (3) what you checked; (4) what the tool got wrong. You remain responsible for citations, licenses and claims. The week-13 Provenance & Ethics Clearance covers the whole project and belongs in the final package. The chatbot does not create evidence that you checked something you have not actually verified.",
+      ["ai","artificial intelligence","chatgpt","disclosure","four line","tools","cheating","provenance","record"],
+      [questions.ai,"can i use ai tools","what must i disclose about ai"],["What is the Provenance and Ethics Clearance?","What data may we use?",questions.submit]),
+    entry("syllabus-ethics", "Provenance and Ethics Clearance", "6, 12, 14, 22",
+      "The week-13 Provenance & Ethics Clearance is worth 40 points, due November 20, 2026 with normal grace through November 22. List each third-party component, dataset, model and asset with its source and license; state the data used and what was verified. Verify every reference. Include the clearance inside the final team package.",
+      ["provenance","ethics","clearance","license","licence","references","third party","copyright"],
+      ["what is the provenance and ethics clearance","when is ethics clearance due"],[questions.ai,"What data may we use?",questions.final]),
+    entry("syllabus-data-policy", "Data, integrity and sponsor agreements", "6",
+      "The syllabus permits public or synthetic data only unless a sponsor's written agreement explicitly allows otherwise and is explained to your team in week two. Do not use live, proprietary or identifying data, including workplace material, without that approved exception. Sponsor NDAs are voluntary, signed directly with the company rather than FIU; a non-proprietary alternative must be available. Course interaction stays on the Capstone site: do not request classmates' email addresses or ID numbers. This prototype still requires fictional testing data.",
+      ["data","synthetic","public data","real data","proprietary","workplace","nda","academic integrity","consent","privacy"],
+      ["what data may we use","can we use real student data","do i have to sign an nda"],[questions.ai,"What is the Provenance and Ethics Clearance?",questions.contact]),
+    entry("syllabus-showcase-preparation", "Showcase Preparation requirements and date warning", "8, 15, 18, 23",
+      "Showcase Preparation is worth 20 points: poster, slides, video and rehearsal, 5 points each. Publish materials so Capstone 1 students can evaluate them. There is no weekend grace. DATE CONFLICT: the narrative and grading/topic tables say December 2, 2026; the PDF's Canvas Schedule on page 18 says December 1. Confirm with the instructor; the bot cannot choose the official deadline.",
+      ["showcase preparation","poster","slides","video","rehearsal","materials","20 points"],
+      ["when is showcase preparation due","what is required for showcase preparation"],["What happens at the Capstone Showcase?","What dates conflict in the syllabus?",questions.final]),
+    entry("syllabus-showcase", "Capstone Showcase presentation", "3, 8, 11, 15, 18, 23-24",
+      "Every team presents at the Capstone Showcase; it is worth 100 points. Industry judges score the work live on a seven-item form, and four awards are announced at the afternoon closing ceremony. RVC in-person attendance is strongly encouraged but not required; U01 requires it. DATE CONFLICT: the narrative and grading/topic tables say December 4, 2026, but the Canvas Schedule on page 18 says December 3. Confirm with the instructor. This is a fixed event with no weekend grace, not the final archive deadline.",
+      ["showcase","present","event","awards","industry judges","in person","rvc"],
+      ["what happens at the capstone showcase","when is the capstone showcase","must rvc attend showcase"],[questions.attendance,"How do I judge the virtual showcase?",questions.final]),
+    entry("syllabus-virtual-showcase", "Virtual judging and three evaluations", "11, 15, 18, 23-24",
+      "The Capstone 1 Virtual Showcase EVENT is Friday December 11, 2026, online for everyone. Each student judges THREE projects using Domain Knowledge, Organization, Presentation Aids, Elocution and Audience Contact, each rated 1-5, with one sentence of comment per project. It is worth 30 points (10 per evaluation). The three evaluations are due Sunday December 13. Do not confuse the event date with the evaluation submission date.",
+      ["virtual showcase","judge","judging","evaluations","three projects","december 11","december 13","30 points"],
+      ["how do i judge the virtual showcase","when are evaluations due","how many projects must i judge"],[questions.submit,questions.final,questions.contact]),
+    entry("syllabus-final", "Final team deliverables", "11-12, 15-16, 24",
+      "Final Deliverables are due Monday December 14, 2026, worth 100 points, with NO weekend grace. The team leader submits ONE package for the team, including the Provenance & Ethics Clearance. This is the project archive, not an award decision; showcase awards are settled at the earlier showcase. The syllabus does not enumerate every required file or a precise Monday cutoff time: check the current final-deliverable instructions on the course site or ask through Canvas Inbox. Final grades are scheduled to be posted December 16.",
+      ["final","deliverable","deliverables","archive","handover","team leader","december 14","final grades"],
+      [questions.final,"when is the final deliverable due","who submits the final package","when are final grades posted"],["What is the Provenance and Ethics Clearance?",questions.submit,questions.contact]),
+    entry("syllabus-teamwork", "Team communication and decisions", "2-3, 10",
+      "Teams have three to five students from the same degree program and keep the same project through the semester. Set two stand-up times per week from your team's availability. Post meeting decisions back to the Capstone team channel so absent teammates are included. Use the team channel for team questions, and have the team leader raise Product Owner questions. Your participation score reflects your own posts and involvement.",
+      ["team","teamwork","communication","decisions","blockers","leader","product owner","standup","participation"],
+      ["how should our team communicate","what if i miss a team meeting","how many people in a team"],[questions.attendance,questions.grading,questions.contact]),
+    entry("syllabus-thanksgiving", "Thanksgiving week", "23-24",
+      "Week 14, November 23-27, 2026, is Thanksgiving week and nothing is due in the syllabus. The syllabus suggests using that time to prepare the poster, slides and demo video. This is not a check of your team's own task board or a live announcement feed.",
+      ["thanksgiving","week 14","november 23","november 27","holiday","break"],["is anything due thanksgiving week"],["What is required for showcase preparation?",questions.dates]),
+    entry("syllabus-accessibility", "Accessibility and accommodations", "6",
+      "Students with disabilities should contact FIU's Disability Resource Center. The syllabus says accommodation letters will be honored in full. If any course element is difficult to access, with or without a letter, message the instructor through Canvas. Do not put medical details or accommodation documents in this public-facing testing prototype.",
+      ["accessibility","accommodation","disability","drc","accessible"],["how do i request accommodations","something is not accessible"],[questions.contact]),
+    entry("syllabus-materials", "Recommended textbook", "6-7",
+      "The syllabus recommends, rather than requires, Essential Scrum: A Practical Guide to the Most Popular Agile Process by Kenneth S. Rubin (Addison-Wesley, 2012, first edition). All chapters/pages are listed. The PDF also describes Panther Book Pack; check FIU OneStop for current charges and opt-out instructions rather than treating the bot as a billing source.",
+      ["textbook","book","essential scrum","rubin","materials","required","recommended","book pack"],["is a textbook required","what textbook is recommended"],["Where are the Capstone tutorials?",questions.contact]),
+    entry("syllabus-outcomes", "Learning outcomes and degree-specific evidence", "3-4, 10, 25-26",
+      "The course evaluates problem analysis; design, implementation and evaluation of a solution; professional communication; legal/ethical responsibility; and teamwork/leadership. Work is assessed using your degree program's wording (CS, Cybersecurity, IT or Data Science & AI). Week two recasts the project to your discipline. Outcomes 1, 2 and 6 are assessed on your own work; 3, 4 and 5 are evaluated at the showcase and across the team's term. Each sprint produces part of that evidence.",
+      ["learning outcomes","abet","objectives","degree","discipline","evidence","outcomes"],["what are the learning outcomes","which degree outcomes are assessed"],["What is the semester plan?",questions.grading])
+  ];
+  const sprints = [
+    [1,"September 18","September 20",50,"9, 13, 19-20","Establish the team's cadence, test the problem with the Product Owner and data/environment, and build a thin end-to-end working slice. End with a sprint review and retrospective."],
+    [2,"October 2","October 4",75,"9, 13, 20","Choose the approach; record rejected alternatives and the criterion used to choose. Write down requirements and design. End with a sprint review and retrospective."],
+    [3,"October 16","October 18",100,"9, 14, 20-21","Build the central capability so it runs end to end on public or synthetic inputs. End with a sprint review and retrospective."],
+    [4,"October 30","November 1",125,"9, 14, 21","Evaluate against a criterion stated in advance, not one chosen after seeing results. Report what the measurements show, including disappointing results."],
+    [5,"November 13","November 15",150,"9-10, 14, 22","Harden the system for another person to run; prepare handover/continuity and an honest limitations statement. This is the largest sprint, not the final December archive submission."]
+  ];
+  for (const [number, due, grace, points, pages, goal] of sprints) entries.push(entry(
+    "syllabus-sprint-"+number, "Sprint "+number+": goals, points and deadline", pages,
+    `Sprint ${number} is worth ${points} points. Published deadline: ${due}, 2026 at 11:59 PM Eastern; full-credit grace through ${grace}, 2026 at 11:59 PM Eastern. ${goal} Scoring is 60% team artifact and 40% individual participation. These are syllabus requirements, not a claim about your team's progress.`,
+    ["sprint "+number,"goals","deadline","due","requirements","points"],
+    [`when is sprint ${number} due`,`what should i do for sprint ${number}`,`how many points is sprint ${number}`],
+    [questions.grading,questions.submit,questions.ai]
+  ));
+  // Explicit course overrides keep obsolete generic Canvas-upload guidance out.
+  entries.push(entry("sprint-planning", "Sprint Planning template", "7, 9-10",
+    "Use the dashboard Resources area's Sprint Planning template to organize the goal, capacity and backlog. For CIS 4951 RVC Fall 2026, the syllabus says to post course work on the Capstone site, not upload it to Canvas. Follow your course/sprint page for the exact artifact and posting instructions.",
+    ["sprint planning","planning minutes","capacity","backlog","sprint goal"],["what goes in sprint planning","where is the sprint planning template"],
+    [questions.submit,questions.grading,"Where can I find the sprint meeting minutes templates?"]));
+  entries.push({ ...entry("dashboard-personal", "Your dashboard records: connection not available", "",
+    "I can explain the syllabus and help you plan from a sprint you choose, but this standalone prototype is NOT connected to your FIU dashboard or Canvas records. I cannot see your assigned project, task completion, personal deadlines, attendance, grades or teammates. Open My Dashboard and Canvas for your actual records. Choose a course topic below, tell me which sprint your dashboard shows, or contact the instructor through Canvas Inbox about a discrepancy. Please do not paste private student records into the demo.",
+    ["my dashboard","my project","my tasks","my deadline","my progress","my attendance","my grades","my team","personal records"],
+    ["what is on my dashboard","what is my project","what are my tasks","what is my progress","what is my attendance","what is my grade","who is on my team","what is due for me"],
+    ["What should I do for Sprint 1?","What should I do for Sprint 2?",questions.dates,questions.attendance,"What is the grade scale?"]),
+    sourceKind:"prototype", sourceTitle:"Prototype dashboard connection boundary", section:"Not connected to personal records" });
+  return { course, sourceFile, sourceSha256:"295d7b291d98339f2a00f2e30d6d4b2b2cd477795214998a73c82521ec6dde10", reviewed:"2026-09-24", entries };
+});

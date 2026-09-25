@@ -11,6 +11,14 @@
   const unassigned = $("#unassigned-filter");
   const refresh = $("#refresh-tickets");
   const logout = $("#staff-logout");
+  const passwordButton = $("#change-staff-password");
+  const passwordDialog = $("#staff-password-dialog");
+  const passwordForm = $("#change-password-form");
+  const passwordFields = $("#change-password-fields");
+  const passwordStatus = $("#change-password-status");
+  const passwordSave = $("#save-change-password");
+  const passwordCancel = $("#cancel-change-password");
+  let changingPassword = false;
   const access = $("#staff-access");
   const checking = $("#staff-checking");
   const login = $("#staff-login");
@@ -19,13 +27,44 @@
   const loginForm = $("#staff-login-form");
   const loginStatus = $("#staff-login-status");
   const staffEmail = $("#staff-email");
+  const rememberSession = $("#staff-remember-session");
+  const passwordControls = [
+    ["staff-password", "password"],
+    ["change-password-current", "current password"],
+    ["change-password-new", "new password"],
+    ["change-password-confirm", "confirmed password"]
+  ].map(([id, label]) => ({ id, label, input: $("#" + id), button: $("#toggle-" + id) }));
+  function setPasswordVisibility(control, visible) {
+    control.input.type = visible ? "text" : "password";
+    control.button.textContent = visible ? "Hide" : "Show";
+    control.button.setAttribute("aria-label", (visible ? "Hide " : "Show ") + control.label);
+    control.button.setAttribute("aria-pressed", String(visible));
+  }
+  function maskPasswords() {
+    passwordControls.forEach(control => setPasswordVisibility(control, false));
+  }
+  passwordControls.forEach(control => {
+    setPasswordVisibility(control, false);
+    control.button.addEventListener("click", () => {
+      if (control.input.disabled || control.input.hidden || (control.id !== "staff-password" && passwordFields.disabled)) return;
+      setPasswordVisibility(control, control.input.type === "password");
+    });
+  });
+  window.addEventListener("pagehide", maskPasswords);
   let loginMode = "password";
   function configureLogin(mode) {
     loginMode = mode === "email-demo" ? "email-demo" : "password";
     const demo = loginMode === "email-demo";
+    const canRemember = !demo && api.storageMode === "supabase";
+    $("#staff-remember-session-control").hidden = !canRemember;
+    rememberSession.disabled = !canRemember;
+    if (!canRemember) rememberSession.checked = false;
     $("#staff-password-label").hidden = $("#staff-password").hidden = $("#staff-password-setup").hidden = demo;
     $("#staff-password").disabled = demo;
     $("#staff-password").required = !demo;
+    $("#staff-password-control").hidden = demo;
+    $("#toggle-staff-password").disabled = demo;
+    setPasswordVisibility(passwordControls[0], false);
     if (demo) $("#staff-password").value = "";
     $("#staff-login-demo-warning").hidden = $("#staff-queue-demo-warning").hidden = !demo;
   }
@@ -98,6 +137,10 @@
     authEpoch++;
     loadSequence++;
     staff = null;
+    maskPasswords();
+    passwordButton.hidden = true;
+    if (passwordDialog.open) passwordDialog.close();
+    clearPasswordInputs();
     ticketWorkspace.clear();
     if (ticketDialog.open) ticketDialog.close();
     resetTicketForm();
@@ -140,6 +183,81 @@
     $("#staff-denied-title").focus();
     redirect.start();
   }
+
+  function clearPasswordInputs() {
+    maskPasswords();
+    for (const name of ["current", "new", "confirm"]) $("#change-password-" + name).value = "";
+  }
+
+  passwordButton.addEventListener("click", () => {
+    if (!staff || api.storageMode !== "supabase" || changingPassword || passwordDialog.open) return;
+    clearPasswordInputs();
+    $("#change-password-email").value = staff.email;
+    passwordStatus.textContent = "";
+    passwordStatus.dataset.success = "false";
+    passwordForm.setAttribute("aria-busy", "false");
+    passwordCancel.textContent = "Cancel";
+    passwordFields.disabled = passwordSave.disabled = passwordCancel.disabled = false;
+    passwordDialog.showModal();
+    $("#change-password-current").focus();
+  });
+  passwordCancel.addEventListener("click", () => { if (!changingPassword) passwordDialog.close(); });
+  passwordDialog.addEventListener("cancel", event => { if (changingPassword) event.preventDefault(); });
+  passwordDialog.addEventListener("close", () => {
+    clearPasswordInputs();
+    $("#change-password-email").value = "";
+    if (staff) passwordButton.focus();
+  });
+  passwordForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (!staff || api.storageMode !== "supabase" || changingPassword || passwordSave.disabled || !passwordForm.reportValidity()) return;
+    const payload = {
+      currentPassword: $("#change-password-current").value,
+      newPassword: $("#change-password-new").value,
+      confirmPassword: $("#change-password-confirm").value
+    };
+    if (payload.newPassword !== payload.confirmPassword) {
+      passwordStatus.textContent = "The new passwords do not match.";
+      $("#change-password-confirm").focus();
+      return;
+    }
+    if (payload.newPassword === payload.currentPassword) {
+      passwordStatus.textContent = "Choose a new password different from your current password.";
+      $("#change-password-new").focus();
+      return;
+    }
+    const epoch = authEpoch;
+    changingPassword = true;
+    passwordFields.disabled = passwordSave.disabled = passwordCancel.disabled = logout.disabled = true;
+    passwordForm.setAttribute("aria-busy", "true");
+    passwordStatus.textContent = "Verifying your current password and saving the new one…";
+    clearPasswordInputs();
+    let success = false;
+    try {
+      const response = await api.fetch("/api/staff/password", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+      });
+      const data = await api.readJson(response);
+      if (epoch !== authEpoch || requestFailed(response, data)) return;
+      if (data.ok !== true) throw new Error("No password change was confirmed. Try signing in with your new password before retrying.");
+      success = true;
+      passwordStatus.dataset.success = "true";
+      passwordStatus.textContent = "Password updated. Use your new password the next time you sign in.";
+      passwordCancel.textContent = "Done";
+    } catch (error) {
+      if (epoch === authEpoch) passwordStatus.textContent = error.message;
+    } finally {
+      payload.currentPassword = payload.newPassword = payload.confirmPassword = "";
+      changingPassword = false;
+      if (epoch === authEpoch) {
+        clearPasswordInputs();
+        passwordForm.setAttribute("aria-busy", "false");
+        passwordFields.disabled = passwordSave.disabled = success;
+        passwordCancel.disabled = logout.disabled = false;
+        if (passwordDialog.open) (success ? passwordCancel : $("#change-password-current")).focus();
+      }
+    }
+  });
 
   function requestFailed(response, data) {
     if ([401, 403].includes(response.status)) {
@@ -401,6 +519,13 @@
       option.selected = member.email === (ticket.assignedTo || "");
       assigneeSelect.append(option);
     });
+    if (ticket.assignedTo && !members.some(member => member.email === ticket.assignedTo)) {
+      const former = element("option", "", ticket.assignedTo + " (former staff)");
+      former.value = ticket.assignedTo;
+      former.selected = true;
+      former.disabled = true;
+      assigneeSelect.append(former);
+    }
     assigneeSelect.addEventListener("change", () => void updateTicket(ticket, { assignedTo: assigneeSelect.value || null, expectedAssignee: ticket.assignedTo || null }, actions));
     assignmentLabel.append(assigneeSelect);
     actions.append(statusLabel, assignmentLabel);
@@ -499,6 +624,7 @@
     rememberStaffEmail(staff.email);
     access.hidden = true;
     workspace.hidden = refresh.hidden = logout.hidden = false;
+    passwordButton.hidden = api.storageMode !== "supabase";
     logout.disabled = false;
     $("#staff-welcome").textContent = "Welcome, " + staff.name;
     $("#staff-identity").textContent = (loginMode === "email-demo" ? "Demo identity (not verified): " : "Signed in as ") + staff.email;
@@ -525,28 +651,32 @@
     const submit = loginForm.querySelector("button[type='submit']");
     if (submit.disabled) return;
     submit.disabled = true;
+    maskPasswords();
     loginStatus.textContent = "Signing in…";
     const epoch = authEpoch;
     try {
       const response = await api.fetch("/api/staff/login", {
         method: "POST", credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: $("#staff-email").value, ...(loginMode === "password" ? { password: $("#staff-password").value } : {}) })
+        body: JSON.stringify({ email: $("#staff-email").value, ...(loginMode === "password" ? { password: $("#staff-password").value } : {}), ...(api.storageMode === "supabase" ? { rememberMe: rememberSession.checked === true } : {}) })
       });
       const data = await api.readJson(response);
       if (epoch !== authEpoch || requestFailed(response, data)) return;
       await enterQueue(data);
+      rememberSession.checked = false;
     } catch (error) { if (epoch === authEpoch) loginStatus.textContent = error.message; }
-    finally { submit.disabled = false; $("#staff-password").value = ""; }
+    finally { submit.disabled = false; $("#staff-password").value = ""; maskPasswords(); }
   });
 
   logout.addEventListener("click", async () => {
+    if (changingPassword) return;
     logout.disabled = true;
     try {
       const response = await api.fetch("/api/staff/logout", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: "{}" });
-      await api.readJson(response);
+      const data = await api.readJson(response);
       if (!response.ok) throw new Error("Sign out failed. Please try again.");
-      showLogin("You have signed out.");
+      rememberSession.checked = false;
+      showLogin(data.warning || "You have signed out.");
     } catch (error) { status.textContent = error.message; }
     finally { logout.disabled = false; }
   });
@@ -570,7 +700,12 @@
   viewButtons.forEach((button) => button.addEventListener("click", () => selectView(button.dataset.view)));
   refresh.addEventListener("click", () => void loadTickets());
   window.addEventListener("pageshow", (event) => { if (event.persisted) { clearQueue(); void checkSession(); } });
-  window.setInterval(() => { if (staff && !document.hidden) void checkSession(); }, 60000);
+  window.addEventListener("focus", () => { if (staff && !changingPassword) void checkSession(); });
+  api.onSessionEnded?.(() => {
+    rememberSession.checked = false;
+    showLogin("Your remembered sign-in has ended. Please sign in again.");
+  });
+  window.setInterval(() => { if (staff && !changingPassword && !document.hidden) void checkSession(); }, 60000);
   if (!staffEmail.value) staffEmail.value = readRememberedEmail();
   const backupButton = $("#browser-backup");
   if (backupButton) backupButton.addEventListener("click", async () => {

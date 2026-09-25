@@ -1,8 +1,12 @@
 # Staff sign-in and assignments
 
+September 24 Supabase addition: **Remember me for 7 days** optionally saves Auth session tokens in browser localStorage after active-staff verification. It never saves passwords; leaving it unchecked keeps tab-scoped storage. Use Sign out on shared computers. This browser-side deadline does not replace a production server-side session policy. The cookie-only descriptions below refer to the Node backend, not Supabase. [Behavior and acceptance checks](SUPABASE_SETUP.md#remember-me-for-7-days).
+
 Implemented and tested locally on September 14, 2026. This extends the existing FIU-styled queue. The source repository is now public, but the app is not publicly hosted: staff authentication and ticket data remain local to each installation. Publishing the source does not publish passwords, tickets, or attachments.
 
 ## Approved staff
+
+September 24, 2026: Raul is no longer active staff. The current roster below has five members. Supabase migration 003 disables his access and new assignments without deleting any Auth account, ticket, file, or historical author/assignee. Node/browser/PHP source rosters exclude him; refresh/restart and rebuild older installations. See [the current cloud account status](SUPABASE_SETUP.md). The local/demo implementation notes below describe alternative modes, not Supabase authentication.
 
 | Name | Email |
 | --- | --- |
@@ -10,7 +14,6 @@ Implemented and tested locally on September 14, 2026. This extends the existing 
 | Christopher Hernandez | chern563@fiu.edu |
 | Michael Alvarez | malva517@fiu.edu |
 | Romelin Charnel | rchar044@fiu.edu |
-| Raul Alvarenga | ralva037@fiu.edu |
 | Anthony Feliz | afeli016@fiu.edu |
 
 The roster lives server-side in `server/lib/staff-auth.js`. Emails are trimmed and compared case-insensitively. Display names always come from the approved roster, not user-submitted names. This does not prove who owns the email.
@@ -24,6 +27,12 @@ At the project owner's request, `server/config.json` now sets `staffLoginMode` t
 To restore passwords, stop the server, set `staffLoginMode` to `password` in `server/config.json` (or set `CAPSTONE_STAFF_LOGIN_MODE=password`), configure passwords as described below, then restart and hard-refresh. All prior sessions end; saved tickets and files remain. Invalid mode values stop startup. Request JSON cannot enable email-only mode on a password-configured server. Password enforcement, password-version revocation, and wrong-password checks below apply **only in password mode**.
 
 The mode/password configuration above applies to the **Node variant**. The new [Ocelot PHP upload](OCELOT_UPLOAD_GUIDE.md) implements only temporary email-demo access, with the same server-side six-email roster in `server/php/index.php`. It does not read Node configuration or passwords. Its sessions persist in private server storage until logout or one-hour expiry; PHP worker restarts do not revoke them. Tickets/documents persist separately from replaceable app files, shared by staff on that instance. No live Ocelot deployment has been verified. A secure PHP identity integration remains future work.
+
+## Supabase self-service password change
+
+Signed-in, provisioned Supabase staff can use **Change password** in the queue header. Enter the current password, then the new password and matching confirmation. The current password is verified before the new credential is submitted. The app does not save passwords; it clears the fields after submission or cancellation. This affects only the current Capstone - AI account, not FIU credentials, another teammate, or local Node credentials. It does not create an account or grant staff access. See [Supabase instructions and live acceptance](SUPABASE_SETUP.md#change-your-staff-password).
+
+This button is not available in Node/PHP/browser-demo modes. The local Node setup/reset command below is unchanged. Forgotten-password recovery is not implemented in the app.
 
 ## Password-mode setup (and password resets)
 
@@ -41,7 +50,7 @@ npm.cmd run staff:password -- afeli016@fiu.edu
 
 There are no default passwords and no web self-registration/reset endpoint. Do not put passwords in command arguments, chat, email, source code, or Git. Do not reuse FIU credentials. The same local command resets a password and invalidates that account's existing sessions when they are next checked. Run one setup command at a time.
 
-Each teammate's cloned/ZIP copy has separate credentials, tickets, and files. A teammate needs to configure their own account on their own local copy; configuring all six is only necessary when testing all six accounts on one computer. Someone who controls this computer/project directory can run the setup command, so it is a trusted local administration action, not proof of FIU account ownership.
+Each teammate's cloned/ZIP copy has separate credentials, tickets, and files. A teammate needs to configure their own account on their own local copy; configuring all five is only necessary when testing all five accounts on one computer. Someone who controls this computer/project directory can run the setup command, so it is a trusted local administration action, not proof of FIU account ownership.
 
 Only randomly salted scrypt password hashes are saved in `data/staff-credentials.json`, which is ignored by Git (including its temporary write file). Filesystem permissions depend on the operating system; protect access to the computer and this directory. Backing up source does not back up credentials. `CAPSTONE_STAFF_CREDENTIALS_FILE` can override the file for isolated tests or a controlled local setup; keep any custom path outside tracked source. `.env` files are not loaded automatically.
 
@@ -64,7 +73,7 @@ The server rejects that account in `NODE_ENV=production`, from non-loopback netw
 1. Open `/pages/staff.html`. Ticket data stays hidden until the server confirms a staff session.
 2. Enter an approved email; enter its configured password only if password mode is enabled. The queue shows the roster name and email, your assigned count, and unassigned count. Email-only mode labels the identity as unverified.
 3. **All tickets** is the initial view, grouped by current assignee with Unassigned first. Choose **My tickets** for everything currently assigned to the signed-in email, **All resolved** for resolved team tickets grouped by assignee, or **My resolved** for resolved tickets currently assigned to that email. To find work to claim, use **All tickets → Unassigned only** (optionally set Status to Open).
-4. **Claim ticket** assigns an unassigned ticket to the signed-in staff member. **Assign to** supports any of the six staff members or **Unassigned**. A stale assignment update is rejected instead of silently overriding another staff member's change.
+4. **Claim ticket** assigns an unassigned ticket to the signed-in staff member. **Assign to** supports any of the five staff members or **Unassigned**. A stale assignment update is rejected instead of silently overriding another staff member's change.
 5. **Sign out** clears the session and visible ticket data. Sessions expire after one hour; restarting the server also clears them.
 
 Unlisted emails, wrong/unconfigured passwords, forged/expired sessions, and unauthorized API access are rejected. Failed login shows **Unauthorized access**, a link back to the student assistant (`/`), and a countdown. After **15 seconds of no keyboard or pointer response in that panel**, the browser returns to `/`. Activity resets the countdown; **Try signing in again** cancels it and reopens sign-in. Rate limits/service failures show their own recoverable error rather than pretending a sign-in succeeded.
@@ -105,8 +114,8 @@ Sample resolution notes are displayed and searchable. Open a ticket to edit its 
 
 Workspace tests also verify field/journal persistence, server-owned author identity, append-only notes, version conflicts, exact-save retry protection, rejected unauthorized/invalid writes, and the requester preview's exclusion of internal data. Workspace event handlers run against a DOM double in tests; browser layout and interaction checks remain on the teammate checklist. End-user delivery is intentionally not claimed by these preview tests.
 
-All six staff members have the same team-level rights to create, view, download, update, claim, and reassign tickets. **My tickets and My resolved are not access-control boundaries.** The instructor privacy checkbox remains a preference, now labeled **Instructor privacy requested** in the queue. It does not hide a ticket from other staff.
+All five staff members have the same team-level rights to create, view, download, update, claim, and reassign tickets. **My tickets and My resolved are not access-control boundaries.** The instructor privacy checkbox remains a preference, now labeled **Instructor privacy requested** in the queue. It does not hide a ticket from other staff.
 
 This is local prototype authentication, not FIU single sign-on, email ownership verification, or a production identity system. Before deployment, arrange institutional authentication, administrator provisioning, role and instructor-only permissions, HTTPS/reverse-proxy handling, stronger abuse controls, auditing, retention, and the upload safety work described in [document attachments](DOCUMENT_ATTACHMENTS.md). The design uses server-side checks and protected session cookies consistent with the [OWASP session guidance](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html), but does not implement every production recommendation.
 
-Automated tests cover all six accounts, wrong/unlisted passwords, hashed storage, unauthorized API access, session expiry/logout/reset, origin checks, assignment validation/persistence/conflicts, all four queue views and grouping, filter resets and live count changes, the idle timer, and the local-only password exception (including production/remote rejection and returning to normal setup). Remembered-email tests cover successful login/session checks, logout/reload, account switching, failed attempts, unavailable/malformed storage, and no password persistence or automatic access. Staff creation tests cover all displayed topics, required fields, forged identities, initial assignments, concurrent IDs, persistence, errors/draft recovery, repeated submits, and logout/expiry cleanup. The hidden-password terminal flow and local sign-in/session/logout APIs are verified. View and form event handlers are tested with a DOM double, not a browser; browser interaction/visual testing of sign-in, the views, and the creation dialog remains a manual checklist item. Local test passwords are never included in the source or guide.
+Automated tests cover all five accounts, wrong/unlisted passwords, hashed storage, unauthorized API access, session expiry/logout/reset, origin checks, assignment validation/persistence/conflicts, all four queue views and grouping, filter resets and live count changes, the idle timer, and the local-only password exception (including production/remote rejection and returning to normal setup). Remembered-email tests cover successful login/session checks, logout/reload, account switching, failed attempts, unavailable/malformed storage, and no password persistence or automatic access. Staff creation tests cover all displayed topics, required fields, forged identities, initial assignments, concurrent IDs, persistence, errors/draft recovery, repeated submits, and logout/expiry cleanup. The hidden-password terminal flow and local sign-in/session/logout APIs are verified. View and form event handlers are tested with a DOM double, not a browser; browser interaction/visual testing of sign-in, the views, and the creation dialog remains a manual checklist item. Local test passwords are never included in the source or guide.

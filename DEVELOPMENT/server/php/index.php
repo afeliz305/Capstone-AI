@@ -11,7 +11,6 @@ define('STAFF', [
     ['name'=>'Christopher Hernandez','email'=>'chern563@fiu.edu'],
     ['name'=>'Michael Alvarez','email'=>'malva517@fiu.edu'],
     ['name'=>'Romelin Charnel','email'=>'rchar044@fiu.edu'],
-    ['name'=>'Raul Alvarenga','email'=>'ralva037@fiu.edu'],
     ['name'=>'Anthony Feliz','email'=>'afeli016@fiu.edu']
 ]);
 define('TOPICS', ['Workflow and improvements','Testing and updates','Implementation and testing','Website navigation','Coursework','Attendance','Scrum and sprints','Showcase','Templates and branding','Other']);
@@ -50,7 +49,7 @@ function dispatch_api($route, $method, $input, &$state, $dir, &$newFiles) {
     if ($method === 'GET' && $route === '/session') return [200, ['status'=>'guest','account'=>null,'identityContext'=>guest_context($state),'demoAvailable'=>false]];
     if ($method === 'GET' && $route === '/search') {
         $question = text_field($_GET, 'q', 500, true);
-        return [200, search_knowledge($question)];
+        return [200, search_knowledge($question, text_field($_GET, 'context', 100))];
     }
     if ($method === 'POST' && $route === '/staff/login') {
         unset($state['sessions'][session_key()]); staff_cookie('', 0);
@@ -99,7 +98,8 @@ function dispatch_api($route, $method, $input, &$state, $dir, &$newFiles) {
             if ($changingAssignment) {
                 $newAssignee = assignee($input['assignedTo']);
                 if (!array_key_exists('expectedAssignee', $input)) fail('Refresh the ticket before changing its assignment.');
-                if (($ticket['assignedTo'] ?? null) !== assignee($input['expectedAssignee'])) fail('Another staff member changed this assignment. Refresh the queue and try again.', 409);
+                $expected = $input['expectedAssignee'] === null ? null : (is_string($input['expectedAssignee']) ? strtolower(trim($input['expectedAssignee'])) : '');
+                if (($ticket['assignedTo'] ?? null) !== $expected) fail('Another staff member changed this assignment. Refresh the queue and try again.', 409);
                 $ticket['assignedTo'] = $newAssignee; $ticket['assignedBy'] = $staff['email']; $ticket['assignedAt'] = stamp();
             }
             if ($changingStatus) {

@@ -2,6 +2,8 @@ const http = require("http");
 const fs = require("fs/promises");
 const path = require("path");
 const { searchKnowledge } = require("./lib/search");
+const { mergeKnowledge } = require("./lib/knowledge");
+const syllabus = require("../js/shared/syllabus-data");
 const { createSessionService } = require("./lib/session");
 const { prepareAttachments, createAttachmentStore } = require("./lib/attachments");
 const { createStaffAuth, memberFor, normalizeEmail } = require("./lib/staff-auth");
@@ -74,7 +76,7 @@ async function readJson(request, limit = 128 * 1024) {
 
 async function readKnowledge() {
   const entries = JSON.parse(await fs.readFile(knowledgeFile, "utf8"));
-  return Array.isArray(entries) ? entries : [];
+  return mergeKnowledge(Array.isArray(entries) ? entries : [], syllabus.entries);
 }
 
 async function readTickets() {
@@ -181,7 +183,7 @@ async function handleApi(request, response, url, sessions, staffAuth) {
   if (request.method === "GET" && url.pathname === "/api/search") {
     const question = cleanText(url.searchParams.get("q"), 500);
     if (!question) return sendJson(response, 400, { error: "A question is required." });
-    const result = searchKnowledge(await readKnowledge(), question);
+    const result = searchKnowledge(await readKnowledge(), question, url.searchParams.get("context"));
     return sendJson(response, 200, { question, ...result });
   }
 

@@ -26,6 +26,7 @@ function findKeywordLinks(entries, question) {
   const query = tokens(question);
   const candidates = [];
   entries.forEach((entry, order) => {
+    if (entry.navigationUrl) entry = { ...entry, url:entry.navigationUrl, sourceTitle:entry.navigationSourceTitle, access:entry.navigationAccess };
     if (!isCapstoneUrl(entry.url)) return;
     for (const keyword of entry.linkKeywords || []) {
       const phrase = tokens(keyword);

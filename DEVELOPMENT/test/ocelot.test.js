@@ -134,7 +134,10 @@ test('PHP hosted integration: shared durable queue, documents, conflicts, search
   const health = await request('/health'); assert.equal(health.status, 200); assert.equal(health.data.storage, 'private-files');
   assert.equal((await request('/tickets')).status, 401);
   assert.equal((await request('/staff/login', {method:'POST',body:{email:'outsider@example.edu'}})).status, 401);
+  assert.equal((await request('/staff/login', {method:'POST',body:{email:'ralva037@fiu.edu'}})).status, 401);
   const alice = await request('/staff/login', {method:'POST',body:{email:'afeli016@fiu.edu'}});
+  assert.equal(alice.data.members.length, 5);
+  assert.equal(alice.data.members.some(member => member.email === 'ralva037@fiu.edu'), false);
   assert.equal(alice.status, 200); assert.equal(alice.data.staff.name, 'Anthony Feliz');
   assert.match(alice.response.headers.get('set-cookie'), /Path=\/Capstone%20-%20AI\/api\/; HttpOnly; SameSite=Strict/);
   const bob = await request('/staff/login', {method:'POST',body:{email:'zrich010@fiu.edu'},base:secondary.base}); assert.equal(bob.status, 200);
@@ -164,12 +167,16 @@ test('PHP hosted integration: shared durable queue, documents, conflicts, search
   assert.equal(preview.data.comments[0].body, 'Public fictional reply'); assert.doesNotMatch(JSON.stringify(preview.data), /Private fictional note|Internal resolution|fictional@example|workSaves|resolvedBy/);
   const claim = await request('/tickets/'+own.data.id, {method:'PATCH',cookie:bob.cookie,body:{assignedTo:'zrich010@fiu.edu',expectedAssignee:'afeli016@fiu.edu'}}); assert.equal(claim.status, 200);
   assert.equal((await request('/tickets/'+own.data.id, {method:'PATCH',cookie:alice.cookie,body:{assignedTo:null,expectedAssignee:'afeli016@fiu.edu'}})).status, 409);
-  const knowledge = JSON.parse(await fs.readFile(path.join(__dirname, '../data/capstone-knowledge.json'), 'utf8'));
+  const knowledge = require('../server/lib/knowledge').mergeKnowledge(JSON.parse(await fs.readFile(path.join(__dirname, '../data/capstone-knowledge.json'), 'utf8')), require('../js/shared/syllabus-data').entries);
   for (const question of ['Where are the sprint planning templates?', 'attendance', 'how do i get started with capstone', 'fonts colors logo', 'showcase judge and retrospective', 'résumé', 'quantum pizza robot', ...knowledge.flatMap(entry => entry.intents || [])]) {
     const found = await request('/search?q='+encodeURIComponent(question));
     assert.equal(found.status, 200); assert.deepEqual(found.data, {question,...searchKnowledge(knowledge, question)}, question);
   }
   // Distinct PHP processes exercise the same persistent lock concurrently on Windows.
+  for (const question of ['When is it due?', 'Where do I submit it?', 'How is it graded?', 'What is my grade?', 'When is Sprint 2 due in Spring 2027?']) {
+    const found = await request('/search?q='+encodeURIComponent(question)+'&context=syllabus-sprint-2');
+    assert.equal(found.status, 200); assert.deepEqual(found.data, {question,...searchKnowledge(knowledge, question, 'syllabus-sprint-2')});
+  }
   const simultaneous = await Promise.all(Array.from({length:10}, (_, i) => request('/tickets', {method:'POST',body:{...student,question:'TEST parallel '+i,attachments:[]},base:i%2 ? primary.base : secondary.base})));
   assert.ok(simultaneous.every(result => result.status === 201)); assert.equal(new Set(simultaneous.map(result => result.data.id)).size, 10);
   assert.equal((await request('/tickets', {cookie:bob.cookie})).data.length, 12);
@@ -191,6 +198,23 @@ test('PHP hosted integration: shared durable queue, documents, conflicts, search
   const privateBase = path.join(temp, 'home', '.capstone-chat-private');
   const storage = path.join(privateBase, (await fs.readdir(privateBase))[0]);
   assert.ok(!path.resolve(storage).startsWith(path.resolve(publicRoot)+path.sep));
+  // Simulate an existing departed-member assignment/session only in this fixture.
+  const fixtureFile = path.join(storage, 'state.json');
+  const legacyState = JSON.parse(await fs.readFile(fixtureFile, 'utf8'));
+  const legacyTicket = legacyState.tickets.find(ticket => ticket.id === own.data.id);
+  legacyTicket.assignedTo = 'ralva037@fiu.edu';
+  const legacyToken = 'c'.repeat(64);
+  legacyState.sessions[createHash('sha256').update(legacyToken).digest('hex')] = { email:'ralva037@fiu.edu', expiresAt:Date.now()+60000 };
+  await fs.writeFile(fixtureFile, JSON.stringify(legacyState));
+  assert.equal((await request('/staff/session', {cookie:bob.cookie.split('=')[0]+'='+legacyToken})).status, 401);
+  const legacyWork = await request('/tickets/'+own.data.id+'/work', {method:'PATCH',cookie:bob.cookie,body:{...legacyTicket,
+    priority:legacyTicket.priority || 'normal', expectedRevision:legacyTicket.revision || 0,requestId:randomUUID(),workNote:'Fictional continuity check'}});
+  assert.equal(legacyWork.status, 200);
+  assert.equal(legacyWork.data.assignedTo, 'ralva037@fiu.edu');
+  const legacyReassign = await request('/tickets/'+own.data.id, {method:'PATCH',cookie:bob.cookie,body:{assignedTo:'zrich010@fiu.edu',expectedAssignee:'ralva037@fiu.edu'}});
+  assert.equal(legacyReassign.status, 200);
+  assert.equal(legacyReassign.data.createdBy, own.data.createdBy);
+  assert.equal((await request('/tickets/'+own.data.id, {method:'PATCH',cookie:bob.cookie,body:{assignedTo:'ralva037@fiu.edu',expectedAssignee:'zrich010@fiu.edu'}})).status, 400);
   const attachmentsBefore = await fs.readdir(path.join(storage, 'attachments'));
   // A queued request cannot create files or claim success while another writer holds the lock.
   const locked = spawn(php, ['-n', '-r', '$h=fopen($argv[1],"c+b");flock($h,LOCK_EX);echo "locked";fflush(STDOUT);sleep(30);', path.join(storage, 'state.lock')], {windowsHide:true,stdio:['ignore','pipe','pipe']});

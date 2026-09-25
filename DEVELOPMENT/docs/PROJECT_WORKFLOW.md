@@ -2,11 +2,13 @@
 
 Branding updated September 24, 2026. [Printable workflow sheet](output/pdf/Capstone_AI_Workflow.pdf).
 
-**Status:** The browser-only demo exists. The owner has now confirmed creation of a Supabase project; **the application connection is still pending**. The proposed shared backend below is not yet in use. This document does not deploy code, migrate tickets, or enable professor email. The current prototype is separate from the official FIU Capstone site and uses fictional test data only.
+**Current status, September 24:** The browser-only upload remains unchanged. The app's Supabase connection now saved fictional ticket **CAP-1001** and a private TXT attachment in a live test; Anthony Feliz's staff account is provisioned, while full staff acceptance remains pending. No Ocelot deployment, record migration, professor email, or production approval is implied. This prototype remains separate from the official FIU Capstone site and uses fictional test data only.
 
 ### Supabase project recorded
 
-Implementation update: the JavaScript Supabase adapter, private Storage flow, email/password staff login, and SQL migrations now exist locally. The dashed connections below still mean **not activated or verified in the hosted project**. Run the one-time setup and live acceptance in [the setup guide](SUPABASE_SETUP.md) before treating the diagram as an operational shared queue. The printable sheet remains an overview of the current-vs-proposed deployment boundary.
+Connection update, September 24: the owner selected the newer **Capstone - AI** project `uoccyfcsalnancmdhnur`. Use [the current Supabase setup guide](SUPABASE_SETUP.md) for its URL and readiness. The project details and printable diagram below record the earlier project and are historical; neither is evidence of a working shared deployment. No records were migrated by the configuration switch.
+
+Implementation update: the JavaScript adapter and migration 001 are connected to the selected project; anonymous requester submission, attachment finalization, and fresh-client receipt retrieval passed live. The owner's staff account is bound; queue operations, other staff accounts, and cross-browser acceptance remain pending. **The diagrams, project details, and printable sheet below are historical September 18 planning material**, including their earlier pending/not-implemented labels; they have not been regenerated for this connection test. Use [the setup guide](SUPABASE_SETUP.md) as the current operational record.
 
 - Project URL: `https://mkpkjmqjbfhkazxgpggg.supabase.co`
 - Project reference: `mkpkjmqjbfhkazxgpggg`

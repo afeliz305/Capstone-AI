@@ -22,7 +22,10 @@ test("adds twelve resolved examples and five open unassigned tickets with unique
   assert.equal(open.length, 5);
   assert.ok(open.every((ticket) => ticket.assignedTo === null && !ticket.resolution));
   assert.ok(resolved.every((ticket) => ticket.resolution.length > 40 && ticket.resolvedBy === ticket.assignedTo && ticket.resolvedAt >= ticket.createdAt));
-  for (const member of STAFF) assert.equal(resolved.filter((ticket) => ticket.assignedTo === member.email).length, 2);
+  const counts = STAFF.map(member => resolved.filter(ticket => ticket.assignedTo === member.email).length);
+  assert.equal(counts.reduce((sum, count) => sum + count, 0), resolved.length);
+  assert.ok(counts.every(count => count >= Math.floor(resolved.length / STAFF.length) && count <= Math.ceil(resolved.length / STAFF.length)));
+  assert.ok(added.every(ticket => ticket.assignedTo !== 'ralva037@fiu.edu'));
   assert.ok(added.every((ticket) => ticket.isSample && ticket.email.endsWith("@example.edu")));
   assert.ok(new Set(added.map((ticket) => ticket.category)).size >= 6);
 });

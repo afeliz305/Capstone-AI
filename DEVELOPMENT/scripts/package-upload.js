@@ -8,6 +8,7 @@ const privateFiles = [
   "server/server.js", "server/config.json", "server/lib/attachments.js", "server/lib/hosting.js",
   "server/lib/keyword-links.js", "server/lib/public-files.js", "server/lib/sample-tickets.js",
   "server/lib/search.js", "server/lib/session.js", "server/lib/staff-auth.js", "server/lib/ticket-work.js",
+  "server/lib/knowledge.js",
   "scripts/set-staff-password.js", "scripts/seed-tickets.js", "docs/HOSTING.md", "docs/licenses/Mulish-OFL.txt"
 ];
 

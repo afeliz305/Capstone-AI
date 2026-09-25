@@ -106,7 +106,7 @@ function createBrowserApi({ baseUrl, knowledge, indexedDB, sessionStorage, store
       if (method === "GET" && pathname === "/api/search") {
         const question = (url.searchParams.get("q") || "").trim().slice(0, 500);
         if (!question) throw fail("A question is required.");
-        return reply({ question, ...searchKnowledge(knowledge, question) });
+        return reply({ question, ...searchKnowledge(knowledge, question, url.searchParams.get("context")) });
       }
       if (method === "GET" && pathname === "/api/session") return reply({ status: "guest", account: null, identityContext: "browser-demo-guest-v1", demoAvailable: false });
       if (method === "POST" && pathname === "/api/staff/login") {

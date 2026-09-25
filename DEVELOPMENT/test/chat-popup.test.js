@@ -9,7 +9,7 @@ const script = readFileSync(path.join(__dirname, "../js/chat/capstone-chat.js"),
 
 // A small DOM double exercises the real widget event handlers without adding
 // browser dependencies. Responsive layout is checked separately in Chrome.
-function mount(fetchResult = async () => ({ ok: true, json: async () => ({ status: "unmatched", matches: [] }) })) {
+function mount(fetchResult = async () => ({ ok: true, json: async () => ({ status: "unmatched", matches: [] }) }), baseUrl = "http://localhost/") {
   const document = { activeElement: null };
   class Element {
     constructor(tag = "div") {
@@ -41,7 +41,12 @@ function mount(fetchResult = async () => ({ ok: true, json: async () => ({ statu
     remove() { this.parent.children = this.parent.children.filter((child) => child !== this); }
     replaceChildren(...children) { this.children = []; this.append(...children); }
     querySelector() { return this.submitButton; }
-    querySelectorAll() { return []; }
+    querySelectorAll(selector) {
+      return descendants(this).filter(node => selector.split(",").some(part => {
+        part = part.trim();
+        return part.startsWith(".") ? (node.className || "").split(" ").includes(part.slice(1)) : node.tagName === part.toUpperCase();
+      }));
+    }
   }
   const selectors = new Map();
   document.querySelector = (selector) => {
@@ -59,7 +64,8 @@ function mount(fetchResult = async () => ({ ok: true, json: async () => ({ statu
   launcher.setAttribute("aria-expanded", "false");
   sidebar.setAttribute("aria-expanded", "false");
   panel.append(input, log);
-  log.append(new Element()); // The initial welcome message.
+  const welcome = new Element(); welcome.className = "message assistant-message";
+  log.append(welcome);
   document.querySelector("#chat-form").submitButton = new Element();
   const supportForm = document.querySelector("#support-form");
   supportForm.submitButton = new Element();
@@ -78,7 +84,7 @@ function mount(fetchResult = async () => ({ ok: true, json: async () => ({ statu
     "[data-question]": [topic]
   }[selector] || []);
   document.createElement = (tag) => new Element(tag);
-  const api = require("../js/shared/api-client").createApiClient({ baseUrl: "http://localhost/", fetchImpl: async (url, options) => {
+  const api = require("../js/shared/api-client").createApiClient({ baseUrl, fetchImpl: async (url, options) => {
     const parsed = new URL(url);
     const response = await fetchResult(parsed.pathname + parsed.search, options);
     return { headers: { get: () => "application/json" }, ...response };
@@ -163,6 +169,56 @@ test("unsupported questions retain escalation without inventing keyword links", 
   await ui.topic.emit("click");
   assert.equal(descendants(ui.log).filter(node => node.className === "keyword-link").length, 0);
   assert.ok(descendants(ui.log).some(node => node.textContent === "Create support request"));
+});
+
+test("syllabus answers link to a safe nested-folder reference and support contextual follow-ups",async()=>{
+  const {searchKnowledge}=require("../server/lib/search");
+  const knowledge=require("../server/lib/knowledge").mergeKnowledge(require("../data/capstone-knowledge.json"),require("../js/shared/syllabus-data").entries);
+  const requests=[];
+  const ui=mount(async url=>{
+    const parsed=new URL(url,"https://example.test"); requests.push(parsed);
+    const result=searchKnowledge(knowledge,parsed.searchParams.get("q"),parsed.searchParams.get("context"));
+    return {ok:true,json:async()=>result};
+  },"https://example.test/~student/Capstone%20-%20AI/");
+  ui.topic.dataset.question="What should I do for Sprint 2?";
+  await ui.topic.emit("click");
+  const source=descendants(ui.log).find(n=>n.className==="source-card");
+  assert.equal(source.href,"https://example.test/~student/Capstone%20-%20AI/pages/syllabus.html#syllabus-sprint-2");
+  assert.match(source.children[0].textContent,/SYLLABUS · pages 9, 13, 20/);
+  const suggestions=descendants(ui.log).filter(n=>n.className==="follow-up-button");
+  assert.equal(suggestions.length,3);
+  ui.input.value="When is it due?";
+  ui.document.querySelector("#chat-form").emit("submit");
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(requests.at(-1).searchParams.get("context"),"syllabus-sprint-2");
+  assert.match(ui.log.children.at(-1).children[1].textContent,/October 2, 2026/);
+  await suggestions.find(n=>n.textContent==="How are sprints graded?").emit("click");
+  assert.match(ui.log.children.at(-1).children[1].textContent,/60% team artifact/);
+});
+
+test("clear conversation cancels pending rendering and forgets the previous topic",async()=>{
+  let resolveFetch; const requests=[];
+  const ui=mount(url=>{requests.push(url);return new Promise(resolve=>{resolveFetch=resolve;});});
+  const pending=ui.topic.emit("click");
+  await ui.topic.emit("click");assert.equal(requests.length,1); // No overlapping searches.
+  ui.document.querySelector("#clear-chat").emit("click");
+  assert.equal(ui.log.children.length,1);assert.equal(ui.input.disabled,false);
+  resolveFetch({ok:true,json:async()=>({status:"matched",matches:[{id:"old",answer:"Late stale result",url:"https://capstone.cs.fiu.edu/resources"}]})});
+  await pending;
+  assert.equal(ui.log.children.length,1);
+  const next=ui.topic.emit("click");
+  assert.ok(!requests.at(-1).includes("context="));
+  resolveFetch({ok:true,json:async()=>({status:"unmatched",matches:[]})});await next;
+});
+
+test("source cards reject external, traversing and script URLs while text stays escaped",async()=>{
+  for(const url of ["javascript:alert(1)","https://evil.test/pages/syllabus.html#syllabus-ai","pages/../private.html#syllabus-ai","//evil.test/pages/syllabus.html#syllabus-ai"]) {
+    const ui=mount(async()=>({ok:true,json:async()=>({status:"matched",matches:[{id:"test",answer:"<script>not executed</script>",url}],links:[]})}));
+    await ui.topic.emit("click");
+    assert.equal(descendants(ui.log).filter(n=>n.className==="source-card").length,0);
+    const answer=ui.log.children.at(-1).children[1];
+    assert.equal(answer.textContent,"<script>not executed</script>");assert.equal(answer.innerHTML,undefined);
+  }
 });
 
 test("minimize and sidebar reopen preserve messages, draft, and scroll position", async () => {

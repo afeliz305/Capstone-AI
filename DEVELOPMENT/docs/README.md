@@ -2,9 +2,11 @@
 
 ## Upload and test
 
+- [Supabase FileZilla upload checklist](OCELOT_SUPABASE_UPLOAD.md) - shared-queue package, exact remote paths, permissions and after-upload tests. Use this instead of the browser-only steps for the Supabase release.
+
 - [Project rename and FileZilla checklist](PROJECT_RENAME.md) - new folders, repository and intended Ocelot URL; preserve old browser queues before switching addresses.
 
-- [Supabase shared queue setup](SUPABASE_SETUP.md) - SQL migrations, staff provisioning, private files, local candidate, and live acceptance before upload. Source integration exists; hosted setup must still be completed.
+- [Supabase shared queue setup](SUPABASE_SETUP.md) - applied SQL setup, staff provisioning, private files, local candidate, and live acceptance before upload. Check its current verification status before deployment.
 
 - [Local presentation demo](LOCAL_DEMO.md) — one-command/double-click launch, correct links, and a short presentation flow.
 
@@ -15,6 +17,7 @@
 
 ## Feature reference
 
+- [Syllabus search and dashboard guidance](SYLLABUS_AND_DASHBOARD.md) - reviewed Fall 2026 content, follow-ups, date conflicts, and the still-required read-only student-record integration.
 - [Staff access and assignments](STAFF_ACCESS.md)
 - [Account integration](ACCOUNT_INTEGRATION.md)
 - [Document attachments](DOCUMENT_ATTACHMENTS.md)

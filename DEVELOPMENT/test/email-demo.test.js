@@ -26,7 +26,7 @@ async function signIn(auth, input) {
   return { data, cookie };
 }
 
-test("email-only demo admits the six roster accounts without reading or changing password records", async t => {
+test("email-only demo admits the five roster accounts without reading or changing password records", async t => {
   const temp = await directory(t);
   const file = path.join(temp, "credentials.json");
   await fs.writeFile(file, "not a usable credential file");
@@ -38,7 +38,7 @@ test("email-only demo admits the six roster accounts without reading or changing
     assert.equal((await auth.current(request(login.cookie))).staff.email, staff.email);
   }
   assert.equal(await fs.readFile(file, "utf8"), "not a usable credential file");
-  for (const email of ["outsider@fiu.edu", "", null, "afeli016@fiu.edu.evil.example"]) {
+  for (const email of ["ralva037@fiu.edu", "outsider@fiu.edu", "", null, "afeli016@fiu.edu.evil.example"]) {
     await assert.rejects(signIn(auth, { email }), { statusCode: 401 });
   }
   await assert.rejects(auth.current(request("capstone_staff_session=forged")), { statusCode: 401 });

@@ -35,6 +35,7 @@ async function main() {
     await page.locator("#staff-login").waitFor({state:"visible"});
     assert.equal(await page.locator("#staff-password").isVisible(),true);
     assert.equal(await page.locator("#staff-password").isEnabled(),true);
+    assert.equal(await page.locator("#staff-password-label").textContent(),"Password");
     assert.match(await page.locator("#staff-password-setup").textContent(),/Supabase staff account/);
     const qa=path.resolve(__dirname,"../dist/staging/supabase-ui");await fs.mkdir(qa,{recursive:true});
     await page.screenshot({path:path.join(qa,"staff-desktop.png"),fullPage:true});

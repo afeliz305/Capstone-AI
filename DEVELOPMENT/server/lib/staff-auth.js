@@ -9,7 +9,6 @@ const STAFF = Object.freeze([
   { name: "Christopher Hernandez", email: "chern563@fiu.edu" },
   { name: "Michael Alvarez", email: "malva517@fiu.edu" },
   { name: "Romelin Charnel", email: "rchar044@fiu.edu" },
-  { name: "Raul Alvarenga", email: "ralva037@fiu.edu" },
   { name: "Anthony Feliz", email: "afeli016@fiu.edu" }
 ].map(Object.freeze));
 const credentialsFile = process.env.CAPSTONE_STAFF_CREDENTIALS_FILE
@@ -117,7 +116,7 @@ function createStaffAuth({ file = credentialsFile, now = Date.now, sessionMs = S
   async function current(request) {
     const token = tokenFor(request);
     const session = sessions.get(token);
-    if (!session || session.expiresAt <= now()) {
+    if (!session || session.expiresAt <= now() || !memberFor(session.email)) {
       sessions.delete(token);
       throw fail("Unauthorized access. Sign in to the staff queue.", 401);
     }

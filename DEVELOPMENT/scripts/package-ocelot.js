@@ -4,6 +4,8 @@ const { createHash } = require("node:crypto");
 const publicFiles = require("../server/lib/public-files");
 const { browserBundle } = require("./browser-bundle");
 const { supabaseBundle } = require("./supabase-bundle");
+const { mergeKnowledge } = require("../server/lib/knowledge");
+const syllabus = require("../js/shared/syllabus-data");
 
 async function createOcelotPackage({ root = path.resolve(__dirname, ".."), outputRoot = path.join(root, "dist"), transport = "php", supabaseConfig } = {}) {
   if (!["php", "browser", "supabase"].includes(transport)) throw new Error("Choose php, browser or supabase packaging.");
@@ -27,7 +29,7 @@ async function createOcelotPackage({ root = path.resolve(__dirname, ".."), outpu
   }
   for (const file of publicFiles) {
     let bytes = await source(file);
-    if (file.endsWith(".html")) {
+    if (file.endsWith(".html") && file !== "pages/syllabus.html") {
       let html = bytes.toString("utf8");
       if (!/src="(?:\.\.\/)?js\/shared\/api-client\.js"/.test(html)) throw new Error("API script missing from " + file);
       html = html.replace(/(src="(?:\.\.\/)?js\/shared\/api-client\.js")/, '$1 data-api-transport="' + transport + '"');
@@ -44,7 +46,7 @@ async function createOcelotPackage({ root = path.resolve(__dirname, ".."), outpu
         html = html.replace(/(<body[^>]*>)/, '$1\n    <p class="hosting-test-notice" role="note"><strong>Supabase shared test queue.</strong> Tickets and documents are saved online after confirmation. Fictional data only. Staff require a provisioned Supabase account. No professor email is sent. Shared storage is not a separate backup.</p>');
         html = html.replace('>Local prototype<', '>Supabase test prototype<');
         html = html.replaceAll("on this app's server", "in the shared Supabase test project");
-        html = html.replace('hidden>Prototype password</label>', 'hidden>Supabase password</label>');
+        html = html.replace('hidden>Prototype password</label>', 'hidden>Password</label>');
         html = html.replace(/(<p class="staff-setup-note" id="staff-password-setup" hidden>)[\s\S]*?<\/p>/,
           '$1Use the separate password for your provisioned Supabase staff account, not your FIU password. Ask the project owner if your account has not been set up. The old demo password does not create an account.</p>');
       } else {
@@ -62,7 +64,7 @@ async function createOcelotPackage({ root = path.resolve(__dirname, ".."), outpu
     await write("js/shared/supabase.bundle.js", await supabaseBundle(root, supabaseConfig));
   } else {
   for (const file of ["index.php", "storage.php", "tickets.php", "search.php"]) await write("api/" + file, await source("server/php/" + file));
-  const knowledge = JSON.stringify(JSON.parse(await source("data/capstone-knowledge.json")));
+  const knowledge = JSON.stringify(mergeKnowledge(JSON.parse(await source("data/capstone-knowledge.json")), syllabus.entries));
   await write("api/knowledge.php", "<?php\nif (!defined('CAPSTONE_API')) { http_response_code(404); exit; }\nreturn json_decode(base64_decode('" + Buffer.from(knowledge).toString("base64") + "'), true);\n");
   // CGI/FastCGI may honor this per-directory request limit. No handlers or broad permissions are changed.
   await write("api/.user.ini", "post_max_size=20M\nmemory_limit=128M\ndisplay_errors=Off\n");
