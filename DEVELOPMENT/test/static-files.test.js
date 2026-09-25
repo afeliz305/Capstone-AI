@@ -50,22 +50,15 @@ test("root homepage and staff page serve with all referenced local assets in the
   assert.equal((await (await fetch(base + "/api/health")).json()).status, "ok");
 });
 
-test("homepage and persistent chat header open the reviewed syllabus in a separate tab", async () => {
+test("only the sidebar exposes the reviewed syllabus reference", async () => {
   const html = await (await fetch(base + "/")).text();
-  for (const id of ["view-syllabus-home", "view-syllabus-chat"]) {
-    const link = html.match(new RegExp(`<a[^>]+id="${id}"[^>]*>[\\s\\S]*?<\\/a>`))?.[0];
-    assert.ok(link, id);
-    assert.match(link, /href="pages\/syllabus\.html"/);
-    assert.match(link, /target="_blank"/);
-    assert.match(link, /rel="noopener noreferrer"/);
-    assert.match(link, /View syllabus/);
-    assert.match(link, /reviewed reference, opens in a new tab/);
-    assert.doesNotMatch(link, /data-question|onclick=/);
-    for (const appRoot of [base + "/", base + "/Capstone%20-%20AI/"]) {
-      assert.equal(new URL("pages/syllabus.html", appRoot).href, appRoot + "pages/syllabus.html");
-    }
+  const links = [...html.matchAll(/<a[^>]+href="pages\/syllabus\.html"[^>]*>[\s\S]*?<\/a>/g)].map(match => match[0]);
+  assert.equal(links.length, 1);
+  assert.match(html, /<aside class="side-nav"[\s\S]*?<a href="pages\/syllabus\.html">Fall 2026 syllabus<\/a>[\s\S]*?<\/aside>/);
+  assert.doesNotMatch(html, /view-syllabus-home|view-syllabus-chat|syllabus-shortcut/);
+  for (const appRoot of [base + "/", base + "/Capstone%20-%20AI/"]) {
+    assert.equal(new URL("pages/syllabus.html", appRoot).href, appRoot + "pages/syllabus.html");
   }
-  assert.match(html, /<header class="chat-header">[\s\S]*?id="view-syllabus-chat"[\s\S]*?<\/header>/);
   const response = await fetch(base + "/pages/syllabus.html");
   assert.equal(response.status, 200);
   assert.match(await response.text(), /not a replacement official syllabus/);
