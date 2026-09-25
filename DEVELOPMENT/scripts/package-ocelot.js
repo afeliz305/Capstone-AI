@@ -4,12 +4,13 @@ const { createHash } = require("node:crypto");
 const publicFiles = require("../server/lib/public-files");
 const { browserBundle } = require("./browser-bundle");
 const { supabaseBundle } = require("./supabase-bundle");
-const { mergeKnowledge } = require("../server/lib/knowledge");
-const syllabus = require("../js/shared/syllabus-data");
+const { reviewedKnowledge } = require("../server/lib/knowledge");
+const { loadPublicIndex } = require("../server/website-index/store");
 
-async function createOcelotPackage({ root = path.resolve(__dirname, ".."), outputRoot = path.join(root, "dist"), transport = "php", supabaseConfig } = {}) {
+async function createOcelotPackage({ root = path.resolve(__dirname, ".."), outputRoot = path.join(root, "dist"), transport = "php", supabaseConfig, siteIndex } = {}) {
   if (!["php", "browser", "supabase"].includes(transport)) throw new Error("Choose php, browser or supabase packaging.");
   root = await fs.realpath(root);
+  if (siteIndex === undefined) siteIndex = await loadPublicIndex(root);
   await fs.mkdir(outputRoot, { recursive: true });
   const destination = await fs.mkdtemp(path.join(outputRoot, "ocelot-upload-"));
   // The user-requested project name is also the remote application folder name.
@@ -50,6 +51,10 @@ async function createOcelotPackage({ root = path.resolve(__dirname, ".."), outpu
         html = html.replace(/(<p class="staff-setup-note" id="staff-password-setup" hidden>)[\s\S]*?<\/p>/,
           '$1Use the separate password for your provisioned Supabase staff account, not your FIU password. Ask the project owner if your account has not been set up. The old demo password does not create an account.</p>');
       } else {
+      if (siteIndex) {
+        const prefix = file.startsWith("pages/") ? "../" : "";
+        html = html.replace(/(<script src="(?:\.\.\/)?js\/shared\/api-client\.js")/, '<script src="' + prefix + 'js/shared/php-search.bundle.js" defer></script>\n    $1');
+      }
       html = html.replace(/(<body[^>]*>)/, '$1\n    <p class="hosting-test-notice" role="note">Group testing only — use fictional names, contact details, and documents. Staff access is email-only and does not verify identity. No professor email is sent.</p>');
       html = html.replace('>Local prototype<', '>Ocelot test prototype<');
       }
@@ -59,12 +64,17 @@ async function createOcelotPackage({ root = path.resolve(__dirname, ".."), outpu
     await write(file, bytes);
   }
   if (transport === "browser") {
-    await write("js/shared/browser-demo.bundle.js", await browserBundle(root, source));
+    await write("js/shared/browser-demo.bundle.js", await browserBundle(root, source, siteIndex));
   } else if (transport === "supabase") {
-    await write("js/shared/supabase.bundle.js", await supabaseBundle(root, supabaseConfig));
+    await write("js/shared/supabase.bundle.js", await supabaseBundle(root, supabaseConfig, siteIndex));
   } else {
+  if (siteIndex) {
+    const { build } = require("esbuild");
+    const result = await build({ absWorkingDir:root,entryPoints:[path.join(root,"js","shared","php-search-entry.js")],bundle:true,platform:"browser",format:"iife",target:["es2020"],write:false,minify:true,define:{CAPSTONE_WEBSITE_INDEX:JSON.stringify(siteIndex)} });
+    await write("js/shared/php-search.bundle.js",result.outputFiles[0].contents);
+  }
   for (const file of ["index.php", "storage.php", "tickets.php", "search.php"]) await write("api/" + file, await source("server/php/" + file));
-  const knowledge = JSON.stringify(mergeKnowledge(JSON.parse(await source("data/capstone-knowledge.json")), syllabus.entries));
+  const knowledge = JSON.stringify(reviewedKnowledge(JSON.parse(await source("data/capstone-knowledge.json"))));
   await write("api/knowledge.php", "<?php\nif (!defined('CAPSTONE_API')) { http_response_code(404); exit; }\nreturn json_decode(base64_decode('" + Buffer.from(knowledge).toString("base64") + "'), true);\n");
   // CGI/FastCGI may honor this per-directory request limit. No handlers or broad permissions are changed.
   await write("api/.user.ini", "post_max_size=20M\nmemory_limit=128M\ndisplay_errors=Off\n");

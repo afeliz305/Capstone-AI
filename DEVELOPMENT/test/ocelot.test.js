@@ -167,12 +167,16 @@ test('PHP hosted integration: shared durable queue, documents, conflicts, search
   assert.equal(preview.data.comments[0].body, 'Public fictional reply'); assert.doesNotMatch(JSON.stringify(preview.data), /Private fictional note|Internal resolution|fictional@example|workSaves|resolvedBy/);
   const claim = await request('/tickets/'+own.data.id, {method:'PATCH',cookie:bob.cookie,body:{assignedTo:'zrich010@fiu.edu',expectedAssignee:'afeli016@fiu.edu'}}); assert.equal(claim.status, 200);
   assert.equal((await request('/tickets/'+own.data.id, {method:'PATCH',cookie:alice.cookie,body:{assignedTo:null,expectedAssignee:'afeli016@fiu.edu'}})).status, 409);
-  const knowledge = require('../server/lib/knowledge').mergeKnowledge(JSON.parse(await fs.readFile(path.join(__dirname, '../data/capstone-knowledge.json'), 'utf8')), require('../js/shared/syllabus-data').entries);
+  const knowledge = require('../server/lib/knowledge').reviewedKnowledge(JSON.parse(await fs.readFile(path.join(__dirname, '../data/capstone-knowledge.json'), 'utf8')));
   for (const question of ['Where are the sprint planning templates?', 'attendance', 'how do i get started with capstone', 'fonts colors logo', 'showcase judge and retrospective', 'résumé', 'quantum pizza robot', ...knowledge.flatMap(entry => entry.intents || [])]) {
     const found = await request('/search?q='+encodeURIComponent(question));
     assert.equal(found.status, 200); assert.deepEqual(found.data, {question,...searchKnowledge(knowledge, question)}, question);
   }
   // Distinct PHP processes exercise the same persistent lock concurrently on Windows.
+  for (const question of ['Check again', 'Open it', 'Any new messages?', 'When is it due?', 'How is my grade calculated?', 'Open my dashboard and messages', 'I see an error message']) {
+    const found = await request('/search?q='+encodeURIComponent(question)+'&context=portal-messages');
+    assert.equal(found.status, 200); assert.deepEqual(found.data, {question,...searchKnowledge(knowledge, question, 'portal-messages')});
+  }
   for (const question of ['When is it due?', 'Where do I submit it?', 'How is it graded?', 'What is my grade?', 'When is Sprint 2 due in Spring 2027?']) {
     const found = await request('/search?q='+encodeURIComponent(question)+'&context=syllabus-sprint-2');
     assert.equal(found.status, 200); assert.deepEqual(found.data, {question,...searchKnowledge(knowledge, question, 'syllabus-sprint-2')});

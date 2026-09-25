@@ -1,8 +1,8 @@
 const { createClient } = require("@supabase/supabase-js");
 const { createSupabaseApi } = require("./supabase-api");
 const { createStaffSessionStorage } = require("./staff-session-storage");
-const { mergeKnowledge } = require("../../server/lib/knowledge");
-const knowledge = mergeKnowledge(require("../../data/capstone-knowledge.json"), require("./syllabus-data").entries);
+const { reviewedKnowledge } = require("../../server/lib/knowledge");
+const knowledge = reviewedKnowledge(require("../../data/capstone-knowledge.json"));
 const config = CAPSTONE_SUPABASE_CONFIG; // Public-only values injected by the packager.
 window.CapstoneSupabase = { create: options => {
   const scope = new URL(options.baseUrl).pathname;
@@ -24,5 +24,5 @@ window.CapstoneSupabase = { create: options => {
   window.addEventListener("focus", () => staffSessions.check());
   window.addEventListener("pageshow", () => staffSessions.check());
   window.addEventListener("storage", event => { if (event.key === null || event.key === staffSessions.rememberedKey) staffSessions.check(); });
-  return createSupabaseApi({ ...options,staffClient:client("staff"),guestClient:client("requester"),staffSessions,knowledge });
+  return createSupabaseApi({ ...options,staffClient:client("staff"),guestClient:client("requester"),staffSessions,knowledge,siteIndex:CAPSTONE_WEBSITE_INDEX });
 } };

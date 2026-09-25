@@ -1,4 +1,6 @@
 const { findKeywordLinks } = require("./keyword-links");
+const { searchIndex } = require("./index-search");
+const { routeMira } = require("./mira-policy");
 
 const STOP_WORDS = new Set([
   "a", "about", "an", "and", "are", "can", "do", "for", "from", "how", "i", "in", "is", "it",
@@ -95,10 +97,26 @@ function publicEntry(entry, score) {
     section: entry.section,
     access: entry.access,
     answer: entry.answer,
-    ...(entry.sourceKind ? { sourceKind:entry.sourceKind, sourcePages:entry.sourcePages } : {}),
+    ...(entry.sourceKind ? { sourceKind:entry.sourceKind } : {}),
+    ...(entry.sourcePages !== undefined ? { sourcePages:entry.sourcePages } : {}),
+    ...(entry.sourceKind === "portal-navigation" ? { portalSection:entry.portalSection, liveDataConnected:false } : {}),
     followUps: (entry.followUps || []).slice(0, 5),
     score: Math.round(score * 1000) / 1000
   };
+}
+
+function portalMatches(entries, question, contextId) {
+  // Match only reviewed navigation rules. Error messages are not inbox messages.
+  const text = normalize(question).replace(/\berror messages?\b/g, "");
+  const navigation = entries.filter(entry => entry.sourceKind === "portal-navigation");
+  if (/\b(?:grade|grades|grading|graded)\b/.test(text) && /\b(?:calculated|calculation|weight|weights|policy|rules|scale)\b/.test(text)) return [];
+  if (/\bcanvas\b/.test(text) && /\b(?:messages?|inbox|unread|notifications?|open|view)\b/.test(text)) return navigation.filter(entry=>entry.id === "portal-canvas");
+  const matches = navigation.filter(entry => entry.intents.some(intent=>normalize(intent) === text) ||
+    entry.navigationPatterns.some(pattern=>new RegExp(pattern).test(text)) ||
+    text === normalize("open " + entry.portalSection) || text === normalize("go to " + entry.portalSection));
+  if (matches.length) return matches.filter(entry=>!(entry.id === "portal-team" && matches.some(e=>e.id === "portal-team-contacts")));
+  if (/^(?:open it|open that|take me there|where do i click|how do i open it|check again|any updates|anything new|any new ones|read them|tell me more)$/.test(text)) return navigation.filter(entry=>entry.id === contextId);
+  return [];
 }
 
 function courseMatches(entries, question, contextId) {
@@ -117,7 +135,7 @@ function courseMatches(entries, question, contextId) {
   if (numbered.length) return numbered;
   if (/^(?:and |also )?(?:when is (?:it|that|this) due|when is the deadline|what is the deadline|how many points(?: is (?:it|that|this))?|what is (?:it|that) worth|tell me more|what does that mean|what should i do|what do i need to do)$/.test(text)) {
     const context = byId(contextId);
-    if (context) return [context];
+    if (context && context.sourceKind !== "portal-navigation") return [context];
   }
   if (contextId && /^(?:and |also )?(?:where (?:do i |should i )?(?:submit|post|upload)(?: (?:it|that|this))?|how (?:is it|is that|am i) graded)$/.test(text)) {
     const target = byId(/graded/.test(text) ? "syllabus-grading" : "canvas-assignments");
@@ -126,17 +144,24 @@ function courseMatches(entries, question, contextId) {
   return [];
 }
 
-function searchKnowledge(entries, question, contextId) {
+function searchKnowledge(entries, question, contextId, siteIndex = null) {
+  const policy = routeMira(entries, question, contextId, publicEntry);
+  if (policy) return policy;
+  const portal = portalMatches(entries, question, contextId);
+  if (portal.length) return { status:portal.length > 1 ? "choices" : "matched", matches:portal.slice(0,3).map(entry=>publicEntry(entry,1)), links:[] };
+  if (siteIndex && /^(?:take me there|show me that section|where does it say that|open it|open that)[.!?]*$/i.test(question.trim())) return searchIndex(siteIndex,question,contextId);
   const links = findKeywordLinks(entries, question);
   // A course PDF is not authority for another term/section. Never infer personal
   // completion/grades from the calendar or from an unrelated staff login.
-  if (/\b(?:spring|summer)\s+20\d\d\b|\b(?:fall\s+)?(?:202[0-5]|202[7-9]|20[3-9]\d)\b/i.test(question)) {
+  if ((!siteIndex || /\b(?:syllabus|sprint|assignment|course deadline)\b/i.test(question)) && /\b(?:spring|summer)\s+20\d\d\b|\b(?:fall\s+)?(?:202[0-5]|202[7-9]|20[3-9]\d)\b/i.test(question)) {
     return { status:"unmatched", matches:[], links:[], scopeNote:"The imported syllabus covers CIS 4951 RVC, Fall 2026 only. Ask the instructor for the other term's requirements." };
   }
   const direct = courseMatches(entries, question, contextId);
   if (direct.length) return { status:direct.length > 1 ? "choices" : "matched", matches:direct.slice(0,3).map(entry => publicEntry(entry,1)), links:direct.some(entry => entry.id === "dashboard-personal") ? [] : links };
+  if (siteIndex) return searchIndex(siteIndex,question,contextId);
   if (/^(?:when is (?:it|that|this) due|when is the deadline|what is the deadline|how many points(?: is (?:it|that|this))?|what is (?:it|that) worth|tell me more|what does that mean)$/.test(normalize(question))) return { status:"unmatched", matches:[], links:[], scopeNote:"Which assignment or sprint do you mean? Try 'Sprint 2' or 'Final deliverables', then ask your follow-up." };
-  const ranked = entries
+  // Navigation-only entries must not compete with course facts in fuzzy search.
+  const ranked = entries.filter(entry=>entry.sourceKind !== "portal-navigation")
     .map((entry) => ({ entry, score: scoreEntry(entry, question) }))
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score);

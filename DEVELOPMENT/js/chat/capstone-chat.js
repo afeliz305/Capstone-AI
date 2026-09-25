@@ -84,7 +84,7 @@
     message.append(createElement("div", "message-label", "YOU"));
     message.append(createElement("p", "", text));
     log.append(message);
-    conversation.push({ role: "User", text });
+    if (!window.CapstonePortal) conversation.push({ role: "User", text });
     scrollToLatest();
   }
 
@@ -94,7 +94,7 @@
     message.append(createElement("p", "", text));
     if (note) message.append(createElement("p", "message-note", note));
     log.append(message);
-    conversation.push({ role: "Assistant", text });
+    if (!window.CapstonePortal) conversation.push({ role: "Assistant", text });
     scrollToLatest();
     return message;
   }
@@ -140,19 +140,25 @@
     container.append(group);
   }
 
-  function addSourceCard(container, match) {
+  function sourceHref(match) {
     let href;
     if (isCapstoneUrl(match.url)) href = match.url;
     else if (/^pages\/syllabus\.html#(?:syllabus-[a-z0-9-]+|canvas-assignments|contact-help|sprint-planning|dashboard-personal)$/.test(match.url)) href = new URL(match.url, api.baseUrl).href;
+    return href || "";
+  }
+
+  function addSourceCard(container, match) {
+    const href = sourceHref(match);
     if (!href) return;
     const source = createElement("a", "source-card");
     source.href = href;
     source.target = "_blank";
     source.rel = "noopener noreferrer";
-    const kind = match.sourceKind === "syllabus" ? "SYLLABUS · pages " + match.sourcePages : match.sourceKind === "prototype" ? "PROTOTYPE LIMITATION" : match.access === "authenticated" ? "SIGN-IN REQUIRED" : "CAPSTONE SOURCE";
+    const kind = match.sourceKind === "portal-navigation" ? "PORTAL SHORTCUT · LIVE DATA NOT CONNECTED" : match.sourceKind === "syllabus" ? "SYLLABUS · pages " + match.sourcePages : match.sourceKind === "prototype" ? "PROTOTYPE LIMITATION" : match.access === "authenticated" ? "SIGN-IN REQUIRED" : "CAPSTONE SOURCE";
     const label = createElement("span", "source-kicker", `${kind} · ${match.section}`);
     const title = createElement("strong", "", match.sourceTitle || match.title);
-    const action = createElement("span", "source-action", "Open source ↗");
+    const actionText = match.sourceKind === "portal-navigation" ? "Open in portal ↗ · then choose " + match.portalSection : match.access === "authenticated" ? "Open in portal ↗ · sign-in required" : "Open this section ↗";
+    const action = createElement("span", "source-action", actionText);
     source.append(label, title, action);
     container.append(source);
   }
@@ -294,6 +300,10 @@
   accountRetry.addEventListener("click", () => void loadAccount());
 
   async function openSupportDialog(question = lastQuestion) {
+    if (window.CapstonePortal) {
+      addAssistantText("Ticket creation and transcript sharing are disabled in this local private portal preview. Use the normal prototype separately with fictional information.");
+      return;
+    }
     const questionField = supportForm.elements.question;
     if (question && !questionField.value) questionField.value = question;
     supportStatus.textContent = "";
@@ -316,13 +326,19 @@
     message.append(feedback);
   }
 
-  function renderAnswer(match, links = []) {
-    lastTopic = match.id;
+  function renderAnswer(match, links = [], result = {}) {
+    const answerMatches = (result.matches || [match]).filter(item => item && typeof item.id === "string").slice(0, 5);
+    lastTopic = answerMatches.map(item => item.id).join(",") || match.id;
     const message = addAssistantText(match.answer);
     addKeywordLinks(message, links);
     if (!links.some(link => link.id === match.id && link.url === match.url && isCapstoneUrl(link.url) && link.keywords?.length)) {
       addSourceCard(message, match);
     }
+    for (const related of answerMatches.slice(1)) addSourceCard(message, related);
+    if (result.responseStatus) {
+      message.append(createElement("p", "message-note", "Response status: " + String(result.responseStatus).replaceAll("_", " ")));
+    }
+    if (result.missingEvidence) message.append(createElement("p", "message-note", "Coverage limit: " + result.missingEvidence));
     const followUps = createElement("div", "follow-up-questions");
     followUps.setAttribute("aria-label", "Suggested follow-up questions");
     followUps.append(createElement("p", "message-note", "Keep exploring this topic:"));
@@ -333,13 +349,18 @@
     message.append(followUps);
     addFeedback(message);
     scrollToLatest(message);
+    if (result.navigationRequested && answerMatches.length === 1 && /^(?:take me there|open it|open that|open this section|show me (?:the )?instructions|show me that section|where does it say that|open the (?:first|second|third) source)[.!?]*$/i.test(lastQuestion.trim())) {
+      const href = sourceHref(answerMatches[0]);
+      if (href) window.open?.(href, "_blank", "noopener,noreferrer");
+    }
   }
 
-  function renderChoices(matches, links = []) {
+  function renderChoices(matches, links = [], result = {}) {
     const message = addAssistantText(
       "I found a few related Capstone topics. Which one best matches what you need?",
       "Choosing a topic lets me use its reviewed answer instead of guessing."
     );
+    if (result.missingEvidence) message.append(createElement("p", "message-note", "What I still need: " + result.missingEvidence));
     const choices = createElement("div", "result-choices");
     matches.forEach((match) => {
       const button = createActionButton(match.title, "result-choice", () => {
@@ -373,6 +394,82 @@
     scrollToLatest(message);
   }
 
+  function indexedLink(source, result) {
+    try {
+      const target = new URL(source.url), scope = result.navigationScope;
+      const prefix = (value, part) => part === "/" || value === part || value.startsWith(part.endsWith("/") ? part : part + "/");
+      const path = decodeURIComponent(target.pathname);
+      if (target.protocol !== "https:" || target.username || target.password || target.port || /[\\%\u0000-\u001f]/.test(path)) return null;
+      if (!scope?.allowedOrigins?.includes(target.origin) || !scope.allowedPaths.some(p => prefix(path,p)) || scope.excludedPaths.some(p => prefix(path.toLowerCase(),p.toLowerCase()))) return null;
+      const action = result.navigation.find(item => item.targetSourceId === source.id && item.url === source.url);
+      return action ? { url:target.href,label:action.label } : null;
+    } catch { return null; }
+  }
+
+  function renderIndexed(result, question) {
+    const sources = (result.sources || []).slice(0,5).filter(source => indexedLink(source,result));
+    const offeredSourceIds = sources.map(source => source.id).join(",");
+    lastTopic = offeredSourceIds;
+    const message = addAssistantText(result.answer,"Indexed website · source excerpts · no AI generation or live check");
+    const choices = result.answerStatus === "clarification_needed";
+    for (const source of sources) {
+      const group = createElement("section","indexed-source");
+      group.append(createElement("h3","",source.pageTitle + " — " + source.sectionTitle));
+      if (!choices) group.append(createElement("blockquote","indexed-excerpt",source.excerpt));
+      group.append(createElement("p","message-note","Indexed: " + source.indexed_at + (source.truncated ? " · Partial excerpt; read all conditions in the source." : "")));
+      const destination = indexedLink(source,result);
+      const link = createElement("a","source-card",destination.label + " ↗" + (!source.anchor ? " · Look for: " + source.sectionTitle : ""));
+      link.href = destination.url; link.target = "_blank"; link.rel = "noopener noreferrer";
+      link.setAttribute("aria-label",destination.label + ": " + source.sectionTitle + ". Opens in a new tab.");
+      group.append(link);
+      if (choices) group.append(createActionButton("Use this source","follow-up-button",()=>submitQuestion("Where does it say that?",source.id)));
+      message.append(group);
+    }
+    if (sources.length) message.append(createActionButton("Where does it say that?","follow-up-button",()=>submitQuestion("Where does it say that?",offeredSourceIds)));
+    addFeedback(message);
+    scrollToLatest(message);
+    // Only an explicit navigation request can open a destination. A regular
+    // question merely offers standard links. Popup-blocking browsers retain
+    // the same clickable link, and the current conversation stays untouched.
+    if (result.navigationRequested && !choices && sources.length === 1 && /^(?:take me there|open it|open that|show me that section)[.!?]*$/i.test(question.trim())) {
+      window.open?.(indexedLink(sources[0],result).url,"_blank","noopener,noreferrer");
+    }
+  }
+
+  function clearPortalConversation() {
+    searchSequence++;
+    log.replaceChildren();
+    conversation.length = 0; lastTopic = ""; lastQuestion = ""; input.value = "";
+    input.disabled = false; form.querySelector("button[type='submit']").disabled = false;
+  }
+  if (window.CapstonePortal) window.addEventListener("capstone-portal-clear",clearPortalConversation);
+
+  function renderPersonal(result,question) {
+    const connected=window.CapstonePortal?.accepts(result);
+    if(result.sources?.length&&!connected){clearPortalConversation();addAssistantText("The private answer no longer belongs to a verified session. Reconnect before asking again.");return;}
+    if(result.publicResult?.indexed) renderIndexed(result.publicResult, "");
+    else if(result.publicResult?.status==="matched") renderAnswer(result.publicResult.matches[0],result.publicResult.links||[],result.publicResult);
+    const message=addAssistantText(result.answer,"Private local portal · source excerpts · not a complete account record");
+    const sources=connected?(result.sources||[]).filter(s=>/^private-[a-f0-9]{24}$/.test(s.id)&&s.url==="https://capstone.cs.fiu.edu/portal"):[];
+    lastTopic=sources.map(s=>s.id).join(",");
+    const open=async source=>{
+      try {const destination=await window.CapstonePortal.destination(source.id);window.open?.(destination.url,"_blank","noopener,noreferrer");}
+      catch {clearPortalConversation();addAssistantText("Your portal source is no longer verified. Reconnect before opening it.");}
+    };
+    for(const source of sources){
+      const section=createElement("section","indexed-source");
+      section.append(createElement("h3","",source.sectionTitle));
+      if(result.answerStatus!=="clarification_needed")section.append(createElement("blockquote","indexed-excerpt",source.excerpt));
+      section.append(createElement("p","message-note","Retrieved: "+source.retrievedAt+" · Portal → "+source.section+". "+source.coverage));
+      section.append(createActionButton("View in portal · "+source.section,"source-card",()=>void open(source)));
+      if(result.answerStatus==="clarification_needed")section.append(createActionButton("Use this private source","follow-up-button",()=>submitQuestion("Where does it say that?",source.id)));
+      message.append(section);
+    }
+    if(result.coverage)message.append(createElement("p","message-note",result.coverage));
+    scrollToLatest(message);
+    if(connected&&result.navigationRequested&&result.answerStatus!=="clarification_needed"&&sources.length===1&&/^(?:take me there|open it|open that|show me that section)[.!?]*$/i.test(question.trim()))void open(sources[0]);
+  }
+
   async function search(question, contextId) {
     const sequence = ++searchSequence;
     lastQuestion = question;
@@ -388,8 +485,10 @@
       if (sequence !== searchSequence) return { status:"cancelled", matches:[], links:[] };
       if (!response.ok) throw new Error(result.error || "Search is unavailable.");
       loading.remove();
-      if (result.status === "matched") renderAnswer(result.matches[0], result.links);
-      else if (result.status === "choices") renderChoices(result.matches, result.links);
+      if (result.personal) renderPersonal(result,question);
+      else if (result.indexed) renderIndexed(result, question);
+      else if (result.status === "matched") renderAnswer(result.matches[0], result.links, result);
+      else if (result.status === "choices") renderChoices(result.matches, result.links, result);
       else renderUnmatched(result.links, result.scopeNote);
       return result;
     } catch (error) {
@@ -538,6 +637,7 @@
   });
 
   function registerWebMcpTools() {
+    if (window.CapstonePortal) return; // Do not expose private-source results to external agents.
     const context = document.modelContext;
     if (!context?.registerTool) return;
 

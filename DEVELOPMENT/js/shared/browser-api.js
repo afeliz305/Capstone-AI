@@ -9,7 +9,7 @@ const attachmentPolicy = require("./attachment-policy");
 const fail = (message, statusCode = 400) => Object.assign(new Error(message), { statusCode });
 const reply = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 
-function createBrowserApi({ baseUrl, knowledge, indexedDB, sessionStorage, store, now = Date.now, uuid = () => crypto.randomUUID() }) {
+function createBrowserApi({ baseUrl, knowledge, siteIndex = null, indexedDB, sessionStorage, store, now = Date.now, uuid = () => crypto.randomUUID() }) {
   const base = new URL(baseUrl);
   const scope = base.origin + base.pathname;
   store = store || createBrowserStore({ indexedDB, scope });
@@ -106,7 +106,7 @@ function createBrowserApi({ baseUrl, knowledge, indexedDB, sessionStorage, store
       if (method === "GET" && pathname === "/api/search") {
         const question = (url.searchParams.get("q") || "").trim().slice(0, 500);
         if (!question) throw fail("A question is required.");
-        return reply({ question, ...searchKnowledge(knowledge, question, url.searchParams.get("context")) });
+        return reply({ question, ...searchKnowledge(knowledge, question, url.searchParams.get("context"), siteIndex) });
       }
       if (method === "GET" && pathname === "/api/session") return reply({ status: "guest", account: null, identityContext: "browser-demo-guest-v1", demoAvailable: false });
       if (method === "POST" && pathname === "/api/staff/login") {

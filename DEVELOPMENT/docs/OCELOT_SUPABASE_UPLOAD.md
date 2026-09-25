@@ -2,6 +2,10 @@
 
 Use this checklist for **Capstone - AI with a shared Supabase ticket queue**. The browser-only and PHP variants in older instructions are different builds. Do not use their packaging commands for this release.
 
+## MIRA group-test release — September 25, 2026
+
+The current source passed 261/261 automated tests, including MIRA's 15-question acceptance set, the public website index, browser/Supabase packaging, and PHP compatibility. The generated **Capstone - AI** folder is prepared with the Supabase transport and the September 25 public-site snapshot. The hosted Ocelot copy is not updated until the owner transfers this folder with FileZilla. This release does not include the local Overview connector, run a database migration, reset tickets, change staff roles, or authorize production/student-data use.
+
 ## Uploaded-site check — September 24, 2026
 
 The owner uploaded this release to Ocelot. Read-only verification found **all 21 public files returning HTTP 200 and matching the prepared release's SHA-256 checksums** at `https://ocelot.aul.fiu.edu/~afeli016/Capstone%20-%20AI/`. Chrome showed the Supabase banner; Sprint 2 and “When is it due?” returned the expected contextual answer, and **View syllabus** opened the hosted reference with all 31 sections. HEAD requests to `package.json`, `AGENTS.md`, `.git/HEAD`, `server/supabase.local.json` and `data/tickets.json` returned 404. These focused checks are not a complete security audit or proof that no other obsolete files exist.

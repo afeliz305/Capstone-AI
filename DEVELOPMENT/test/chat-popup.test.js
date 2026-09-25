@@ -9,7 +9,7 @@ const script = readFileSync(path.join(__dirname, "../js/chat/capstone-chat.js"),
 
 // A small DOM double exercises the real widget event handlers without adding
 // browser dependencies. Responsive layout is checked separately in Chrome.
-function mount(fetchResult = async () => ({ ok: true, json: async () => ({ status: "unmatched", matches: [] }) }), baseUrl = "http://localhost/") {
+function mount(fetchResult = async () => ({ ok: true, json: async () => ({ status: "unmatched", matches: [] }) }), baseUrl = "http://localhost/", open = () => {}, portal = undefined) {
   const document = { activeElement: null };
   class Element {
     constructor(tag = "div") {
@@ -89,9 +89,10 @@ function mount(fetchResult = async () => ({ ok: true, json: async () => ({ statu
     const response = await fetchResult(parsed.pathname + parsed.search, options);
     return { headers: { get: () => "application/json" }, ...response };
   } });
-  vm.runInNewContext(script, { document, URL, FormData: TestFormData, window: { CapstoneApi: api, setTimeout: callback => callback(), CapstoneContactPolicy: require("../js/shared/contact-policy"), CapstoneAttachmentPolicy: require("../js/shared/attachment-policy") } });
+  const windowEvents={};
+  vm.runInNewContext(script, { document, URL, FormData: TestFormData, window: { open, CapstonePortal:portal, addEventListener:(name,handler)=>{windowEvents[name]=handler;}, CapstoneApi: api, setTimeout: callback => callback(), CapstoneContactPolicy: require("../js/shared/contact-policy"), CapstoneAttachmentPolicy: require("../js/shared/attachment-policy") } });
   return {
-    panel, launcher, input, log, sidebar, topic, document,
+    panel, launcher, input, log, sidebar, topic, document, windowEvents,
     minimize: document.querySelector("#minimize-chat"),
     supportDialog: document.querySelector("#support-dialog"),
     attachmentInput: document.querySelector("#ticket-attachments"),
@@ -116,6 +117,51 @@ test("chat starts hidden in HTML and opens only when requested", () => {
 function descendants(element) {
   return element.children.flatMap(child => [child, ...descendants(child)]);
 }
+
+test("private portal answers use verified buttons, escape text and clear the interface on invalidation",async()=>{
+  const id="private-"+"a".repeat(24),opened=[],resolved=[];
+  const result={personal:true,status:"matched",answerStatus:"answered",answer:"Private excerpt",sources:[{id,url:"https://capstone.cs.fiu.edu/portal",sectionTitle:"My project",section:"Overview",excerpt:"Synthetic private project <script>do not execute</script>",retrievedAt:"2026-09-25T15:00:00Z",coverage:"Partial fixture"}],connection:{state:"connected",generation:1},matches:[],links:[]};
+  const portal={accepts:()=>true,destination:async sourceId=>{resolved.push(sourceId);return{url:"https://capstone.cs.fiu.edu/portal"};}};
+  const ui=mount(async()=>({ok:true,json:async()=>result}),"http://localhost/",(...args)=>opened.push(args),portal);
+  await ui.topic.emit("click");assert.equal(opened.length,0);
+  const quote=descendants(ui.log).find(n=>n.className==="indexed-excerpt");assert.match(quote.textContent,/Synthetic private/);assert.equal(quote.innerHTML,undefined);
+  const button=descendants(ui.log).find(n=>n.textContent==="View in portal · Overview");assert.equal(button.tagName,"BUTTON");button.emit("click");await new Promise(r=>setImmediate(r));assert.deepEqual(resolved,[id]);assert.equal(opened.length,1);
+  ui.input.value="private draft";ui.windowEvents["capstone-portal-clear"]();assert.equal(ui.log.children.length,0);assert.equal(ui.input.value,"");
+});
+
+test("private session invalidation rejects late UI answers and unverified personal sources",async()=>{
+  let resolve;const deferred=new Promise(r=>{resolve=r;});
+  const ui=mount(async()=>({ok:true,json:()=>deferred}),"http://localhost/",()=>{}, {accepts:()=>false});
+  const pending=ui.topic.emit("click");ui.windowEvents["capstone-portal-clear"]();resolve({personal:true,status:"matched",answer:"STALE PRIVATE CONTENT",sources:[],matches:[]});await pending;
+  assert.equal(ui.log.children.length,0);
+});
+
+test("indexed evidence renders plain text, validated source actions, saved navigation context and explicit-only opening",async()=>{
+  const scope={allowedOrigins:["https://capstone.cs.fiu.edu"],allowedPaths:["/"],excludedPaths:["/portal"]};
+  const source={id:"section-fixture",pageTitle:"Fictional source",sectionTitle:"Actual heading",url:"https://capstone.cs.fiu.edu/resources#actual-id",anchor:"actual-id",excerpt:"Only with approval. <script>never executed</script>",indexed_at:"2026-09-25T00:00:00Z"};
+  const opened=[],requests=[];
+  const ui=mount(async url=>{
+    requests.push(url);const q=new URL(url,"http://localhost").searchParams.get("q");
+    return {ok:true,json:async()=>({indexed:true,answerStatus:"answered",answer:"Source excerpt",status:"matched",matches:[],sources:[source,{...source,id:"evil",url:"javascript:alert(1)"}],navigationScope:scope,navigation:[{targetSourceId:source.id,label:"View this section",url:source.url}],navigationRequested:q==="Take me there"})};
+  },"http://localhost/",(...args)=>opened.push(args));
+  await ui.topic.emit("click");
+  const citation=descendants(ui.log).find(n=>n.className==="source-card");
+  assert.equal(citation.href,source.url);assert.equal(citation.target,"_blank");assert.equal(citation.rel,"noopener noreferrer");
+  assert.equal(opened.length,0);assert.equal(descendants(ui.log).filter(n=>n.className==="source-card").length,1);
+  const quote=descendants(ui.log).find(n=>n.className==="indexed-excerpt");assert.equal(quote.textContent,source.excerpt);assert.equal(quote.innerHTML,undefined);
+  ui.input.value="Take me there";await ui.document.querySelector("#chat-form").emit("submit");
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.ok(requests.at(-1).includes("context=section-fixture"));assert.equal(opened[0][0],source.url);
+  assert.equal(ui.panel.hidden,false);assert.ok(descendants(ui.log).some(n=>n.textContent===source.excerpt));
+});
+
+test("ambiguous indexed navigation shows choices without opening a guessed source",async()=>{
+  let opened=0;
+  const ui=mount(async()=>({ok:true,json:async()=>({indexed:true,answerStatus:"clarification_needed",answer:"Which source?",status:"choices",sources:[],navigation:[],navigationRequested:true})}),"http://localhost/",()=>opened++);
+  ui.input.value="Take me there";await ui.document.querySelector("#chat-form").emit("submit");
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(opened,0);assert.ok(descendants(ui.log).some(n=>n.textContent==="Which source?"));
+});
 
 test("chat renders clickable keyword links with source labels and safe new-tab behavior", async () => {
   const { searchKnowledge } = require("../server/lib/search");
@@ -194,6 +240,21 @@ test("syllabus answers link to a safe nested-folder reference and support contex
   assert.match(ui.log.children.at(-1).children[1].textContent,/October 2, 2026/);
   await suggestions.find(n=>n.textContent==="How are sprints graded?").emit("click");
   assert.match(ui.log.children.at(-1).children[1].textContent,/60% team artifact/);
+});
+
+test("portal messages show a safe opt-in link and an honest live-data boundary",async()=>{
+  const {searchKnowledge}=require("../server/lib/search");
+  const knowledge=require("../server/lib/knowledge").reviewedKnowledge(require("../data/capstone-knowledge.json"));
+  const ui=mount(async()=>({ok:true,json:async()=>searchKnowledge(knowledge,"Do I have any new messages?")}));
+  ui.topic.dataset.question="Do I have any new messages?";
+  await ui.topic.emit("click");
+  const source=descendants(ui.log).find(n=>n.className==="source-card");
+  assert.equal(source.href,"https://capstone.cs.fiu.edu/portal");
+  assert.equal(source.target,"_blank");
+  assert.equal(source.rel,"noopener noreferrer");
+  assert.match(source.children[0].textContent,/LIVE DATA NOT CONNECTED/);
+  assert.equal(source.children[2].textContent,"Open in portal ↗ · then choose Messages");
+  assert.match(ui.log.children.at(-1).children[1].textContent,/cannot check for new or unread messages/);
 });
 
 test("clear conversation cancels pending rendering and forgets the previous topic",async()=>{

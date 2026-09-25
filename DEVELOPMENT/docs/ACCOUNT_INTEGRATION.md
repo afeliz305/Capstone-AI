@@ -1,5 +1,10 @@
 # Signed-in account integration
 
+September 25 local prototype: an application-owned, read-only Chrome existing-session connector is implemented separately under `demo:portal`. It does not supply identity to ticket creation, and live acceptance is still pending. [Local setup, scope, privacy controls and actual verification status](LOCAL_PORTAL_CONNECTOR.md). The ordinary hosted modes and production contract below remain unconnected to FIU authentication.
+## Portal navigation versus account access
+
+September 25: the chatbot can guide students to Messages, Overview and the other portal sections using [reviewed navigation shortcuts](PORTAL_NAVIGATION.md). These links do not access a portal session or read personal data. Supabase staff authentication also does not connect the FIU account. The integration contract below is separate from this navigation feature; no live FIU adapter has been configured. See the navigation guide for future read-only message/dashboard requirements.
+
 ## What works now
 
 When the support form opens, it calls `GET /api/session` on this app's origin. A connected account fills in the student's name and email, which are read-only. On `POST /api/tickets`, the server checks the session again and gets identity from that session, ignoring name, email, account ID, or identity-source values supplied by the browser. Only the help details come from the form.

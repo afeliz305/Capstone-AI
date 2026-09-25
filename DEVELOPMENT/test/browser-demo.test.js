@@ -31,7 +31,7 @@ async function harness(store = memoryStore()) {
   const window = { sessionStorage: { getItem: key => session.get(key) || null, setItem: (key, value) => session.set(key, value), removeItem: key => session.delete(key) } };
   let networkCalls = 0;
   const context = { window, URL, Response, Uint8Array, TextDecoder, atob, btoa, crypto, setTimeout, fetch: () => { networkCalls++; throw new Error("No network allowed"); } };
-  vm.runInNewContext(await browserBundle(root), context);
+  vm.runInNewContext(await browserBundle(root, undefined, null), context);
   const api = window.CapstoneBrowserDemo.create({ baseUrl, store });
   async function request(route, method = "GET", input) {
     const response = await api.fetch("/api" + route, { method, ...(input ? { body: JSON.stringify(input) } : {}) });
@@ -116,7 +116,7 @@ test("browser workspace preserves conflict checks, save deduplication and reques
 });
 test("browser lookup matches the reviewed Node knowledge engine, including unknown topics", async () => {
   const h = await harness();
-  const entries = require("../server/lib/knowledge").mergeKnowledge(JSON.parse(await fs.readFile(path.join(root, "data/capstone-knowledge.json"), "utf8")), require("../js/shared/syllabus-data").entries);
+  const entries = require("../server/lib/knowledge").reviewedKnowledge(JSON.parse(await fs.readFile(path.join(root, "data/capstone-knowledge.json"), "utf8")));
   for (const question of ["attendance", "showcase judge", "quantum pizza robot", ...entries.flatMap(entry => entry.intents || [])]) {
     assert.deepEqual((await h.request("/search?q=" + encodeURIComponent(question))).data, { question, ...searchKnowledge(entries, question) });
   }

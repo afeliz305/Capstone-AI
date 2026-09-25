@@ -17,3 +17,4 @@ UPLOAD_TO_OCELOT/
 /DEVELOPMENT/data/*.seed-backup-*
 /DEVELOPMENT/data/*.tmp
 /DEVELOPMENT/server/supabase.local.json
+/DEVELOPMENT/server/website-index/runtime/

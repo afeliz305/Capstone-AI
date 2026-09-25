@@ -4,9 +4,14 @@
   "private": true,
   "description": "Zero-token, site-grounded support assistant for the FIU KFSCIS Capstone portal.",
   "scripts": {
+    "index:site": "node scripts/website-index.js refresh",
+    "index:refresh": "node scripts/website-index.js refresh",
+    "index:status": "node scripts/website-index.js status",
+    "index:watch": "node scripts/website-index.js watch",
     "start": "node server/server.js",
     "demo": "node scripts/start-demo.js",
     "demo:supabase": "node scripts/start-supabase-demo.js",
+    "demo:portal": "node scripts/start-portal-demo.js",
     "test": "node --test test/*.test.js",
     "test:branding:ui": "node scripts/smoke-branding-ui.js",
     "supabase:check": "node scripts/check-supabase.js",
@@ -26,10 +31,15 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@supabase/supabase-js": "2.116.0"
+    "@supabase/supabase-js": "2.116.0",
+    "cheerio": "1.2.0",
+    "ipaddr.js": "2.5.0",
+    "robots-parser": "3.0.1"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",
+    "@modelcontextprotocol/sdk": "1.30.1",
+    "chrome-devtools-mcp": "1.10.1",
     "esbuild": "0.28.2",
     "playwright-core": "1.63.0"
   }

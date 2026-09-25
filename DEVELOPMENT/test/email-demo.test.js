@@ -80,6 +80,7 @@ async function startBackend(temp, mode) {
     cwd: path.resolve(__dirname, ".."), env, windowsHide: true, stdio: ["ignore", "pipe", "pipe"]
   });
   let errors = "";
+  let output = "";
   child.stderr.on("data", chunk => { errors += chunk; });
   let timer;
   try {
@@ -87,7 +88,11 @@ async function startBackend(temp, mode) {
       timer = setTimeout(() => reject(new Error("Isolated backend startup timed out.")), 10000);
       child.once("error", reject);
       child.once("exit", () => reject(new Error("Isolated backend exited: " + errors)));
-      child.stdout.once("data", chunk => resolve(Number(String(chunk).trim())));
+      child.stdout.on("data", chunk => {
+        output += String(chunk);
+        const line = output.split(/\r?\n/).find(value => /^\d+$/.test(value.trim()));
+        if (line) resolve(Number(line.trim()));
+      });
     });
     assert.ok(Number.isInteger(port) && port > 0);
     return {

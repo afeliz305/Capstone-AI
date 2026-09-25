@@ -104,6 +104,37 @@
           </div>
         </section>
 
+        <section class="topic-grid portal-shortcuts" aria-labelledby="portal-shortcuts-title">
+          <div class="section-heading"><div><p class="eyebrow">PORTAL SHORTCUTS</p><h2 id="portal-shortcuts-title">Messages &amp; dashboard</h2></div></div>
+          <p>Ask where to go, then open the portal in a new tab and choose its section. Live messages, unread counts and personal records are not connected to this chatbot.</p>
+          <div class="starter-prompts" aria-label="Portal shortcuts">
+            <button type="button" data-question="Do I have any new messages?">Check messages</button>
+            <button type="button" data-question="Open my dashboard">Open dashboard</button>
+            <button type="button" data-question="Open portal Team">My team</button>
+            <button type="button" data-question="Open portal Grade">My grade</button>
+          </div>
+          <details class="portal-section-list">
+            <summary>More portal sections</summary>
+            <div class="starter-prompts" aria-label="More portal shortcuts">
+              <button type="button" data-question="Open portal Start here">Start here</button>
+              <button type="button" data-question="Open portal Standing">Standing</button>
+              <button type="button" data-question="Open portal Classmates">Classmates</button>
+              <button type="button" data-question="Open portal Alumni directory">Alumni directory</button>
+              <button type="button" data-question="Open portal Connections">Connections</button>
+              <button type="button" data-question="Open portal Opportunities">Opportunities</button>
+              <button type="button" data-question="Open portal Team contacts">Team contacts</button>
+              <button type="button" data-question="Open portal AI Anchors">AI Anchors</button>
+              <button type="button" data-question="Open portal Record">Record</button>
+              <button type="button" data-question="Open portal Showcase">Showcase</button>
+              <button type="button" data-question="Open portal Letters">Letters</button>
+              <button type="button" data-question="Open portal Request a letter">Request a letter</button>
+              <button type="button" data-question="Open portal Resources">Resources</button>
+              <button type="button" data-question="Open portal Brand &amp; templates">Brand &amp; templates</button>
+              <button type="button" data-question="Open portal Canvas">Canvas</button>
+            </div>
+          </details>
+        </section>
+
         <section class="topic-grid" aria-labelledby="dashboard-help-title">
           <div class="section-heading"><div><p class="eyebrow">GUIDED DASHBOARD HELP</p><h2 id="dashboard-help-title">What are you working on?</h2></div></div>
           <p>Choose a topic or tell the chat which sprint you are on. Course guidance is available; your personal dashboard and Canvas records are not connected.</p>
@@ -128,7 +159,7 @@
           <div class="trust-mark" aria-hidden="true"><svg class="ui-icon"><use href="css/images/icons.svg#check"></use></svg></div>
           <div>
             <strong>Answers stay grounded in Capstone content</strong>
-            <p>Answers cite reviewed site or syllabus content. The assistant does not read your live project, tasks, attendance, grades, private messages or student-directory data. Date conflicts are flagged for instructor confirmation.</p>
+              <p>Answers cite saved public-site excerpts or reviewed syllabus content. The assistant does not read your live project, tasks, attendance, grades, private messages or student-directory data. Date conflicts are flagged for instructor confirmation.</p>
           </div>
         </section>
       </main>
@@ -163,6 +194,8 @@
           <p class="message-note">I cite reviewed sources, not live personal records. For course questions, the syllabus directs you to Canvas Inbox. This prototype can also create a test support ticket.</p>
         </article>
         <div class="starter-prompts" aria-label="Suggested questions">
+          <button type="button" data-question="Do I have any new messages?">Check messages</button>
+          <button type="button" data-question="Open my dashboard">Open dashboard</button>
           <button type="button" data-question="How do I get started with Capstone?">Getting started</button>
           <button type="button" data-question="Show me the syllabus">Ask about syllabus</button>
           <button type="button" data-question="What are the course deadlines?">Deadlines</button>

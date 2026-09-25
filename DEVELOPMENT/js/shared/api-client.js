@@ -12,13 +12,13 @@
       root.CapstoneApi = root.CapstoneBrowserDemo.create(options);
     } else if (options.transport === "supabase") {
       root.CapstoneApi = root.CapstoneSupabase.create(options);
-    } else root.CapstoneApi = factory().createApiClient(options);
+    } else root.CapstoneApi = factory().createApiClient({ ...options, indexedSearch:options.transport === "php" ? root.CapstoneIndexedSearch : undefined });
   }
 })(typeof window === "undefined" ? globalThis : window, function () {
   "use strict";
   const setupMessage = "The Capstone backend is not available at this address. Start the server version with npm.cmd start from DEVELOPMENT. For browser-only Ocelot testing, upload the complete generated Capstone - AI website from package:ocelot, then hard-refresh; do not upload DEVELOPMENT. If you deliberately chose the PHP shared version, follow the optional PHP health/setup guide. No save was confirmed.";
 
-  function createApiClient({ baseUrl, fetchImpl, transport = "node" }) {
+  function createApiClient({ baseUrl, fetchImpl, transport = "node", indexedSearch }) {
     const base = new URL(baseUrl);
     if (!["node", "php"].includes(transport)) throw new Error("Invalid Capstone API transport.");
     function url(route) {
@@ -37,6 +37,13 @@
     }
     async function request(route, options = {}) {
       if (!["http:", "https:"].includes(base.protocol)) throw new Error(setupMessage);
+      url(route); // Validate even locally handled routes.
+      const parsed = new URL(route,base);
+      if (transport === "php" && indexedSearch && parsed.pathname === "/api/search" && (!options.method || options.method === "GET")) {
+        const question = (parsed.searchParams.get("q") || "").trim().slice(0,500);
+        const data = question ? {question,...indexedSearch(question,parsed.searchParams.get("context"))} : {error:"A question is required."};
+        return new Response(JSON.stringify(data),{status:question?200:400,headers:{"Content-Type":"application/json"}});
+      }
       let response;
       try {
         response = await fetchImpl(url(route), {

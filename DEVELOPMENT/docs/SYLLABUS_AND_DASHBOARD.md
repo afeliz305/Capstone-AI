@@ -1,5 +1,7 @@
 # Syllabus search and guided dashboard questions
 
+September 25 addition: [portal navigation shortcuts](PORTAL_NAVIGATION.md) now cover Messages, Overview and all 19 sidebar sections. Personal-record questions can offer the correct portal section while explicitly stating live data is not connected. Course-policy questions continue to use the syllabus. The original syllabus implementation and provenance below are unchanged; this new navigation update is local-only pending packaging/upload.
+
 Updated September 24, 2026. Implemented in source and the isolated Supabase preview; not deployed to Ocelot or pushed to GitHub by this change.
 
 ## What is available

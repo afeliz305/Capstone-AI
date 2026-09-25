@@ -2,8 +2,8 @@ const http = require("http");
 const fs = require("fs/promises");
 const path = require("path");
 const { searchKnowledge } = require("./lib/search");
-const { mergeKnowledge } = require("./lib/knowledge");
-const syllabus = require("../js/shared/syllabus-data");
+const { reviewedKnowledge } = require("./lib/knowledge");
+const { loadPublicIndex } = require("./website-index/store");
 const { createSessionService } = require("./lib/session");
 const { prepareAttachments, createAttachmentStore } = require("./lib/attachments");
 const { createStaffAuth, memberFor, normalizeEmail } = require("./lib/staff-auth");
@@ -76,7 +76,7 @@ async function readJson(request, limit = 128 * 1024) {
 
 async function readKnowledge() {
   const entries = JSON.parse(await fs.readFile(knowledgeFile, "utf8"));
-  return mergeKnowledge(Array.isArray(entries) ? entries : [], syllabus.entries);
+  return reviewedKnowledge(Array.isArray(entries) ? entries : []);
 }
 
 async function readTickets() {
@@ -152,7 +152,7 @@ function normalizeNewTicket(input, tickets, session = null) {
   };
 }
 
-async function handleApi(request, response, url, sessions, staffAuth) {
+async function handleApi(request, response, url, sessions, staffAuth, indexProvider) {
   if (request.method === "POST" && url.pathname === "/api/staff/login") {
     return sendJson(response, 200, await staffAuth.login(request, response, await readJson(request)));
   }
@@ -183,7 +183,7 @@ async function handleApi(request, response, url, sessions, staffAuth) {
   if (request.method === "GET" && url.pathname === "/api/search") {
     const question = cleanText(url.searchParams.get("q"), 500);
     if (!question) return sendJson(response, 400, { error: "A question is required." });
-    const result = searchKnowledge(await readKnowledge(), question, url.searchParams.get("context"));
+    const result = searchKnowledge(await readKnowledge(), question, url.searchParams.get("context"), await indexProvider());
     return sendJson(response, 200, { question, ...result });
   }
 
@@ -368,7 +368,7 @@ async function serveStatic(response, pathname, basePath = "") {
   }
 }
 
-function createServer({ sessions = createSessionService(), staffAuth = createStaffAuth(), basePath = "", publicOrigin = null } = {}) {
+function createServer({ sessions = createSessionService(), staffAuth = createStaffAuth(), basePath = "", publicOrigin = null, indexProvider = async () => null } = {}) {
   basePath = normalizeBasePath(basePath);
   publicOrigin = normalizePublicOrigin(publicOrigin);
   return http.createServer(async (request, response) => {
@@ -395,7 +395,7 @@ function createServer({ sessions = createSessionService(), staffAuth = createSta
             throw requestError("Request body must use application/json.", 415);
           }
         }
-        return await handleApi(request, response, url, sessions, staffAuth);
+        return await handleApi(request, response, url, sessions, staffAuth, indexProvider);
       }
       if (request.method !== "GET") return sendJson(response, 405, { error: "Method not allowed." });
       await serveStatic(response, url.pathname, basePath);
@@ -414,6 +414,7 @@ function createRuntimeServer() {
     ? require(path.resolve(process.env.CAPSTONE_SESSION_ADAPTER))
     : null;
   return createServer({
+    indexProvider: () => loadPublicIndex(root),
     sessions: createSessionService({ resolveAccount, enableDemo: true }),
     staffAuth: createStaffAuth({ mode: process.env.CAPSTONE_STAFF_LOGIN_MODE ?? require("./config.json").staffLoginMode }),
     basePath: process.env.CAPSTONE_BASE_PATH || "",

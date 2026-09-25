@@ -1,21 +1,23 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { STAFF } = require("../server/lib/staff-auth");
-const { mergeKnowledge } = require("../server/lib/knowledge");
-const syllabus = require("../js/shared/syllabus-data");
+const { reviewedKnowledge } = require("../server/lib/knowledge");
+const { loadPublicIndex } = require("../server/website-index/store");
 
 // Explicit, dependency-free bundle: only reviewed knowledge and pure app code.
 // Never reads runtime tickets, passwords, sessions, or stored attachments.
-async function browserBundle(root, readSource = file => fs.readFile(path.join(root, file))) {
+async function browserBundle(root, readSource = file => fs.readFile(path.join(root, file)), siteIndex) {
+  if (siteIndex === undefined) siteIndex = await loadPublicIndex(root);
   const sources = {
     "./browser-api": "js/shared/browser-api.js", "./browser-store": "js/shared/browser-store.js",
-    "./search": "server/lib/search.js", "./keyword-links": "server/lib/keyword-links.js",
+    "./search": "server/lib/search.js", "./keyword-links": "server/lib/keyword-links.js", "./mira-policy": "server/lib/mira-policy.js",
+    "./index-search": "server/lib/index-search.js",
     "./ticket-work": "server/lib/ticket-work.js",
     "./contact-policy": "js/shared/contact-policy.js", "./attachment-policy": "js/shared/attachment-policy.js"
   };
   const modules = [];
   for (const [id, file] of Object.entries(sources)) modules.push(JSON.stringify(id) + ": function(module, exports, require) {\n" + await readSource(file) + "\n}");
-  const knowledge = mergeKnowledge(JSON.parse(await readSource("data/capstone-knowledge.json")), syllabus.entries);
+  const knowledge = reviewedKnowledge(JSON.parse(await readSource("data/capstone-knowledge.json")));
   return `(function () { "use strict";
 const modules = {${modules.join(",\n")}};
 const STAFF = ${JSON.stringify(STAFF)};
@@ -33,7 +35,7 @@ window.CapstoneBrowserDemo = { create: options => {
   let indexedDB, sessionStorage;
   try { indexedDB = window.indexedDB; } catch { /* API reports unavailable storage, without network fallback */ }
   try { sessionStorage = window.sessionStorage; } catch { /* Sign-in reports blocked session storage */ }
-  return require("./browser-api").createBrowserApi({ ...options, knowledge: ${JSON.stringify(knowledge)}, indexedDB, sessionStorage });
+  return require("./browser-api").createBrowserApi({ ...options, knowledge: ${JSON.stringify(knowledge)}, siteIndex: ${JSON.stringify(siteIndex)}, indexedDB, sessionStorage });
 } };
 })();\n`;
 }

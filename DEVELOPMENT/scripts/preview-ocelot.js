@@ -3,7 +3,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createHash } = require("node:crypto");
 const publicFiles = require("../server/lib/public-files");
-const allowed = new Set([...publicFiles, "js/shared/browser-demo.bundle.js", "js/shared/supabase.bundle.js", "css/fonts/OFL.txt"]);
+const allowed = new Set([...publicFiles, "js/shared/browser-demo.bundle.js", "js/shared/supabase.bundle.js", "js/shared/php-search.bundle.js", "css/fonts/OFL.txt"]);
 const basePath = "/Capstone%20-%20AI/";
 // Serve, do not redirect: browser-demo IndexedDB is scoped to the original URL.
 // This permits exporting old demo records after a branding/folder rename.

@@ -7,4 +7,10 @@ function mergeKnowledge(base, supplement) {
       navigationUrl:previous.url, navigationSourceTitle:previous.sourceTitle, navigationAccess:previous.access } : entry;
   })];
 }
-module.exports = { mergeKnowledge };
+function reviewedKnowledge(base) {
+  return mergeKnowledge(base, [
+    ...require("../../js/shared/syllabus-data").entries,
+    ...require("../../js/shared/portal-data").entries
+  ]);
+}
+module.exports = { mergeKnowledge, reviewedKnowledge };

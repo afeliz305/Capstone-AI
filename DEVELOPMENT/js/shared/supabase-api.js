@@ -35,7 +35,7 @@ async function filesFor(input) {
   }));
 }
 
-function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, staffSessions, uuid = () => crypto.randomUUID() }) {
+function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, siteIndex = null, staffSessions, uuid = () => crypto.randomUUID() }) {
   const base = new URL(baseUrl);
   const pending = new Map(); // In-memory idempotency IDs, not ticket persistence.
   let guestStart;
@@ -163,7 +163,7 @@ function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, staff
       if (method === "GET" && pathname === "/api/search") {
         const question=(target.searchParams.get("q")||"").trim().slice(0,500);
         if (!question) throw fail("A question is required.");
-        return reply({ question, ...searchKnowledge(knowledge,question,target.searchParams.get("context")) });
+        return reply({ question, ...searchKnowledge(knowledge,question,target.searchParams.get("context"),siteIndex) });
       }
       if (method === "GET" && pathname === "/api/session") return reply({ status:"guest",account:null,identityContext:"supabase-requester-v1",demoAvailable:false });
       if (method === "POST" && pathname === "/api/staff/login") {

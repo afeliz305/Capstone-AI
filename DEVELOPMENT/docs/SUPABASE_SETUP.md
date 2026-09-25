@@ -1,5 +1,9 @@
 # Supabase shared queue: one-time setup and testing
 
+September 25 indexed website search: Supabase builds now embed the [public website index](WEBSITE_INDEX.md) when present. Run the owner-only `index:site`/`index:refresh` maintenance command before rebuilding the isolated preview or a requested release. Searches use the snapshot without querying the site, Auth, or ticket database; no migration or new Supabase permission/key is needed. Private FIU messages and grades are still not connected. The stable upload and Ocelot remain unchanged by this local implementation.
+
+September 25 local feature update: the isolated preview includes [Messages/dashboard portal shortcuts](PORTAL_NAVIGATION.md). They search reviewed navigation only and do not call Supabase Auth or ticket APIs to read FIU records. No migration, staff binding, credential or hosted setting needs changing. Supabase login is not portal login. The stable upload folder and hosted website remain unchanged by this feature.
+
 ## Current uploaded state
 
 September 24: the owner uploaded the Supabase release to Ocelot. All 21 public files match the prepared manifest and return HTTP 200. Chrome verified the Supabase banner, contextual syllabus chat and the View syllabus reference. The **Ocelot-origin ticket save, staff read-back and attachment download are still pending**, distinct from the local-preview live verification below. No remote data or settings changed during the hosted read-only check. See [the upload verification and next tests](OCELOT_SUPABASE_UPLOAD.md). No GitHub push occurred.
