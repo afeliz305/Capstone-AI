@@ -1,5 +1,7 @@
 # Syllabus search and guided dashboard questions
 
+September 25 public-document update: the single left-sidebar syllabus link opens a flattened 26-page PDF copy of the supplied syllabus. The private Zoom join URL and mobile number are removed from the pixels, and the new PDF contains no selectable text or carried-over annotations. This public viewing copy is separate from `pages/syllabus.html`, which remains the searchable, anchored evidence source used by MIRA. The original owner file is unchanged.
+
 September 25 addition: [portal navigation shortcuts](PORTAL_NAVIGATION.md) now cover Messages, Overview and all 19 sidebar sections. Personal-record questions can offer the correct portal section while explicitly stating live data is not connected. Course-policy questions continue to use the syllabus. The original syllabus implementation and provenance below are unchanged; this new navigation update is local-only pending packaging/upload.
 
 Updated September 24, 2026. Implemented in source and the isolated Supabase preview; not deployed to Ocelot or pushed to GitHub by this change.
@@ -52,7 +54,7 @@ No such endpoint or authorization flow has been supplied or assumed; these are f
 
 ## Test it
 
-**Viewing the syllabus:** choose **View syllabus** on the homepage or in the chat header. Both links open `pages/syllabus.html` in a new tab and leave the current chat intact. The header link remains available while scrolling through answers. The page is the reviewed course reference, not the original PDF; use the course's official copy for the original. **Ask about syllabus** still sends a chat question instead of opening the reference.
+**Viewing the syllabus:** choose **Fall 2026 syllabus** in the left sidebar. The one visible syllabus link opens the public PDF copy in a new tab and leaves the current chat intact. **Ask about syllabus** still sends a chat question, and MIRA citations continue to open the reviewed HTML reference at the relevant topic anchor.
 
 From `DEVELOPMENT`, restart `npm.cmd run demo:supabase`, then refresh the same port-3004 address. This builds an isolated candidate without replacing the current upload folder. Node mode also needs a server restart after knowledge/search module changes.
 
@@ -62,7 +64,7 @@ From `DEVELOPMENT`, restart `npm.cmd run demo:supabase`, then refresh the same p
 4. Ask **When is showcase preparation due?**. Expect the December 1/2 conflict warning and a linked source with PDF page references.
 5. Ask **What is my grade?**, **What is my attendance?** or **What are my tasks?**. Expect the explicit not-connected boundary, not personal results.
 6. Clear the conversation, then ask **When is it due?**. Expect a request to identify the assignment, not the previous sprint. Unrelated or other-term questions must not borrow the last answer.
-7. Select **View syllabus** from the homepage, then from the chat header. Each should open the reviewed course reference in a new tab, including when the app is served from the encoded `Capstone%20-%20AI/` subfolder. Return to the chat tab and confirm the conversation is unchanged.
+7. Select **Fall 2026 syllabus** from the left sidebar. It should open the public PDF copy in a new tab, including when the app is served from the encoded `Capstone%20-%20AI/` subfolder. Return to the chat tab and confirm the conversation is unchanged. Ask a syllabus question and confirm its source still opens the matching HTML evidence section.
 
 Verification: **214 automated tests passed, none failed/skipped**, including the optional PHP suite and search parity over all reviewed intents. Tests cover content values, conflicting dates, private-record boundaries, contextual follow-ups, reset/late-response handling, safe source URLs, public-file/package boundaries and existing staff/ticket behavior. Chrome checks verified Sprint 2, natural follow-up, a suggested question, corrected submission guidance, the personal-grade boundary, the date-conflict warning and the linked reference section. No real ticket, student record, password or remote database setting was modified.
 

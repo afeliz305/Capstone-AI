@@ -21,7 +21,7 @@ test.after(() => new Promise((resolve, reject) => {
 
 test("root homepage and staff page serve with all referenced local assets in their new folders", async () => {
   const checked = new Set();
-  const expectedTypes = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2" };
+  const expectedTypes = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".pdf": "application/pdf" };
   async function checkFile(url) {
     url.hash = "";
     if (url.origin !== base || checked.has(url.href)) return;
@@ -50,18 +50,26 @@ test("root homepage and staff page serve with all referenced local assets in the
   assert.equal((await (await fetch(base + "/api/health")).json()).status, "ok");
 });
 
-test("only the sidebar exposes the reviewed syllabus reference", async () => {
+test("only the sidebar exposes the public syllabus PDF while the searchable reference remains available", async () => {
   const html = await (await fetch(base + "/")).text();
-  const links = [...html.matchAll(/<a[^>]+href="pages\/syllabus\.html"[^>]*>[\s\S]*?<\/a>/g)].map(match => match[0]);
+  const publicPdf = "documents/Fall-Term-2026-CIS-4951-RVC-Capstone-II-public.pdf";
+  const links = [...html.matchAll(/<a[^>]+href="documents\/Fall-Term-2026-CIS-4951-RVC-Capstone-II-public\.pdf"[^>]*>[\s\S]*?<\/a>/g)].map(match => match[0]);
   assert.equal(links.length, 1);
-  assert.match(html, /<aside class="side-nav"[\s\S]*?<a href="pages\/syllabus\.html">Fall 2026 syllabus<\/a>[\s\S]*?<\/aside>/);
+  assert.match(html, /<aside class="side-nav"[\s\S]*?<a href="documents\/Fall-Term-2026-CIS-4951-RVC-Capstone-II-public\.pdf" target="_blank" rel="noreferrer">Fall 2026 syllabus<\/a>[\s\S]*?<\/aside>/);
   assert.doesNotMatch(html, /view-syllabus-home|view-syllabus-chat|syllabus-shortcut/);
   for (const appRoot of [base + "/", base + "/Capstone%20-%20AI/"]) {
-    assert.equal(new URL("pages/syllabus.html", appRoot).href, appRoot + "pages/syllabus.html");
+    assert.equal(new URL(publicPdf, appRoot).href, appRoot + publicPdf);
   }
-  const response = await fetch(base + "/pages/syllabus.html");
-  assert.equal(response.status, 200);
-  assert.match(await response.text(), /not a replacement official syllabus/);
+  const pdfResponse = await fetch(base + "/" + publicPdf);
+  assert.equal(pdfResponse.status, 200);
+  assert.equal(pdfResponse.headers.get("content-type"), "application/pdf");
+  const pdf = Buffer.from(await pdfResponse.arrayBuffer());
+  assert.match(pdf.subarray(0, 8).toString("ascii"), /^%PDF-/);
+  assert.ok(pdf.length > 1000000, "public syllabus PDF should contain the full rendered document");
+
+  const referenceResponse = await fetch(base + "/pages/syllabus.html");
+  assert.equal(referenceResponse.status, 200);
+  assert.match(await referenceResponse.text(), /not a replacement official syllabus/);
 });
 
 test("generic chat launcher is accessible, self-contained, and excludes the retired mascot", async () => {

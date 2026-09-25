@@ -1,6 +1,7 @@
 // One shared allowlist for the Node server and the safe public upload package.
 module.exports = new Set([
   "index.html", "pages/staff.html", "pages/syllabus.html",
+  "documents/Fall-Term-2026-CIS-4951-RVC-Capstone-II-public.pdf",
   "css/styles.css", "css/staff.css", "css/capstone-chat.css",
   "css/images/FIU_mark_white.svg", "css/images/icons.svg", "css/fonts/mulish-var.woff2",
   "css/images/capstone-chat.svg",

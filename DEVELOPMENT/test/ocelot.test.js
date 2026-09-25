@@ -46,7 +46,9 @@ test('Ocelot package includes only public assets and credential-free PHP, never 
   assert.ok(result.manifest.some(item => item.file === 'api/index.php'));
   assert.ok(result.manifest.some(item => item.file === 'css/fonts/OFL.txt'));
   assert.ok(result.manifest.some(item => item.file === 'css/images/capstone-chat.svg'));
+  assert.ok(result.manifest.some(item => item.file === 'documents/Fall-Term-2026-CIS-4951-RVC-Capstone-II-public.pdf'));
   assert.deepEqual(await fs.readFile(path.join(result.uploadDirectory, 'css/images/capstone-chat.svg')), await fs.readFile(path.join(__dirname, '../css/images/capstone-chat.svg')));
+  assert.deepEqual(await fs.readFile(path.join(result.uploadDirectory, 'documents/Fall-Term-2026-CIS-4951-RVC-Capstone-II-public.pdf')), await fs.readFile(path.join(__dirname, '../documents/Fall-Term-2026-CIS-4951-RVC-Capstone-II-public.pdf')));
   assert.ok(!result.manifest.some(item => item.file === 'package.json'));
 });
 
@@ -56,7 +58,7 @@ test('current Ocelot upload has one stable location and archives previous files 
   const first = await prepareOcelotUpload({ workspace });
   assert.equal(first.destination, path.join(workspace, 'Capstone - AI'));
   assert.equal(first.uploadDirectory, first.destination);
-  assert.deepEqual((await fs.readdir(first.destination)).sort(), ['css','index.html','js','pages']);
+  assert.deepEqual((await fs.readdir(first.destination)).sort(), ['css','documents','index.html','js','pages']);
   assert.ok(first.recordDirectory.startsWith(path.join(workspace, 'DEVELOPMENT', 'dist', 'release-records') + path.sep));
   assert.ok((await fs.stat(path.join(first.recordDirectory, 'manifest.json'))).isFile());
   assert.equal(first.archivedDirectory, null);

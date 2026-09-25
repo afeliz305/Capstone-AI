@@ -9,7 +9,7 @@ const basePath = "/Capstone%20-%20AI/";
 // This permits exporting old demo records after a branding/folder rename.
 const legacyBasePath = "/Capstone%20AI%20Chat/";
 const previewIdentity = root => createHash("sha256").update(path.resolve(root)).digest("hex").slice(0, 24);
-const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8" };
+const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".pdf": "application/pdf", ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8" };
 function createPreview({ root = path.resolve(__dirname, "../../Capstone - AI") } = {}) {
   return http.createServer(async (req, res) => {
     const pathname = new URL(req.url, "http://localhost").pathname;

@@ -7,7 +7,7 @@ const {basePath}=require('../../scripts/preview-ocelot');
 const {PortalError}=require('./browser-adapter');
 const opaque=()=>randomBytes(24).toString('base64url');
 const equal=(a,b)=>{if(typeof a!=='string'||typeof b!=='string')return false;const x=Buffer.from(a),y=Buffer.from(b);return x.length===y.length&&timingSafeEqual(x,y);};
-const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.woff2':'font/woff2'};
+const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.pdf':'application/pdf','.woff2':'font/woff2'};
 function createPortalServer({root,sourceRoot,service,pairingCode=opaque(),port=3005,now=Date.now}) {
   const sessions=new Map(),limits=new Map(),bootstrapTokens=new Map();
   const pairingExpiresAt=now()+15*60000;
