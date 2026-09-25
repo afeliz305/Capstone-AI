@@ -1,7 +1,7 @@
 const path = require('node:path');
 const { Client } = require('@modelcontextprotocol/sdk/client/index.js');
 const { StdioClientTransport } = require('@modelcontextprotocol/sdk/client/stdio.js');
-const { readPortalDom, readPortalGuard } = require('./dom-reader');
+const { SECTION_ROUTES, readPortalGuard, readPortalIdentity, navigatePortalSection, readPortalSection } = require('./dom-reader');
 const PORTAL='https://capstone.cs.fiu.edu/portal';
 function portalUrl(url) { try { const u=new URL(url); return u.href===PORTAL || u.href===PORTAL+'#'; } catch { return false; } }
 class PortalError extends Error { constructor(state,message) { super(message); this.state=state; } }
@@ -44,19 +44,44 @@ class BrowserAdapter {
     return (result.structuredContent?.pages || []).filter(p=>portalUrl(p.url) && Number.isSafeInteger(p.id)).map(p=>({id:p.id,label:'Capstone portal tab '+p.id}));
   }
   async assertTab(id) { if(!(await this.listEligible()).some(p=>p.id===id)) throw new PortalError('connection-lost','The selected portal tab is closed or has left the approved portal.'); }
-  async evaluate(id,fn) { return jsonResult(await this.call('evaluate_script',{pageId:id,function:fn.toString(),dialogAction:'dismiss',waitForStableDom:false})); }
-  async inspect(id) {
+  async evaluate(id,fn,arg) {
+    const source=arguments.length>2?'('+fn.toString()+')('+JSON.stringify(arg)+')':fn.toString();
+    return jsonResult(await this.call('evaluate_script',{pageId:id,function:source,dialogAction:'dismiss',waitForStableDom:false}));
+  }
+  async identity(id) {
     await this.assertTab(id);
     const guard=await this.evaluate(id,readPortalGuard);
     if(guard.state!=='present') throw new PortalError('connection-lost','The selected tab is not on the portal.');
-    if(guard.active!=='Overview' || guard.editable) throw new PortalError('overview-required','Choose Overview in the approved portal tab and finish editing before continuing. No message was opened.');
-    const result=await this.evaluate(id,readPortalDom);
+    if(guard.editable) throw new PortalError('editing-active','Finish editing in the selected portal tab before continuing. No control was used.');
+    const result=await this.evaluate(id,readPortalIdentity);
     if(result.state!=='verified') {
       if(result.state==='sign-in-required') throw new PortalError('sign-in-required','Sign in to the Capstone portal with its normal email code, then return to Overview.');
-      if(result.state==='overview-required') throw new PortalError('overview-required','Choose Overview in the approved portal tab.');
-      throw new PortalError('extraction-failed','The approved Overview could not be read. No cached personal answer will be used.');
+      if(result.state==='editing-active') throw new PortalError('editing-active','Finish editing in the selected portal tab before continuing.');
+      throw new PortalError('identity-verification-failed','The signed-in portal identity could not be verified.');
     }
     return {...result,contextBinding:'chrome-stable:'+id};
+  }
+  async inspectSection(id,section,{navigate=false}={}) {
+    if(!Object.hasOwn(SECTION_ROUTES,section)) throw new PortalError('section-denied','That portal section is outside the approved connector scope.');
+    const identity=await this.identity(id);
+    let guard=await this.evaluate(id,readPortalGuard);
+    if(guard.active!==section) {
+      if(!navigate) throw new PortalError('section-required','Open '+section+' in the selected portal tab, or ask MIRA for that section explicitly.');
+      const moved=await this.evaluate(id,navigatePortalSection,section);
+      if(moved.state!=='present') throw new PortalError(moved.state==='editing-active'?'editing-active':'section-unavailable','The approved '+section+' section could not be opened safely.');
+      guard=await this.evaluate(id,readPortalGuard);
+    }
+    if(guard.active!==section||guard.editable) throw new PortalError('section-unavailable','The approved '+section+' section is not ready for read-only extraction.');
+    const extracted=await this.evaluate(id,readPortalSection,section);
+    if(extracted.state!=='verified') throw new PortalError(extracted.state==='editing-active'?'editing-active':'extraction-failed','The approved '+section+' information could not be read. No cached answer for that section will be used.');
+    return {...identity,...extracted,contextBinding:'chrome-stable:'+id};
+  }
+  async inspect(id) { return this.inspectSection(id,'Overview',{navigate:false}); }
+  async inspectActive(id) {
+    await this.assertTab(id);
+    const guard=await this.evaluate(id,readPortalGuard);
+    if(!Object.hasOwn(SECTION_ROUTES,guard.active)) throw new PortalError('section-required','Choose Overview, Team, Standing, Grade, or Messages before refreshing.');
+    return this.inspectSection(id,guard.active,{navigate:false});
   }
   async verify(id) {
     await this.assertTab(id);
@@ -65,14 +90,24 @@ class BrowserAdapter {
     if(before.active!=='Overview' || before.editable) throw new PortalError('overview-required','Choose Overview in the approved portal tab and finish editing before verifying. No message was opened.');
     const reload=await this.call('navigate_page',{pageId:id,type:'reload',ignoreCache:true,handleBeforeUnload:'dismiss',timeout:15000});
     if(!resultText(reload).includes('Successfully reloaded the page.')) throw new PortalError('session-expired','A fresh portal load could not be verified. Old data was removed.');
-    const result=await this.inspect(id);
+    const result=await this.inspectSection(id,'Overview',{navigate:false});
     const proof=result.proof;
     // A new document, successful network response, and no service-worker/cache
     // substitution are required; a cached signed-in DOM is not authentication.
     if(!proof || proof.documentId===before.documentId || proof.status!==200 || !(proof.transferred>0) || proof.worker || proof.serviceWorker) throw new PortalError('session-expired','A fresh, non-cached authenticated page could not be verified.');
     return result;
   }
-  async open(id) { await this.assertTab(id); return {url:PORTAL,section:'Overview'}; }
+  async open(id,section='Overview') {
+    await this.assertTab(id);
+    if(section==='Messages') {
+      const moved=await this.evaluate(id,navigatePortalSection,'Messages');
+      if(moved.state!=='present')throw new PortalError('section-unavailable','The Messages channel list could not be opened safely. No conversation was opened.');
+      return{url:PORTAL,section:'Messages',guidance:'The channel list is open. Select a conversation yourself if you want to read it.'};
+    }
+    const moved=await this.evaluate(id,navigatePortalSection,Object.hasOwn(SECTION_ROUTES,section)?section:'Overview');
+    if(moved.state!=='present')throw new PortalError('section-unavailable','The verified portal section could not be opened safely.');
+    return{url:PORTAL,section:moved.section,guidance:'The verified parent section is open. Detail panels without a stable URL must be opened manually.'};
+  }
   async close() { this.epoch++; const client=this.client; this.client=null; this.transport=null; try { await client?.close(); } catch {} }
 }
 module.exports={BrowserAdapter,PortalError,PORTAL,portalUrl,jsonResult};
