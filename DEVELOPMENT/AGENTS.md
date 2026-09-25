@@ -38,6 +38,7 @@ The user explicitly requested an ongoing guide for teammates to download, run, a
 - Document Windows PowerShell commands with `npm.cmd` and preserve the missing-`package.json` troubleshooting guidance.
 - Preserve the distinction between the local sample account and real FIU authentication, local tickets and professor email, and a recorded privacy preference and actual authorization.
 - Keep test tickets, real student data, cookies, credentials, and `.env` files out of Git. Use fictional data for verification.
-- When a source backup is requested, include the matching guide and application changes together; otherwise do not infer permission to push or deploy.
+- The owner has given standing authorization to keep the project synchronized after completed updates. After a source change, run relevant tests, refresh the sibling `../Capstone - AI/` folder with `npm.cmd run package:ocelot:supabase` whenever public/package inputs changed, then commit and push the matching source, tests, and guides to `origin/main` unless the owner explicitly says not to. Generated releases, runtime data, tickets, attachments, credentials, local configuration, and archives remain excluded from Git.
+- This standing workflow authorizes preparation of the local upload folder and GitHub backup only. It does not authorize silently transferring files to Ocelot, changing Supabase data/schema/roles, or deploying to production. FileZilla transfer remains an explicit owner action unless a separately approved deployment mechanism is configured.
 
 Do not claim the document updates automatically in the background. Maintain it as part of future project work.
