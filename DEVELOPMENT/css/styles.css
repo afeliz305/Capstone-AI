@@ -154,6 +154,7 @@ button:disabled { cursor: wait; opacity: .6; }
 .portal-panel-heading h2 { margin: 0; }
 .portal-status { margin: 0; padding: .45rem .7rem; border-radius: 999px; background: #e7eef8; color: #164f8f; font-weight: 800; }
 .portal-progress { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: .5rem; margin: 1rem 0; padding: 0; list-style: none; counter-reset: portal-step; }
+.portal-progress.hosted { grid-template-columns: repeat(4,minmax(0,1fr)); }
 .portal-progress li { min-height: 64px; padding: .75rem; border: 1px solid #d5dfea; border-radius: 10px; color: #52657c; font-size: .86rem; line-height: 1.35; counter-increment: portal-step; }
 .portal-progress li::before { display: block; content: counter(portal-step); width: 1.55rem; height: 1.55rem; margin-bottom: .35rem; border-radius: 50%; background: #e7eef8; color: #164f8f; text-align: center; line-height: 1.55rem; font-weight: 800; }
 .portal-progress li.complete { border-color: #8bc7a8; background: #f0faf5; color: #155c3a; }

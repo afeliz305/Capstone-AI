@@ -4,6 +4,7 @@ const { createHash } = require("node:crypto");
 const publicFiles = require("../server/lib/public-files");
 const { browserBundle } = require("./browser-bundle");
 const { supabaseBundle } = require("./supabase-bundle");
+const { hostedPortalBundle } = require("./hosted-portal-bundle");
 const { reviewedKnowledge } = require("../server/lib/knowledge");
 const { loadPublicIndex } = require("../server/website-index/store");
 
@@ -58,11 +59,16 @@ async function createOcelotPackage({ root = path.resolve(__dirname, ".."), outpu
       html = html.replace(/(<body[^>]*>)/, '$1\n    <p class="hosting-test-notice" role="note">Group testing only — use fictional names, contact details, and documents. Staff access is email-only and does not verify identity. No professor email is sent.</p>');
       html = html.replace('>Local prototype<', '>Ocelot test prototype<');
       }
+      if (file === "index.html") {
+        html = html.replace('<script src="js/chat/capstone-chat.js" defer></script>', '<script src="js/hosted/portal-client.bundle.js" defer></script>\n    <script src="js/chat/capstone-chat.js" defer></script>');
+        html = html.replace('Ask where to go, then open the portal in a new tab and choose its section. Live messages, unread counts and personal records are not connected to this chatbot.', 'Install the Capstone - AI connector to use your own signed-in dashboard in this browser. Without the connector, these buttons remain safe navigation shortcuts.');
+      }
       bytes = Buffer.from(html);
     }
     if (file === "css/styles.css") bytes = Buffer.concat([bytes, Buffer.from('\n.hosting-test-notice { margin: 0; padding: .75rem 1.5rem; background: #fff4d1; color: #172b4d; border-bottom: 1px solid #d9a836; font-size: .95rem; line-height: 1.5; }\n')]);
     await write(file, bytes);
   }
+  await write("js/hosted/portal-client.bundle.js", await hostedPortalBundle(root));
   if (transport === "browser") {
     await write("js/shared/browser-demo.bundle.js", await browserBundle(root, source, siteIndex));
   } else if (transport === "supabase") {

@@ -16,12 +16,12 @@ function paired(options={}){
   return{bridge,credentials,next:()=>bridge.next(origin,{token:credentials.token,seq:++seq}),complete:(command,value,ok=true)=>bridge.complete(origin,{token:credentials.token,seq:++seq,id:command.id,ok,value,...(ok?{}:{error:value})}),sequence:()=>seq};
 }
 
-test('extension manifest requests only loopback plus an explicit optional FIU site grant',()=>{
+test('extension manifest requests loopback plus explicit portal and hosted-app grants',()=>{
   const manifest=JSON.parse(fs.readFileSync(path.join(root,'portal-extension','manifest.json'),'utf8'));
   assert.equal(manifest.manifest_version,3);
   assert.deepEqual(manifest.permissions.sort(),['alarms','scripting','storage']);
   assert.deepEqual(manifest.host_permissions,['http://127.0.0.1:3005/*']);
-  assert.deepEqual(manifest.optional_host_permissions,['https://capstone.cs.fiu.edu/*']);
+  assert.deepEqual(manifest.optional_host_permissions,['https://capstone.cs.fiu.edu/*','https://ocelot.aul.fiu.edu/*']);
   assert.equal(manifest.background.service_worker,'background.js');
   assert.ok(!manifest.permissions.includes('debugger'));
   assert.ok(!manifest.permissions.includes('tabs'));
@@ -38,11 +38,27 @@ test('normal extension source has no debugger or MCP dependency and persists no 
   assert.match(background,/setAccessLevel\(\{accessLevel:'TRUSTED_CONTEXTS'\}\)/);
   assert.match(background,/local\.set\(\{token:response\.token,trustExpiresAt:response\.trustExpiresAt,seq:0,manualDisconnect:false\}\)/);
   assert.doesNotMatch(background,/local\.set\([^\n]*(?:records|messages|grades|standing|content|answer|question)/i);
+  const hosted=fs.readFileSync(path.join(root,'portal-extension','hosted-entry.js'),'utf8');
   assert.match(background,/permissions\.onRemoved[\s\S]*disconnect/);
   assert.match(background,/runtime\.onStartup[\s\S]*poll/);
   assert.match(background,/alarms\.onAlarm[\s\S]*poll/);
-  assert.match(background,/message\.operation==='status'\)\{await register\(\);await poll\(\);value=await status\(\);\}/);
+  assert.match(background,/message\.operation==='grant-app'/);
+  assert.match(background,/exactHostedSender/);
+  assert.match(background,/DIRECT_OPERATIONS/);
   assert.match(background,/if\(pollPromise\)return pollPromise/);
+  assert.match(hosted,/event\.source!==window/);
+  assert.match(hosted,/~afeli016\/Capstone - AI/);
+  assert.doesNotMatch(hosted,/fetch\(|localStorage|sessionStorage|indexedDB|document\.cookie/);
+});
+
+test('hosted Ocelot client keeps personal search in memory and uses an exact app path',()=>{
+  const client=fs.readFileSync(path.join(root,'js','hosted','portal-client-entry.js'),'utf8');
+  assert.match(client,/EXPECTED_ORIGIN='https:\/\/ocelot\.aul\.fiu\.edu'/);
+  assert.match(client,/EXPECTED_PATH='\/~afeli016\/Capstone - AI\/'/);
+  assert.match(client,/if\(routeQuestion\(question,context\)\)/);
+  assert.match(client,/service\.search\(owner,\{question,context\}\)/);
+  assert.match(client,/Cache-Control':'no-store/);
+  assert.doesNotMatch(client,/localStorage|sessionStorage|indexedDB|document\.cookie|createClient|supabaseUrl|sb_(?:secret|publishable)_/i);
 });
 
 test('loopback bridge authenticates one extension origin and rejects replay and stale commands',async()=>{

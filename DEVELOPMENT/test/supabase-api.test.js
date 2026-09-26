@@ -43,6 +43,7 @@ test("Supabase package has a bundled SDK, correct labels, and no private files o
   for(const page of ["index.html","pages/staff.html"]) {
     const html=await fs.readFile(path.join(built.uploadDirectory,page),"utf8");
     assert.match(html,/data-api-transport="supabase"/);assert.match(html,/Supabase shared test queue/);assert.match(html,/supabase.bundle.js/);
+    if(page==='index.html')assert.match(html,/js\/hosted\/portal-client\.bundle\.js/);
     if(page.includes("staff")){
       assert.match(html,/<label id="staff-password-label" for="staff-password" hidden>Password<\/label>/);
       assert.doesNotMatch(html,/Supabase password/);
@@ -52,6 +53,10 @@ test("Supabase package has a bundled SDK, correct labels, and no private files o
   }
   const bundle=await fs.readFile(path.join(built.uploadDirectory,"js/shared/supabase.bundle.js"),"utf8");
   assert.match(bundle,/sb_publishable_fixture/);assert.match(bundle,/capstone_finalize/);
+  const portalBundle=await fs.readFile(path.join(built.uploadDirectory,"js/hosted/portal-client.bundle.js"),"utf8");
+  assert.match(portalBundle,/capstone-ai-hosted-v1/);
+  assert.match(portalBundle,/Private information expired/);
+  assert.doesNotMatch(portalBundle,/service_role|sb_secret_|chrome-devtools-mcp|modelcontextprotocol/);
   assert.ok(!built.manifest.some(item=>/^(server|data|docs|api)\//.test(item.file)));
   assert.ok(!built.manifest.some(item=>item.file.includes("browser-demo")));
   await assert.rejects(()=>createOcelotPackage({root,outputRoot:out,transport:"supabase",supabaseConfig:{url:"https://abcdefghijklmnopqrst.supabase.co",publishableKey:"sb_secret_no"}}),/publishable/);

@@ -1,6 +1,18 @@
-# Local private portal connector
+# Private portal connector
 
-Updated September 26, 2026. This is a development-only, read-only connector for the local MIRA preview. It is not part of the Ocelot upload, does not modify the FIU portal, and does not send private portal content to Supabase, tickets, analytics, an AI provider, or files.
+Updated September 26, 2026. The read-only Chrome extension now supports both the local MIRA preview and the owner's hosted Ocelot MIRA page. It does not modify the FIU portal or send private portal content, private questions, or private answers to Supabase, tickets, analytics, an AI provider, or files.
+
+## Hosted Ocelot mode
+
+The generated Supabase package includes `js/hosted/portal-client.bundle.js`. That browser-only client talks to the installed extension through an isolated content-script bridge; no local Node helper is required for hosted use.
+
+1. Load or reload the unpacked `DEVELOPMENT\portal-extension` folder in `chrome://extensions`.
+2. Open the extension and grant **Portal access** and **Hosted MIRA access**. Chrome permissions are origin-wide, while the extension additionally restricts requests to the exact portal page and the exact `https://ocelot.aul.fiu.edu/~afeli016/Capstone%20-%20AI/` application path.
+3. Reload the portal and Ocelot tabs once after a first grant or extension update.
+4. Keep the signed-in `https://capstone.cs.fiu.edu/portal` tab open. On Ocelot, choose **Connect my portal**.
+5. The hosted page keeps private records and private chat results only in that tab's JavaScript memory for five minutes. A reload, tab close, disconnect, account change, authentication failure, or expiry clears them. Public help and ticket operations continue through their existing transport, but personal questions are intercepted locally before the Supabase search path.
+
+The hosted permission is deliberately limited to Anthony's Capstone application path by application checks. Other Ocelot user directories cannot request portal data through this extension. The extension must be installed on each tester's own computer; an ordinary website cannot silently install or grant it.
 
 ## Normal mode: Chrome extension
 
@@ -36,6 +48,7 @@ The extension can remain installed between sessions. A helper restart creates a 
 | `storage` | Store only the local bridge token, replay sequence, trust expiration, and explicit-disconnect flag. Access is restricted to trusted extension contexts. No portal content is stored. |
 | `http://127.0.0.1:3005/*` | Reach the loopback helper. The helper binds only to loopback and validates the exact host. |
 | Optional `https://capstone.cs.fiu.edu/*` | Let the user explicitly grant portal access. Browser permissions are origin-wide; application checks still require exactly `/portal`. |
+| Optional `https://ocelot.aul.fiu.edu/*` | Let the user explicitly connect the hosted MIRA page. Browser permission is origin-wide; application checks accept only `/~afeli016/Capstone - AI/` and its `index.html`. |
 
 The extension does not request `debugger`, `tabs`, cookies, downloads, native messaging, `<all_urls>`, or access to Canvas/SharePoint. A linked external site needs a separate reviewed integration and permission; portal access does not imply access elsewhere.
 

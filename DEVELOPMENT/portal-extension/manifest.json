@@ -1,11 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Capstone - AI Portal Connector",
-  "version": "0.2.0",
-  "description": "Local, read-only access to the signed-in FIU Capstone dashboard for MIRA.",
+  "version": "0.3.0",
+  "description": "Read-only access to the signed-in FIU Capstone dashboard for local and hosted MIRA.",
   "permissions": ["alarms", "scripting", "storage"],
   "host_permissions": ["http://127.0.0.1:3005/*"],
-  "optional_host_permissions": ["https://capstone.cs.fiu.edu/*"],
+  "optional_host_permissions": [
+    "https://capstone.cs.fiu.edu/*",
+    "https://ocelot.aul.fiu.edu/*"
+  ],
   "background": {"service_worker": "background.js"},
   "action": {"default_title": "Capstone - AI Portal Connector", "default_popup": "popup.html"},
   "minimum_chrome_version": "116"

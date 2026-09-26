@@ -449,7 +449,7 @@
     if(result.sources?.length&&!connected){clearPortalConversation();addAssistantText("The private answer no longer belongs to a verified session. Reconnect before asking again.");return;}
     if(result.publicResult?.indexed) renderIndexed(result.publicResult, "");
     else if(result.publicResult?.status==="matched") renderAnswer(result.publicResult.matches[0],result.publicResult.links||[],result.publicResult);
-    const message=addAssistantText(result.answer,"Private local portal · source excerpts · not a complete account record");
+    const message=addAssistantText(result.answer,"Private portal · source excerpts · not a complete account record");
     const sources=connected?(result.sources||[]).filter(s=>/^private-[a-f0-9]{24}$/.test(s.id)&&s.url==="https://capstone.cs.fiu.edu/portal"):[];
     lastTopic=sources.map(s=>s.id).join(",");
     const open=async source=>{
