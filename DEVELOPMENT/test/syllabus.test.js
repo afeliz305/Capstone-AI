@@ -22,9 +22,10 @@ test("reviewed syllabus entries have unique IDs, original page references and no
   }
 });
 test("Fall 2026 posting and contact policies override obsolete generic instructions",()=>{
-  const submission=answer("Where do I submit my work?","canvas-assignments");
-  assert.match(submission.answer,/NOT uploaded to Canvas/);
-  assert.equal(submission.sourcePages,"7");
+  const ambiguous=search("Where do I submit my work?");
+  assert.equal(ambiguous.responseStatus,"partial");assert.equal(ambiguous.matches[0].id,"minutes-usage-guide");assert.ok(ambiguous.matches.some(match=>match.id==="canvas-assignments"));
+  assert.match(ambiguous.missingEvidence,/exact destination depends on the specific work item/);
+  const submission=answer("Where do I submit weekly assignments?","canvas-assignments");assert.match(submission.answer,/NOT uploaded to Canvas/);assert.equal(submission.sourcePages,"7");
   assert.match(answer("How do I contact the professor?","contact-help").answer,/Canvas Inbox/);
   assert.doesNotMatch(entries.find(e=>e.id==="sprint-planning").answer,/Every teammate should submit the same completed file to .*Canvas/);
 });

@@ -6,13 +6,13 @@ const path=require('node:path');
 const http=require('node:http');
 const vm=require('node:vm');
 const {PortalService,PRIVATE_TTL,routeQuestion,sectionFor}=require('../server/portal-local/service');
-const {BrowserAdapter,PortalError,PORTAL,portalUrl}=require('../server/portal-local/browser-adapter');
-const {readPortalDom,readPortalSection,navigatePortalSection}=require('../server/portal-local/dom-reader');
+const {BrowserAdapter,PortalError,PORTAL,portalUrl,APPROVAL_TIMEOUT_MS,TOOL_TIMEOUTS}=require('../server/portal-local/browser-adapter');
+const {SECTION_ROUTES,INTENTIONALLY_EXCLUDED,readPortalDom,readPortalSection,navigatePortalSection}=require('../server/portal-local/dom-reader');
 const {createPortalServer}=require('../server/portal-local/http');
 function fixture(){
   let time=Date.parse('2026-09-25T15:00:00Z'),user='alpha',failure=null,wait=null,calls=0,active='Overview';
   const identity=async()=>{calls++;if(wait)await wait;if(failure)throw new PortalError(failure,'Verification unavailable.');return{state:'verified',identity:{email:user+'@example.test',name:user==='alpha'?'Synthetic Alpha':'Synthetic Beta'},contextBinding:'fixture-context-7',proof:{documentId:2,status:200,transferred:100,worker:0,serviceWorker:false}};};
-  const read=async(section='Overview')=>{const verified=await identity();active=section;const records={Overview:[{kind:'project',heading:'My project',text:user==='alpha'?'My project is the fictional Aurora Weather Station. It reports daily weather and includes a tested display.':'My project is the fictional Borealis Garden. It reports soil moisture and includes a tested display.',url:PORTAL,section:'Overview',subview:'Overview card'},{kind:'dates',heading:'My deadlines',text:'My next assignment deadline is October 4. This is fictional fixture data only.',url:PORTAL,section:'Overview',subview:'Schedule'}],Team:[{kind:'team',heading:'My team',text:'My fictional team includes Taylor and Morgan.',url:PORTAL,section:'Team',subview:'Team members'}],Standing:[{kind:'standing-trend',heading:'My standing trend',text:'My fictional standing trend is steady.',url:PORTAL,section:'Standing',subview:'Standing'}],Grade:[{kind:'grade',heading:'My grade components',text:'My fictional posted grade has 20 points with a 25 percent weight.',url:PORTAL,section:'Grade',subview:'Current grade'}],Messages:[]};return{...verified,section,records:records[section],coverage:'Synthetic '+section+' fixture only.'};};
+  const read=async(section='Overview')=>{const verified=await identity();active=section;const records={Overview:[{kind:'project',heading:'My project',text:user==='alpha'?'My project is the fictional Aurora Weather Station. It reports daily weather and includes a tested display.':'My project is the fictional Borealis Garden. It reports soil moisture and includes a tested display.',url:PORTAL,section:'Overview',subview:'Overview card'},{kind:'dates',heading:'My deadlines',text:'My next assignment deadline is October 4. This is fictional fixture data only.',url:PORTAL,section:'Overview',subview:'Schedule'}],Team:[{kind:'team',heading:'My team',text:'My fictional team includes Taylor and Morgan.',url:PORTAL,section:'Team',subview:'Team members'},{kind:'task',heading:'Synthetic assigned card',text:'Assigned to me. Acceptance criteria: show a passing fixture. Evidence: synthetic test report.',url:PORTAL,section:'Team',subview:'Sprint board'}],Standing:[{kind:'standing-trend',heading:'My standing explanation',text:'My fictional standing trend is steady because the current checkpoint is complete.',url:PORTAL,section:'Standing',subview:'Standing'}],Grade:[{kind:'grade',heading:'My grade components',text:'My fictional posted grade has 20 points with a 25 percent weight.',url:PORTAL,section:'Grade',subview:'Current grade'}],Messages:[]};return{...verified,section,records:records[section],coverage:'Synthetic '+section+' fixture only.'};};
   const adapter={listEligible:async()=>[{id:7,label:'Capstone portal tab 7'}],close:async()=>{},verify:()=>read('Overview'),identity,inspect:()=>read('Overview'),inspectActive:()=>read(active),inspectSection:(_id,section)=>read(section),open:async(_id,section)=>({url:PORTAL,section,guidance:'Synthetic navigation.'})};
   const service=new PortalService({adapter,now:()=>time,publicSearch:async question=>({indexed:true,status:'matched',answer:'PUBLIC fixture: '+question,sources:[],navigation:[],matches:[],links:[]})});
   return{service,adapter,switch:()=>{user='beta';},fail:s=>{failure=s;},advance:n=>{time+=n;},wait:p=>{wait=p;},calls:()=>calls,connect:async(owner='local-a')=>{await service.discover(owner);return service.connect(owner,7);}};
@@ -24,6 +24,16 @@ test('local portal starts disconnected, connects only a chosen verified tab, and
   const result=await f.service.search('local-a',{question:'What is my project?'});
   assert.equal(result.personal,true);assert.match(result.sources[0].excerpt,/Aurora/);assert.equal(result.sources[0].url,PORTAL);assert.ok(result.sources[0].retrievedAt);assert.match(result.coverage,/Temporary local Overview/);
   assert.ok(f.calls()>=2);assert.equal((await f.service.search('another-local-session',{question:'What is my project?'})).sources.length,0);
+});
+test('connection discovery is idempotent and keeps a human-sized approval window',async()=>{
+  let release,calls=0;const gate=new Promise(resolve=>{release=resolve;});
+  const adapter={listEligible:async()=>{calls++;await gate;return[{id:7,label:'Capstone portal tab 7'}];},close:async()=>{},diagnostics:()=>({attempt:1,stage:'browser-request-issued',at:'2026-09-26T13:00:00.000Z',childPid:1234,exitCode:null,errorType:null})};
+  const service=new PortalService({adapter});
+  const first=service.discover('local-a'),second=service.discover('local-a');
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(calls,1);assert.equal(service.status('local-a').state,'browser-approval-required');
+  release();const [one,two]=await Promise.all([first,second]);assert.equal(one.state,'tab-selection-required');assert.equal(two.state,'tab-selection-required');assert.equal(calls,1);
+  const repeated=await service.discover('local-a');assert.equal(repeated.state,'tab-selection-required');assert.equal(calls,1);
+  assert.equal(APPROVAL_TIMEOUT_MS,120000);assert.equal(TOOL_TIMEOUTS.list_pages,120000);assert.ok(TOOL_TIMEOUTS.navigate_page>25000);
 });
 test('account switching invalidates old records and requires explicit selection before using the second account',async()=>{
   const f=fixture();await f.connect();const old=await f.service.search('local-a',{question:'What is my project?'});f.switch();
@@ -45,6 +55,20 @@ test('public requests never fetch private data and mixed responses label both so
   const mixed=await f.service.search('local-a',{question:'What is my project; how do teams propose projects?'});assert.match(mixed.sources[0].excerpt,/Aurora/);assert.match(mixed.publicResult.answer,/PUBLIC/);
   assert.equal(routeQuestion('Tell me about public resources'),false);
 });
+test('disconnected personal routing preserves a useful reviewed course fallback',async()=>{
+  const f=fixture();
+  const result=await f.service.search('local-a',{question:'When is the current sprint due?'});
+  assert.equal(result.personal,undefined);assert.equal(result.status,'matched');assert.match(result.answer,/PUBLIC fixture/);
+  assert.equal(result.privateUnavailable,true);assert.equal(result.connection.state,'helper-ready');assert.equal(f.calls(),0);
+});
+test('authority and privacy policy questions stay public even while a portal is connected',async()=>{
+  const f=fixture();await f.connect();const before=f.calls();
+  for(const question of ['What should I do if MIRA cannot answer?','Can Professor Sadjadi give me an extension on my assignment?','What grade will I receive for this sprint?','Can you move me to another Capstone team?','Can you approve my card as Done?',"Why did another student's grade differ?",'What do I put in my standup?','Where do we submit our sprint work?']){
+    const result=await f.service.search('local-a',{question});assert.equal(result.personal,undefined);assert.match(result.answer,/PUBLIC fixture/);
+  }
+  assert.equal(f.calls(),before);
+  assert.equal((await f.service.search('local-a',{question:'What is my grade?'})).personal,true);
+});
 test('private navigation resolves owned source IDs, checks identity again, and rejects invented destinations',async()=>{
   const f=fixture();await f.connect();const result=await f.service.search('local-a',{question:'What is my project?'});const source=result.sources[0];
   assert.equal((await f.service.destination('local-a',source.id)).url,PORTAL);
@@ -59,9 +83,40 @@ test('multiple private sources ask which one; missing message data never claims 
 });
 test('approved sections load only on deliberate questions and never extend the five-minute lease',async()=>{
   const f=fixture();await f.connect();const initial=f.service.status('local-a');assert.deepEqual(initial.loadedSections,['Overview']);
+  const deadline=await f.service.search('local-a',{question:'When do we have to finish this sprint?'});assert.match(deadline.sources[0].excerpt,/deadline/);
   const grade=await f.service.search('local-a',{question:'What is my grade?'});assert.match(grade.sources[0].excerpt,/20 points/);assert.ok(grade.connection.loadedSections.includes('Grade'));assert.equal(grade.connection.expiresAt,initial.expiresAt);
   const team=await f.service.search('local-a',{question:'Who is on my team?'});assert.match(team.sources[0].excerpt,/Taylor/);assert.ok(team.connection.loadedSections.includes('Team'));assert.equal(team.connection.expiresAt,initial.expiresAt);
   const messages=await f.service.search('local-a',{question:'Do I have unread messages?'});assert.equal(messages.sources.length,0);assert.match(messages.answer,/does not mean/i);assert.ok(messages.connection.loadedSections.includes('Messages'));
+});
+test('expanded natural questions retrieve only the relevant synthetic authorized source',async()=>{
+  const f=fixture();await f.connect();
+  const deadlines=await f.service.search('local-a',{question:'What deadlines are coming up?'});assert.match(deadlines.sources[0].excerpt,/October 4/);assert.equal(deadlines.sources[0].section,'Overview');
+  const work=await f.service.search('local-a',{question:'What work is assigned to me?'});assert.ok(work.sources.length,JSON.stringify(work));assert.match(work.sources[0].excerpt,/Assigned to me/);assert.equal(work.sources[0].section,'Team');
+  const criteria=await f.service.search('local-a',{question:'What acceptance criteria are listed on this card?'});assert.match(criteria.sources[0].excerpt,/Acceptance criteria/);
+  const evidence=await f.service.search('local-a',{question:'What evidence is recorded for this task?'});assert.match(evidence.sources[0].excerpt,/Evidence/);
+  const standing=await f.service.search('local-a',{question:'What does my standing explanation say?'});assert.match(standing.sources[0].excerpt,/checkpoint is complete/);assert.equal(standing.sources[0].section,'Standing');
+  const grade=await f.service.search('local-a',{question:'Which posted grade components are available?'});assert.match(grade.sources[0].excerpt,/25 percent weight/);assert.equal(grade.sources[0].section,'Grade');
+});
+test('continuous transport refreshes an expired private snapshot without revoking transport trust',async()=>{
+  const f=fixture();f.adapter.continuous=true;f.adapter.mode='extension';await f.connect();
+  const generation=f.service.status('local-a').generation;f.advance(PRIVATE_TTL+1);
+  assert.equal(f.service.status('local-a').state,'snapshot-expired');assert.equal(f.service.records.length,0);
+  const refreshed=await f.service.search('local-a',{question:'What is my project?'});
+  assert.equal(refreshed.connection.state,'connected');assert.match(refreshed.sources[0].excerpt,/Aurora/);assert.ok(refreshed.connection.generation>generation);assert.equal(refreshed.connection.transport,'extension');
+});
+test('message bodies require explicit scope and the connector never opens a conversation',async()=>{
+  const f=fixture();await f.connect();let options=null;
+  f.adapter.inspectSection=async(_id,section,next)=>{options=next;const verified=await f.adapter.identity();return{...verified,section,records:next.messageContent?[{kind:'message-content',heading:'Synthetic team conversation',text:'A deliberately opened synthetic team conversation contains a fixture update.',url:PORTAL,section:'Messages',subview:'User-selected visible conversation'}]:[],coverage:'Synthetic message fixture.'};};
+  f.service.configure('local-a',{messageContent:true});
+  const result=await f.service.search('local-a',{question:'What information is available in this team conversation?'});
+  assert.equal(options.navigate,false);assert.equal(options.messageContent,true);assert.match(result.sources[0].excerpt,/deliberately opened/);
+  assert.doesNotMatch(readPortalSection.toString(),/\.cs-chan[^\n;]*\.click\(/);
+  f.service.configure('local-a',{messageContent:false});assert.equal(f.service.records.some(record=>record.kind==='message-content'),false);
+});
+test('dashboard capability map accounts for every discovered route and excludes unrelated directories',()=>{
+  assert.equal(Object.keys(SECTION_ROUTES).length,18);
+  for(const section of ['Overview','Messages','Start here','Team','Standing','Grade','Connections','Opportunities','Team contacts','AI Anchors','Record','Showcase','Letters','Request a letter','Resources','Brand & templates'])assert.ok(Object.hasOwn(SECTION_ROUTES,section),section);
+  assert.deepEqual([...INTENTIONALLY_EXCLUDED].sort(),['Alumni directory','Classmates']);
 });
 test('question routing distinguishes approved private sections from public course questions',()=>{
   assert.equal(routeQuestion('What is the public grading scale?'),false);
@@ -83,15 +138,17 @@ test('client identity requests and injected portal instructions cannot select us
 });
 test('browser adapter permits only fixed operations and demands fresh network-backed identity',async()=>{
   const adapter=new BrowserAdapter();const calls=[];let proof={documentId:2,status:200,transferred:100,worker:0,serviceWorker:false};
-  adapter.call=async(name,args)=>{calls.push({name,args});if(name==='list_pages')return{structuredContent:{pages:[{id:7,url:PORTAL},{id:8,url:'https://unrelated.test'}]}};if(name==='navigate_page')return{content:[{type:'text',text:'Successfully reloaded the page.'}]};let value;if(args.function.includes('const account=document.querySelector'))value={state:'verified',identity:{name:'Fixture',email:'fixture@example.test'},proof,active:'Overview'};else if(args.function.includes("if(section==='Overview')"))value={state:'verified',section:'Overview',records:[],coverage:'Synthetic Overview.'};else value={state:'present',documentId:1,active:'Overview',route:'home',editable:false};return{content:[{type:'text',text:'```json\n'+JSON.stringify(value)+'\n```'}]};};
+  adapter.call=async(name,args)=>{calls.push({name,args});if(name==='list_pages')return{structuredContent:{pages:[{id:7,url:PORTAL},{id:8,url:'https://unrelated.test'}]}};if(name==='navigate_page')return{content:[{type:'text',text:'Successfully reloaded the page.'}]};let value;if(args.function.includes('const account=document.querySelector'))value={state:'verified',identity:{name:'Fixture',email:'fixture@example.test'},proof,active:'Overview'};else if(args.function.includes("if(section==='Overview')"))value={state:'verified',section:'Overview',records:[],coverage:'Synthetic Overview.'};else value={state:'present',documentId:1,active:'Overview',route:'home',editable:false};return{content:[{type:'text',text:'```json\n'+JSON.stringify({ok:true,value})+'\n```'}]};};
   assert.deepEqual(await adapter.listEligible(),[{id:7,label:'Capstone portal tab 7'}]);assert.equal((await adapter.verify(7)).state,'verified');assert.ok(calls.some(c=>c.name==='navigate_page'&&c.args.ignoreCache));
   const reloads=calls.filter(call=>call.name==='navigate_page').length;assert.equal((await adapter.inspect(7)).state,'verified');assert.equal(calls.filter(call=>call.name==='navigate_page').length,reloads);
   for(const invalid of [{documentId:1},{status:401},{transferred:0},{worker:1},{serviceWorker:true}]){const saved=proof;proof={...proof,...invalid};await assert.rejects(adapter.verify(7));proof=saved;}
   assert.doesNotMatch(readPortalDom.toString(),/document\.cookie|localStorage|sessionStorage|fetch\(/);
   const raw=new BrowserAdapter();await assert.rejects(raw.call('send_message',{}),/denied/);
+  const transient=new BrowserAdapter();let attempts=0;transient.call=async()=>{attempts++;if(attempts===1)throw new PortalError('extraction-failed','Context changed.','unknown');return{content:[{type:'text',text:'```json\n'+JSON.stringify({ok:true,value:{state:'present'}})+'\n```'}]};};
+  assert.equal((await transient.evaluate(7,()=>({state:'present'}))).state,'present');assert.equal(attempts,2);
 });
 
-test('real DOM reader extracts only approved visible cards and never reads forms, hidden fields or conversations',()=>{
+test('real DOM reader extracts only approved visible cards and keeps message bodies behind explicit scope',()=>{
   function element(tag,text='',children=[]){const el={nodeType:1,tagName:tag.toUpperCase(),textContent:text,innerText:text,children,childNodes:children.length?children:[{nodeType:3,textContent:text}],offsetWidth:10,offsetHeight:10,getClientRects:()=>[{}],getAttribute:()=>null,matches:selector=>selector.split(',').some(s=>s.trim()===tag),querySelector:()=>null,querySelectorAll:()=>[],classList:{contains:()=>false}};return el;}
   const name=element('div','Synthetic Alpha'),email=element('div','alpha@example.test');let open=false;
   const account=element('button');account.getAttribute=()=>open?'true':'false';account.click=()=>{open=!open;};
@@ -100,11 +157,13 @@ test('real DOM reader extracts only approved visible cards and never reads forms
   const content={children:[card('Aurora · Read the brief','Fictional project body',true),card('Other teams on this project','UNRELATED-TEAM'),card('Standing & grade','PRIVATE-GRADE'),card('Your team','COLLAPSED-TEAM',false,true)]};
   const badge=element('button','Messages 3');
   content.querySelector=()=>null;content.querySelectorAll=selector=>selector===':scope > .card'?content.children:[];
-  const context={location:{origin:'https://capstone.cs.fiu.edu',pathname:'/portal',search:''},performance:{timeOrigin:2,getEntriesByType:()=>[{responseStatus:200,transferSize:200,workerStart:0}]},navigator:{},getComputedStyle:()=>({visibility:'visible'}),document:{activeElement:{matches:()=>false},querySelector:s=>s.startsWith('button[')?account:s==='main .sidebar .nav-item.on'?element('button','Overview'):s==='#pubavdrop.open'&&open?menu:s==='main #cmain'?content:null,querySelectorAll:()=>[badge]}};
+  const context={URL,location:{origin:'https://capstone.cs.fiu.edu',href:'https://capstone.cs.fiu.edu/portal',pathname:'/portal',search:''},performance:{timeOrigin:2,getEntriesByType:()=>[{responseStatus:200,transferSize:200,workerStart:0}]},navigator:{},getComputedStyle:()=>({visibility:'visible'}),document:{activeElement:{matches:()=>false},querySelector:s=>s.startsWith('button[')?account:s==='main .sidebar .nav-item.on'?element('button','Overview'):s==='#pubavdrop.open'&&open?menu:s==='main #cmain'?content:null,querySelectorAll:()=>[badge]}};
   const result=vm.runInNewContext('('+readPortalDom.toString()+')("Overview")',context);
   assert.equal(result.state,'verified');assert.equal(result.records.length,1);assert.match(result.records[0].text,/Fictional project/);assert.equal(result.records[0].section,'Overview');
   assert.doesNotMatch(JSON.stringify(result),/SENSITIVE-FORM|SCRIPT-INSTRUCTION|UNRELATED-TEAM|PRIVATE-GRADE|COLLAPSED-TEAM/);
-  assert.doesNotMatch(readPortalDom.toString(),/#csMsgs.*textContent|#csThread.*textContent/);
+  assert.match(readPortalDom.toString(),/messageContent.*selected-conversation/);
+  assert.match(readPortalDom.toString(),/if\(messageContent\)/);
+  assert.match(readPortalDom.toString(),/#csMsgs \.cs-msg/);
   context.location.pathname='/admin';assert.equal(vm.runInNewContext('('+readPortalDom.toString()+')("Overview")',context).state,'connection-lost');
 });
 test('Grade past-term disclosure is read temporarily and restored to its original state',()=>{

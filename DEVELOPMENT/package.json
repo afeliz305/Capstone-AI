@@ -12,6 +12,8 @@
     "demo": "node scripts/start-demo.js",
     "demo:supabase": "node scripts/start-supabase-demo.js",
     "demo:portal": "node scripts/start-portal-demo.js",
+    "demo:portal:mcp": "node scripts/start-portal-demo.js --mcp",
+    "extension:build": "node scripts/build-portal-extension.js",
     "test": "node --test test/*.test.js",
     "test:branding:ui": "node scripts/smoke-branding-ui.js",
     "supabase:check": "node scripts/check-supabase.js",

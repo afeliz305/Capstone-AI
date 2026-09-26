@@ -74,7 +74,7 @@ function routeMira(entries, question, contextId, toPublic) {
   });
   if(/what grade will i receive|predict (?:my )?grade|guess (?:my )?grade|just guess.*grade|future grade/.test(text)) return result(entries,toPublic,{
     status:"partial",ids:["syllabus-grading","portal-grade"],
-    missingEvidence:"A future or unofficial personal grade cannot be verified or predicted; Grade is outside the approved Overview-only connector scope.",
+    missingEvidence:"A future or unofficial personal grade cannot be verified or predicted. The connected Grade section can report posted components only.",
     answer:entry=>"I cannot predict or promise your sprint grade. "+entry.answer+" For a posted official result, open the portal Grade section or contact the instructor about your own feedback."
   });
   if(/extension|extra time|extend.*assignment/.test(text)) return result(entries,toPublic,{
@@ -84,39 +84,35 @@ function routeMira(entries, question, contextId, toPublic) {
   });
   if(/acceptance criteria|success conditions|\bac\b/.test(text)) return result(entries,toPublic,{
     status:"link_only",ids:["portal-resources","contact-help"],accessScope:"authenticated-navigation-only",
-    missingEvidence:"No reviewed public/syllabus source defines how card acceptance criteria control Verify or Done for this course.",
-    answer:()=>"I could not verify course-specific acceptance-criteria instructions from the available indexed content. Do not treat criteria as satisfied without evidence or official review. Open the authenticated portal Resources area for the current workflow guidance; ask course staff if the card or policy remains unclear."
+    missingEvidence:"Not found after inspecting the available Team, Resources, and linked template sources. A specific team card may still contain its own criteria in the connected private view.",
+    answer:()=>"I did not find a published course-wide acceptance-criteria procedure in the available Team, Resources, or linked template sources. MIRA can report criteria visibly recorded on your own connected team card, but it will not infer approval rules. Ask course staff if the card or policy remains unclear."
   });
   if(/definition of done|what does done mean|card.*\bdone\b|\bdone\b.*card/.test(text)) return result(entries,toPublic,{
     status:"link_only",ids:["portal-resources","contact-help"],accessScope:"authenticated-navigation-only",
-    missingEvidence:"No reviewed public/syllabus source contains the course's Definition of Done or approval rule.",
-    answer:()=>"I could not verify the course's Definition of Done from the available indexed content. A commit or student assertion alone is not verified approval. Open the authenticated portal Resources area for the current workflow instructions, or ask course staff. MIRA will not change the card."
+    missingEvidence:"Not found after inspecting the available Team, Resources, and linked template sources.",
+    answer:()=>"I did not find an official course Definition of Done or approval rule in the available Team, Resources, or linked templates. A card's visible criteria or evidence are not automatically proof of approval. Ask course staff; MIRA will not change the card."
   });
-  if(/(?:move|enter|ready).*(?:to )?verify|verification now|before.*verify|verify requirements/.test(text)) return result(entries,toPublic,{
+  if(/(?:move|enter|ready).*(?:to )?verify|verification now|before.*verif(?:y|ication)|(?:missing|required|need).*before.*verif(?:y|ication)|verify requirements/.test(text)) return result(entries,toPublic,{
     status:"link_only",ids:["portal-resources","contact-help"],accessScope:"authenticated-navigation-only",
-    missingEvidence:"No reviewed public/syllabus source contains the exact transition requirements for Verify.",
-    answer:()=>"I could not verify the evidence, checks, fields, or review steps required before entering Verify. Verify and Done are different states, and MIRA will not move the card. Open the authenticated portal Resources area for the current workflow instructions, or ask course staff."
+    missingEvidence:"Not found after inspecting the available Team board, Resources, and linked template sources.",
+    answer:()=>"I did not find a published course-wide checklist for entering Verify in the available Team board, Resources, or linked templates. MIRA can report criteria and evidence visibly recorded on your own connected card, but Verify and Done remain different states and MIRA will not move the card. Ask course staff for the transition rule."
   });
   if(/what information.*stand ?up|what.*(?:put|include).*(?:stand ?up|daily scrum)|stand ?up (?:fields|template|content)/.test(text)) return result(entries,toPublic,{
-    status:"link_only",ids:["daily-scrum","portal-resources"],accessScope:"authenticated-source-unverified",
-    missingEvidence:"The portal lists a Daily Scrum template, but its current field contents were not readable in the approved Overview scope.",
-    answer:()=>"The authenticated portal lists a Daily Scrum minutes template, but I could not verify its current required fields from the approved Overview-only scope. Open the template in portal Resources and treat its labels as authoritative; MIRA will not invent mandatory fields."
+    status:"answered",ids:["daily-scrum","minutes-usage-guide"],accessScope:"authenticated-linked-documents"
   });
   if(/how often.*(?:stand ?up|status update)|(?:stand ?up|status update).*frequency|finish.*stand ?up/.test(text)) return result(entries,toPublic,{
-    status:"partial",ids:["syllabus-attendance"],
-    missingEvidence:"The syllabus states the team's meeting frequency and individual participation basis, but not an exact per-member posting frequency.",
-    answer:entry=>entry.answer+" This source does not establish that every member must post a separate update at that same cadence. Use the current course instructions or ask the instructor if posting frequency is distinct from meeting participation."
+    status:"partial",ids:["daily-scrum","minutes-usage-guide","syllabus-attendance"],
+    missingEvidence:"The linked Daily Scrum template and its usage guide conflict on cadence and submission wording.",
+    answer:entry=>entry.answer+" Because the two current linked documents disagree, MIRA will not choose a cadence silently. Confirm the active requirement with the instructor."
   });
   if(/sprint retrospective|\bretro\b|process improvement/.test(text)) return result(entries,toPublic,{
-    status:"partial",ids:["syllabus-sprint-retrospective","portal-resources"],accessScope:"public-summary-plus-authenticated-navigation",
-    missingEvidence:"The syllabus establishes the ceremony but does not provide its detailed checklist in the reviewed text. The portal destination is a navigation lead, not verified policy evidence."
+    status:"answered",ids:["sprint-retrospective-template","syllabus-sprint-retrospective"],accessScope:"authenticated-linked-document"
   });
   if(/sprint review|review meeting|sprint demo/.test(text) && !/showcase/.test(text)) return result(entries,toPublic,{
-    status:"partial",ids:["syllabus-sprint-review","portal-resources"],accessScope:"public-summary-plus-authenticated-navigation",
-    missingEvidence:"The syllabus establishes the ceremony but does not provide its detailed checklist in the reviewed text. The portal destination is a navigation lead, not verified policy evidence."
+    status:"answered",ids:["sprint-review-template","syllabus-sprint-review"],accessScope:"authenticated-linked-document"
   });
   if(/where.*(?:sprint work|work).*(?:submit|document|upload)|where.*(?:submit|document|upload).*(?:sprint work|work)|upload our sprint work/.test(text)) return result(entries,toPublic,{
-    status:"answered",ids:["canvas-assignments"],answer:entry=>entry.answer
+    status:"partial",ids:["minutes-usage-guide","canvas-assignments"],missingEvidence:"The linked minutes guide distinguishes Capstone-site ceremony/board filing from Canvas weekly assignments. The exact destination depends on the specific work item."
   });
   if(/(?:mira|you).*(?:cannot|can t|don t|doesn t|do not).*(?:answer|know)|who should i ask.*(?:don t|do not|cannot|can t) know|question.*(?:cannot|can t).*(?:answer|find)/.test(text)) return result(entries,toPublic,{
     status:"escalation",ids:["contact-help"],answer:entry=>entry.answer+" Include the course/term, sprint or assignment, the page/section you checked, and the specific point that remains unclear. No message or support request is sent automatically."

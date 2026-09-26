@@ -18,7 +18,7 @@
 ## Feature reference
 
 - [MIRA source coverage and acceptance](MIRA_SOURCE_COVERAGE.md) - public/course/private scope map, source authority, fifteen-question results, verified destinations and unresolved workflow-policy gaps.
-- [Local private portal connector](LOCAL_PORTAL_CONNECTOR.md) - guided existing-session connection, launcher, manual Chrome approval, explicit verification/refresh, isolation, tests and live-verification limits. Development only; never upload it.
+- [Local private portal connector](LOCAL_PORTAL_CONNECTOR.md) - Manifest V3 installation/pairing, exact permissions, five-minute refresh, message scope, full dashboard capability matrix, MCP fallback, privacy controls and restart behavior. Development only; never upload it.
 - [Indexed website knowledge and navigation](WEBSITE_INDEX.md) - public crawler, persistent snapshots, source excerpts/actions, maintenance commands, configuration, tests and limitations.
 - [Messages and dashboard navigation](PORTAL_NAVIGATION.md) - 19 portal shortcuts, test prompts, explicit live-data limits and future owner-approved API requirements.
 - [Syllabus search and dashboard guidance](SYLLABUS_AND_DASHBOARD.md) - reviewed Fall 2026 content, follow-ups, date conflicts, and the still-required read-only student-record integration.
