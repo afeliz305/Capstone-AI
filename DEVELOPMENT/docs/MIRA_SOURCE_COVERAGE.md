@@ -1,6 +1,6 @@
 # MIRA source coverage and acceptance record
 
-September 26 hosted transport note: the same approved private source coverage is now available from the Ocelot page when extension version 0.3.0 has both explicit site grants. Personal questions and excerpts remain browser-memory-only and do not enter Supabase. Without the extension or either permission, MIRA correctly falls back to portal navigation rather than claiming a live check.
+September 26 architecture correction: hosted Ocelot remains navigation-only for personal information. The Ocelot-to-extension relay was removed so private questions and answers do not return to the shared Ocelot origin. The approved private source coverage remains local development evidence; the owner-review portal-native module is pending installation. See [PORTAL_OWNER_HANDOFF.md](PORTAL_OWNER_HANDOFF.md).
 
 Updated September 26, 2026. This records the local development implementation. It is not production authorization and does not claim that unavailable or excluded data was searched.
 

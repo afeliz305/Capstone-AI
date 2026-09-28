@@ -10,6 +10,8 @@
     <script src="js/shared/api-client.js" defer></script>
     <script src="js/shared/attachment-policy.js" defer></script>
     <script src="js/shared/contact-policy.js" defer></script>
+    <script src="js/shared/portal-navigation.js" defer></script>
+    <script src="js/chat/shared-information.js" defer></script>
     <script src="js/chat/capstone-chat.js" defer></script>
   </head>
   <body>
@@ -99,7 +101,7 @@
 
         <section class="topic-grid portal-shortcuts" aria-labelledby="portal-shortcuts-title">
           <div class="section-heading"><div><p class="eyebrow">PORTAL SHORTCUTS</p><h2 id="portal-shortcuts-title">Messages &amp; dashboard</h2></div></div>
-          <p>Ask where to go, then open the portal in a new tab and choose its section. Live messages, unread counts and personal records are not connected to this chatbot.</p>
+          <p>Use verified links to open the requested portal section. Personal messages, grades, and account records remain inside the authenticated portal and are not read by Ocelot MIRA.</p>
           <div class="starter-prompts" aria-label="Portal shortcuts">
             <button type="button" data-question="Do I have any new messages?">Check messages</button>
             <button type="button" data-question="Open my dashboard">Open dashboard</button>
@@ -176,6 +178,17 @@
         </div>
       </header>
 
+      <section class="shared-information-bar" aria-label="Temporary information sources">
+        <div>
+          <strong id="shared-mode-status">No shared information loaded</strong>
+          <span id="shared-mode-detail">Public and course answers are active.</span>
+        </div>
+        <div class="shared-bar-actions">
+          <button type="button" class="secondary-action" id="open-shared-information">Use information I share</button>
+          <button type="button" class="secondary-action" id="load-sample-information">Load fictional sample</button>
+        </div>
+      </section>
+
       <div class="chat-log" role="log" aria-live="polite" aria-relevant="additions">
         <article class="message assistant-message">
           <div class="message-label">CAPSTONE - AI</div>
@@ -201,6 +214,69 @@
         <p>Press Enter to send · Shift+Enter for a new line</p>
       </form>
     </section>
+
+    <dialog class="shared-information-dialog" id="shared-information-dialog" aria-labelledby="shared-information-title">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">TEMPORARY BROWSER SESSION</p>
+          <h2 id="shared-information-title">Use information I share</h2>
+          <p>This is a copy you supply, not a live account connection. Only the pasted content is searchable, it will not update with the portal, and it expires five minutes after import.</p>
+        </div>
+        <button class="dialog-close" id="close-shared-information" type="button" aria-label="Close shared information panel">×</button>
+      </div>
+
+      <div class="shared-safety-note" role="note">
+        <strong>Review before adding.</strong>
+        <span>Do not paste login codes, passwords, cookies, tokens, or another person's private records. Use fictional or redacted information for this proof of concept. Clear it before handing the device to someone else.</span>
+      </div>
+
+      <form id="shared-information-form" class="shared-information-form">
+        <div class="form-row">
+          <label>
+            Source category
+            <select name="category" required>
+              <option>Task</option><option>Sprint</option><option>Grade</option><option>Team</option><option>Course instructions</option><option>Other</option>
+            </select>
+          </label>
+          <label>
+            Source title
+            <input name="title" maxlength="120" placeholder="Example: Redacted Sprint 2 task" required>
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            Term <span>(optional)</span>
+            <input name="term" maxlength="80" placeholder="Example: Fall 2026">
+          </label>
+          <label>
+            Sprint or context <span>(optional)</span>
+            <input name="sprint" maxlength="80" placeholder="Example: Sprint 2">
+          </label>
+        </div>
+        <label>
+          Selected plain text
+          <textarea name="text" rows="8" maxlength="20000" placeholder="Paste only the selected text you want MIRA to use. Remove unnecessary personal details first." required></textarea>
+        </label>
+        <p class="form-status" id="shared-information-status" role="status" aria-live="polite"></p>
+        <div class="dialog-actions">
+          <button class="primary-action" type="submit">Use this information</button>
+        </div>
+      </form>
+
+      <section class="loaded-source-panel" aria-labelledby="loaded-source-title">
+        <div class="section-heading">
+          <div><p class="eyebrow">SESSION SOURCES</p><h3 id="loaded-source-title">Loaded information</h3></div>
+        </div>
+        <p id="loaded-source-empty">No temporary sources are loaded.</p>
+        <ul id="loaded-source-list" class="loaded-source-list" aria-label="Temporary sources" hidden></ul>
+        <div class="dialog-actions shared-session-actions">
+          <button type="button" class="secondary-action" id="activate-shared-information" hidden>Use my shared sources</button>
+          <button type="button" class="secondary-action" id="activate-sample-information" hidden>Use fictional sample</button>
+          <button type="button" class="secondary-action" id="clear-shared-information">Clear shared information</button>
+          <button type="button" class="secondary-action" id="new-shared-session">Start a new demo session</button>
+        </div>
+      </section>
+    </dialog>
 
     <dialog class="support-dialog" id="support-dialog" aria-labelledby="support-title">
       <form class="support-form" id="support-form">
@@ -276,7 +352,7 @@
 
         <label class="check-row">
           <input name="includeTranscript" type="checkbox" checked>
-          Include this chat with the request
+          Include public/course chat with the request (shared-information questions and answers are excluded)
         </label>
         <label class="check-row">
           <input name="privateToInstructor" type="checkbox" checked>

@@ -1,9 +1,9 @@
 # Signed-in account integration
 
-September 25 local prototype: an application-owned, read-only Chrome existing-session connector is implemented separately under `demo:portal`. After a fresh Overview identity check, it lazily reads only a deliberately requested approved section: Overview, own Team, Standing, own Grade, or Messages channel metadata. It does not supply identity to ticket creation, and live application acceptance is still pending the Chrome handshake. [Local setup, section coverage, privacy controls and actual verification status](LOCAL_PORTAL_CONNECTOR.md). The ordinary hosted modes and production contract below remain unconnected to FIU authentication.
+September 26 architecture: hosted Ocelot remains navigation-only for private account information. The local extension/loopback connector remains development tooling. A separate portal-native bundle and fail-closed adapter contract are ready for owner review, but no production adapter has been installed. [Portal owner handoff](PORTAL_OWNER_HANDOFF.md) and [local connector limits](LOCAL_PORTAL_CONNECTOR.md).
 ## Portal navigation versus account access
 
-September 25: the chatbot can guide students to Messages, Overview and the other portal sections using [reviewed navigation shortcuts](PORTAL_NAVIGATION.md). These links do not access a portal session or read personal data. Supabase staff authentication also does not connect the FIU account. The integration contract below is separate from this navigation feature; no live FIU adapter has been configured. See the navigation guide for future read-only message/dashboard requirements.
+September 26: the chatbot uses [verified portal hash destinations](PORTAL_NAVIGATION.md) for signed-in navigation. These links do not access a portal session or read personal data. Supabase staff authentication also does not connect the FIU account. The portal-native adapter contract is separate and remains owner-dependent.
 
 ## What works now
 

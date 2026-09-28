@@ -2,6 +2,8 @@
 
 ## Upload and test
 
+- [Pre-integration proof-of-concept demo](PROOF_OF_CONCEPT_DEMO.md) - current three-mode capability boundary, browser-only shared information, five-minute presentation, privacy limits, and verification steps.
+
 - [Supabase FileZilla upload checklist](OCELOT_SUPABASE_UPLOAD.md) - shared-queue package, exact remote paths, permissions and after-upload tests. Use this instead of the browser-only steps for the Supabase release.
 
 - [Project rename and FileZilla checklist](PROJECT_RENAME.md) - new folders, repository and intended Ocelot URL; preserve old browser queues before switching addresses.
@@ -21,6 +23,7 @@
 - [Local private portal connector](LOCAL_PORTAL_CONNECTOR.md) - Manifest V3 installation/pairing, exact permissions, five-minute refresh, message scope, full dashboard capability matrix, MCP fallback, privacy controls and restart behavior. Development only; never upload it.
 - [Indexed website knowledge and navigation](WEBSITE_INDEX.md) - public crawler, persistent snapshots, source excerpts/actions, maintenance commands, configuration, tests and limitations.
 - [Messages and dashboard navigation](PORTAL_NAVIGATION.md) - 19 portal shortcuts, test prompts, explicit live-data limits and future owner-approved API requirements.
+- [Portal owner handoff](PORTAL_OWNER_HANDOFF.md) - verified deep-link matrix, owner-hosted bundle, adapter/login-continuation hooks, privacy decisions, tests, and rollback.
 - [Syllabus search and dashboard guidance](SYLLABUS_AND_DASHBOARD.md) - reviewed Fall 2026 content, follow-ups, date conflicts, and the still-required read-only student-record integration.
 - [Staff access and assignments](STAFF_ACCESS.md)
 - [Account integration](ACCOUNT_INTEGRATION.md)

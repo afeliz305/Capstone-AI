@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const portal = require("../js/shared/portal-data");
+const navigation = require("../js/shared/portal-navigation");
 const {reviewedKnowledge} = require("../server/lib/knowledge");
 const {searchKnowledge} = require("../server/lib/search");
 const entries = reviewedKnowledge(require("../data/capstone-knowledge.json"));
@@ -14,28 +15,45 @@ function answer(q, id, context) {
   return result.matches[0];
 }
 
-test("all 19 reviewed sidebar sections have safe navigation-only results",()=>{
+test("all 19 reviewed sidebar destinations are centralized and navigation-only",()=>{
   assert.equal(portal.entries.length,19);
   assert.equal(new Set(entries.map(e=>e.id)).size,entries.length);
   for(const entry of portal.entries) {
-    assert.equal(entry.url,"https://capstone.cs.fiu.edu/portal");
+    const destination=navigation.resolvePortalDestination(entry.portalSectionId);
+    assert.ok(destination);
+    assert.equal(entry.url,destination.url);
+    assert.equal(entry.navigationCapability,destination.navigationCapability);
+    assert.equal(entry.dataCapability,"navigation-only");
+    assert.equal(entry.liveDataConnected,false);
+    assert.equal(entry.mappedFromObservedControl,true);
+    assert.equal(entry.loginReturnVerified,false);
     assert.equal(entry.sourceKind,"portal-navigation");
     assert.equal(entry.access,"authenticated");
     for(const intent of entry.intents) {
       const result=answer(intent,entry.id);
       assert.equal(result.portalSection,entry.portalSection);
       assert.equal(result.liveDataConnected,false);
-      assert.match(result.answer,/NOT connected/);
+      if (entry.portalSectionId === "grade") {
+        assert.match(result.answer,/Personal grades are not yet available inside this Ocelot chat/);
+        assert.match(result.answer,/land on Overview, choose Grade/);
+      } else assert.match(result.answer,/Ocelot MIRA cannot/);
     }
     for(const followUp of entry.followUps) assert.notEqual(search(followUp,entry.id).status,"unmatched",followUp);
   }
+  assert.equal(navigation.resolvePortalDestination("grade").url,"https://capstone.cs.fiu.edu/portal#mygrade");
+  assert.equal(navigation.resolvePortalDestination("messages").url,"https://capstone.cs.fiu.edu/portal#messages");
+  for(const id of ["grade","messages","team","standing"]) assert.equal(navigation.resolvePortalDestination(id).signedInVerified,true);
+  assert.equal(navigation.resolvePortalDestination("grade").refreshVerified,true);
+  assert.equal(navigation.resolvePortalDestination("messages").refreshVerified,false);
+  assert.equal(navigation.resolvePortalDestination("resources").signedInVerified,false);
+  assert.equal(navigation.resolvePortalDestination("unknown"),null);
 });
 
 test("new/unread messages never imply an inbox was checked",()=>{
-  for(const q of ["Any new messages?","Do I have unread messages?","Can you read my messages?","Check for new messages","Check my notifications","Check again","Read them"]) {
+  for(const q of ["Any new messages?","Do I have unread messages?","Can you read my messages?","Check for new messages","Check my notifications?","Check again","Read them"]) {
     const result=answer(q,"portal-messages","portal-messages");
-    assert.match(result.answer,/cannot check for new or unread messages/);
-    assert.match(result.answer,/No messages have been read, marked as read, sent or changed/);
+    assert.match(result.answer,/cannot check unread counts or message contents/);
+    assert.match(result.answer,/No message has been opened, marked read, sent, or changed/);
     assert.doesNotMatch(result.answer,/you have \d|no new messages|no unread messages/i);
   }
   assert.equal(search("Open my dashboard and messages").status,"choices");
@@ -68,10 +86,10 @@ test("portal shortcuts make no Auth, dashboard or paid model calls in Supabase m
   }
 });
 
-test("homepage exposes every section and explains the live-data boundary",()=>{
+test("homepage exposes every section and explains the portal privacy boundary",()=>{
   const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
   const markup=html.match(/<section class="topic-grid portal-shortcuts"[\s\S]*?<\/section>/)[0];
-  assert.match(markup,/Live messages, unread counts and personal records are not connected/);
+  assert.match(markup,/Personal messages, grades, and account records remain inside the authenticated portal/);
   const questions=[...markup.matchAll(/data-question="([^"]+)"/g)].map(m=>m[1].replaceAll("&amp;","&"));
   assert.equal(questions.length,19);
   const matches=questions.map(q=>search(q).matches[0].id);

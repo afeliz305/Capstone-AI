@@ -4,7 +4,6 @@ const { createHash } = require("node:crypto");
 const publicFiles = require("../server/lib/public-files");
 const { browserBundle } = require("./browser-bundle");
 const { supabaseBundle } = require("./supabase-bundle");
-const { hostedPortalBundle } = require("./hosted-portal-bundle");
 const { reviewedKnowledge } = require("../server/lib/knowledge");
 const { loadPublicIndex } = require("../server/website-index/store");
 
@@ -59,16 +58,11 @@ async function createOcelotPackage({ root = path.resolve(__dirname, ".."), outpu
       html = html.replace(/(<body[^>]*>)/, '$1\n    <p class="hosting-test-notice" role="note">Group testing only — use fictional names, contact details, and documents. Staff access is email-only and does not verify identity. No professor email is sent.</p>');
       html = html.replace('>Local prototype<', '>Ocelot test prototype<');
       }
-      if (file === "index.html") {
-        html = html.replace('<script src="js/chat/capstone-chat.js" defer></script>', '<script src="js/hosted/portal-client.bundle.js" defer></script>\n    <script src="js/chat/capstone-chat.js" defer></script>');
-        html = html.replace('Ask where to go, then open the portal in a new tab and choose its section. Live messages, unread counts and personal records are not connected to this chatbot.', 'Install the Capstone - AI connector to use your own signed-in dashboard in this browser. Without the connector, these buttons remain safe navigation shortcuts.');
-      }
       bytes = Buffer.from(html);
     }
     if (file === "css/styles.css") bytes = Buffer.concat([bytes, Buffer.from('\n.hosting-test-notice { margin: 0; padding: .75rem 1.5rem; background: #fff4d1; color: #172b4d; border-bottom: 1px solid #d9a836; font-size: .95rem; line-height: 1.5; }\n')]);
     await write(file, bytes);
   }
-  await write("js/hosted/portal-client.bundle.js", await hostedPortalBundle(root));
   if (transport === "browser") {
     await write("js/shared/browser-demo.bundle.js", await browserBundle(root, source, siteIndex));
   } else if (transport === "supabase") {
@@ -88,7 +82,21 @@ async function createOcelotPackage({ root = path.resolve(__dirname, ".."), outpu
   await write("api/.htaccess", '<IfModule mod_authz_core.c>\n  <FilesMatch "^(?:\\.user\\.ini|storage\\.php|tickets\\.php|search\\.php|knowledge\\.php)$">\n    Require all denied\n  </FilesMatch>\n</IfModule>\n');
   }
   await write("css/fonts/OFL.txt", await source("docs/licenses/Mulish-OFL.txt"));
-  await fs.writeFile(path.join(destination, "UPLOAD-INSTRUCTIONS.md"), await source("docs/OCELOT_UPLOAD_GUIDE.md"), { flag: "wx" });
+  const totalBytes = manifest.reduce((sum, entry) => sum + entry.bytes, 0);
+  const instructions = `# Capstone - AI build record\n\n` +
+    `Generated: ${new Date().toISOString()}\n\n` +
+    `- Transport: ${transport}\n` +
+    `- Website folder: Capstone - AI\n` +
+    `- Public files: ${manifest.length}\n` +
+    `- Total public bytes: ${totalBytes}\n` +
+    `- Checksums: manifest.json in this record folder\n\n` +
+    `Upload only the generated **Capstone - AI** website folder into public_html. ` +
+    `Do not upload this record folder, DEVELOPMENT, source tests, local data, credentials, or archives. ` +
+    `Use directories 755 and ordinary files 644; never use 777. Hard-refresh after transfer.\n\n` +
+    `For the complete current FileZilla checklist and backend-specific acceptance steps, read ` +
+    `DEVELOPMENT/docs/OCELOT_SUPABASE_UPLOAD.md for Supabase or DEVELOPMENT/docs/OCELOT_UPLOAD_GUIDE.md for other modes. ` +
+    `This build record proves only the local package contents; it does not prove an upload, hosted backend, or database save.\n`;
+  await fs.writeFile(path.join(destination, "UPLOAD-INSTRUCTIONS.md"), instructions, { flag: "wx" });
   await fs.writeFile(path.join(destination, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n", { flag: "wx" });
   return { destination, uploadDirectory, manifest, transport };
 }

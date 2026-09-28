@@ -3,7 +3,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createHash } = require("node:crypto");
 const publicFiles = require("../server/lib/public-files");
-const allowed = new Set([...publicFiles, "js/shared/browser-demo.bundle.js", "js/shared/supabase.bundle.js", "js/shared/php-search.bundle.js", "js/hosted/portal-client.bundle.js", "css/fonts/OFL.txt"]);
+const allowed = new Set([...publicFiles, "js/shared/browser-demo.bundle.js", "js/shared/supabase.bundle.js", "js/shared/php-search.bundle.js", "css/fonts/OFL.txt"]);
 const basePath = "/Capstone%20-%20AI/";
 // Serve, do not redirect: browser-demo IndexedDB is scoped to the original URL.
 // This permits exporting old demo records after a branding/folder rename.
@@ -30,7 +30,7 @@ function createPreview({ root = path.resolve(__dirname, "../../Capstone - AI") }
   });
 }
 if (require.main === module) createPreview().listen(Number(process.env.PORT) || 3003, "127.0.0.1", () => {
-  console.log("Capstone browser-only preview: http://127.0.0.1:" + (Number(process.env.PORT) || 3003) + basePath);
-  console.log("No ticket backend here. Browser data is separate from localhost:3000 and Ocelot.");
+  console.log("Capstone generated-folder preview: http://127.0.0.1:" + (Number(process.env.PORT) || 3003) + basePath);
+  console.log("This static preview adds no backend; the generated package keeps its selected browser, PHP, or Supabase transport.");
 });
 module.exports = { createPreview, previewIdentity, basePath };

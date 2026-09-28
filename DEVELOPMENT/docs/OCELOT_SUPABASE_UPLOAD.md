@@ -1,6 +1,14 @@
 # Upload the Supabase version to Ocelot
 
+## Prepared proof-of-concept release - September 26, 2026
+
+The current sibling `Capstone - AI` folder is the zero-install pre-integration demo. It includes reviewed public/course search, centralized verified portal navigation, and **Use information I share** with five-minute browser-memory sources. It does not include or require the local extension/helper or portal-owner package. The build has **24 manifest-matched public files (4,407,676 bytes)**; the local checksum/instruction record is `dist/release-records/ocelot-upload-6GmSUX/`, and the previous website is preserved under `dist/archive/ocelot/2026-09-26T18-17-34-489Z-qnAP17/release/`. The full suite reported 292 passed, 0 failed, and one optional hosted-PHP integration skip. Generated-folder browser checks passed with no console warnings/errors. This preparation did not upload Ocelot files or change Supabase/portal data. See [the current proof-of-concept demonstration guide](PROOF_OF_CONCEPT_DEMO.md).
+
 Use this checklist for **Capstone - AI with a shared Supabase ticket queue**. The browser-only and PHP variants in older instructions are different builds. Do not use their packaging commands for this release.
+
+## Prepared navigation release - September 26, 2026
+
+The current local upload folder contains the verified signed-in portal shortcuts for Grade, Messages, Team, and Standing, while personal answers remain unavailable in Ocelot. It contains 22 manifest-matched public files and excludes the portal-native owner package, extension/helper code, backend source, tests, development documentation, runtime data, and secrets. The previous local website was archived by the packager. This preparation did not upload or deploy the folder; FileZilla transfer and hosted acceptance remain owner actions. Live personal answers require the separate portal-owner installation described in [Portal owner handoff](PORTAL_OWNER_HANDOFF.md).
 
 ## MIRA group-test release — September 25, 2026
 

@@ -99,7 +99,15 @@ function publicEntry(entry, score) {
     answer: entry.answer,
     ...(entry.sourceKind ? { sourceKind:entry.sourceKind } : {}),
     ...(entry.sourcePages !== undefined ? { sourcePages:entry.sourcePages } : {}),
-    ...(entry.sourceKind === "portal-navigation" ? { portalSection:entry.portalSection, liveDataConnected:false } : {}),
+    ...(entry.sourceKind === "portal-navigation" ? {
+      portalSection:entry.portalSection,
+      portalSectionId:entry.portalSectionId,
+      navigationCapability:entry.navigationCapability,
+      dataCapability:entry.dataCapability,
+      authCapability:entry.authCapability,
+      loginReturnVerified:entry.loginReturnVerified,
+      liveDataConnected:false
+    } : {}),
     followUps: (entry.followUps || []).slice(0, 5),
     score: Math.round(score * 1000) / 1000
   };

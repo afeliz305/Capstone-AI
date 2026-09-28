@@ -105,7 +105,7 @@ function createPortalServer({root,sourceRoot,service,extensionBridge=null,pairin
       if(file==='js/local/portal-client.js') bytes=await fs.readFile(path.join(sourceRoot,file));
       else if(allowed.has(file)) bytes=await fs.readFile(path.join(root,file));
       else return send(res,404,{error:'Not found'});
-      if(file==='index.html') bytes=Buffer.from(bytes.toString('utf8').replace('<script src="js/chat/capstone-chat.js"','<script src="js/local/portal-client.js" defer></script>\n    <script src="js/chat/capstone-chat.js"').replace(/<p class="hosting-test-notice"[\s\S]*?<\/p>/,'<p class="hosting-test-notice" role="note"><strong>LOCAL PRIVATE PORTAL DEMO.</strong> Read-only; this session stays on your computer. Ticket creation and transcript sharing are disabled in this preview. Public Ocelot visitors cannot connect to this browser.</p>'));
+      if(file==='index.html') bytes=Buffer.from(bytes.toString('utf8').replace('<script src="js/chat/capstone-chat.js"','<script src="js/local/portal-client.js" defer></script>\n    <script src="js/chat/capstone-chat.js"').replace(/<p class="hosting-test-notice"[\s\S]*?<\/p>/,'<p class="hosting-test-notice" role="note"><strong>LOCAL LIVE PROTOTYPE — NOT CONNECTED TO THE PUBLIC OCELOT WEBSITE.</strong> Read-only; this session stays on your computer. Ticket creation and transcript sharing are disabled in this preview. Public Ocelot visitors cannot connect to this browser.</p>'));
       const extra={};
       if(file==='index.html'&&!getSession(req)&&req.headers['sec-fetch-mode']==='navigate'&&req.headers['sec-fetch-dest']==='document'&&['none','same-origin'].includes(req.headers['sec-fetch-site'])) {
         const bootstrap=opaque();bootstrapTokens.set(bootstrap,{expires:now()+5*60000});

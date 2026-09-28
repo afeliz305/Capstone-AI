@@ -9,8 +9,9 @@ const script = readFileSync(path.join(__dirname, "../js/chat/capstone-chat.js"),
 
 // A small DOM double exercises the real widget event handlers without adding
 // browser dependencies. Responsive layout is checked separately in Chrome.
-function mount(fetchResult = async () => ({ ok: true, json: async () => ({ status: "unmatched", matches: [] }) }), baseUrl = "http://localhost/", open = () => {}, portal = undefined) {
-  const document = { activeElement: null };
+function mount(fetchResult = async () => ({ ok: true, json: async () => ({ status: "unmatched", matches: [] }) }), baseUrl = "http://localhost/", open = () => {}, portal = undefined, options = {}) {
+  const documentEvents = {};
+  const document = { activeElement: null, addEventListener: (name, handler) => { documentEvents[name] = handler; } };
   class Element {
     constructor(tag = "div") {
       this.tagName = tag.toUpperCase();
@@ -24,6 +25,14 @@ function mount(fetchResult = async () => ({ ok: true, json: async () => ({ statu
       this.scrollTop = 0;
       this.scrollHeight = 0;
       this.dataset = {};
+      this.className = "";
+      this.classList = {
+        toggle: (name, enabled) => {
+          const names = new Set(this.className.split(/\s+/).filter(Boolean));
+          if (enabled) names.add(name); else names.delete(name);
+          this.className = [...names].join(" ");
+        }
+      };
     }
     addEventListener(type, handler) { this.listeners[type] = handler; }
     emit(type, event = {}) {
@@ -74,6 +83,9 @@ function mount(fetchResult = async () => ({ ok: true, json: async () => ({ statu
   supportForm.elements.preferredContactMethod.value = "email";
   supportForm.elements.contactPhone = document.querySelector("#request-contact-phone");
   supportForm.reset = () => { Object.values(supportForm.elements).forEach(field => { field.value = ""; }); };
+  const sharedForm = document.querySelector("#shared-information-form");
+  sharedForm.elements = Object.fromEntries(["category", "title", "term", "sprint", "text"].map(name => [name, new Element()]));
+  sharedForm.elements.category.value = "Task";
   class TestFormData {
     constructor(form) { this.fields = form.elements; }
     get(name) { return this.fields[name]?.disabled ? null : this.fields[name]?.value ?? null; }
@@ -90,16 +102,72 @@ function mount(fetchResult = async () => ({ ok: true, json: async () => ({ statu
     return { headers: { get: () => "application/json" }, ...response };
   } });
   const windowEvents={};
-  vm.runInNewContext(script, { document, URL, FormData: TestFormData, window: { open, CapstonePortal:portal, addEventListener:(name,handler)=>{windowEvents[name]=handler;}, CapstoneApi: api, setTimeout: callback => callback(), CapstoneContactPolicy: require("../js/shared/contact-policy"), CapstoneAttachmentPolicy: require("../js/shared/attachment-policy") } });
+  let sourceId=0;
+  const browserWindow = {
+    open,
+    CapstonePortal: portal,
+    addEventListener: (name,handler)=>{windowEvents[name]=handler;},
+    CapstoneApi: api,
+    setTimeout: options.shared ? (()=>1) : (callback => callback()),
+    clearTimeout: ()=>{},
+    crypto: { randomUUID: ()=>`00000000-0000-4000-8000-${String(++sourceId).padStart(12,"0")}` },
+    CapstoneContactPolicy: require("../js/shared/contact-policy"),
+    CapstoneAttachmentPolicy: require("../js/shared/attachment-policy")
+  };
+  if (options.shared) {
+    browserWindow.CapstoneSharedInformation=require("../js/chat/shared-information");
+    browserWindow.CapstonePortalNavigation=require("../js/shared/portal-navigation");
+  }
+  vm.runInNewContext(script, { document, URL, FormData: TestFormData, window: browserWindow });
   return {
-    panel, launcher, input, log, sidebar, topic, document, windowEvents,
+    panel, launcher, input, log, sidebar, topic, document, documentEvents, windowEvents,
     minimize: document.querySelector("#minimize-chat"),
     supportDialog: document.querySelector("#support-dialog"),
+    chatForm: document.querySelector("#chat-form"),
+    sharedDialog: document.querySelector("#shared-information-dialog"),
+    sharedForm,
+    sharedStatus: document.querySelector("#shared-information-status"),
+    sharedModeStatus: document.querySelector("#shared-mode-status"),
+    sharedModeDetail: document.querySelector("#shared-mode-detail"),
+    clearShared: document.querySelector("#clear-shared-information"),
+    newSharedSession: document.querySelector("#new-shared-session"),
+    loadSample: document.querySelector("#load-sample-information"),
     attachmentInput: document.querySelector("#ticket-attachments"),
     attachmentList: document.querySelector("#attachment-list"),
     attachmentStatus: document.querySelector("#attachment-status")
   };
 }
+
+test("temporary shared information stays on the local retrieval path and renders pasted markup as text", async () => {
+  const requests=[];
+  const ui=mount(async (url)=>{requests.push(url);return{ok:true,json:async()=>({status:"unmatched",matches:[]})};},"http://localhost/",()=>{},undefined,{shared:true});
+  Object.assign(ui.sharedForm.elements.category,{value:"Task"});
+  Object.assign(ui.sharedForm.elements.title,{value:"Redacted testing task"});
+  Object.assign(ui.sharedForm.elements.term,{value:"Fall 2026"});
+  Object.assign(ui.sharedForm.elements.sprint,{value:"Sprint 2"});
+  Object.assign(ui.sharedForm.elements.text,{value:"Acceptance criteria require <img src=x onerror=alert(1)> automated testing for invalid input and a short evidence note."});
+  ui.sharedForm.emit("submit");
+  ui.input.value="Which acceptance criteria mention testing?";
+  await ui.chatForm.emit("submit");
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(requests.length,0);
+  assert.match(ui.sharedModeStatus.textContent,/Shared information active/);
+  const excerpt=descendants(ui.log).find(node=>node.tagName==="BLOCKQUOTE");
+  assert.match(excerpt.textContent,/<img src=x onerror=alert\(1\)>/);
+  assert.equal(excerpt.innerHTML,undefined);
+  assert.ok(descendants(ui.log).some(node=>/Based on the information you shared/.test(node.textContent||"")));
+  ui.input.value="What is the student's parking permit number?";
+  await ui.chatForm.emit("submit");
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(requests.length,0);
+  assert.ok(descendants(ui.log).some(node=>/does not support an answer/.test(node.textContent||"")));
+  ui.newSharedSession.emit("click");
+  ui.input.value="What did the old task require?";
+  await ui.chatForm.emit("submit");
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(requests.length,1);
+  assert.ok(!descendants(ui.log).some(node=>/automated testing for invalid input/.test(node.textContent||"")));
+});
 
 test("chat starts hidden in HTML and opens only when requested", () => {
   const ui = mount();
@@ -249,12 +317,23 @@ test("portal messages show a safe opt-in link and an honest live-data boundary",
   ui.topic.dataset.question="Do I have any new messages?";
   await ui.topic.emit("click");
   const source=descendants(ui.log).find(n=>n.className==="source-card");
-  assert.equal(source.href,"https://capstone.cs.fiu.edu/portal");
-  assert.equal(source.target,"_blank");
-  assert.equal(source.rel,"noopener noreferrer");
-  assert.match(source.children[0].textContent,/LIVE DATA NOT CONNECTED/);
-  assert.equal(source.children[2].textContent,"Open in portal ↗ · then choose Messages");
-  assert.match(ui.log.children.at(-1).children[1].textContent,/cannot check for new or unread messages/);
+  assert.equal(source.href,"https://capstone.cs.fiu.edu/portal#messages");
+  assert.equal(source.target,undefined);
+  assert.equal(source.rel,undefined);
+  assert.match(source.children[0].textContent,/PERSONAL DATA STAYS IN PORTAL/);
+  assert.equal(source.children[2].textContent,"Open Messages in portal →");
+  assert.match(ui.log.children.at(-1).children[1].textContent,/cannot check unread counts or message contents/);
+});
+
+test("reviewed Canvas portal destination is allowed without broadening external links",async()=>{
+  const {searchKnowledge}=require("../server/lib/search");
+  const knowledge=require("../server/lib/knowledge").reviewedKnowledge(require("../data/capstone-knowledge.json"));
+  const ui=mount(async()=>({ok:true,json:async()=>searchKnowledge(knowledge,"Open Canvas")}));
+  ui.topic.dataset.question="Open Canvas";await ui.topic.emit("click");
+  const source=descendants(ui.log).find(n=>n.className==="source-card");
+  assert.equal(source.href,"https://fiu.instructure.com/courses/262782");
+  assert.equal(source.target,undefined);
+  assert.equal(source.children[2].textContent,"Open Canvas →");
 });
 
 test("clear conversation cancels pending rendering and forgets the previous topic",async()=>{

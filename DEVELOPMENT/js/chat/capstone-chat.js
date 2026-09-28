@@ -20,6 +20,19 @@
   const attachmentInput = document.querySelector("#ticket-attachments");
   const attachmentList = document.querySelector("#attachment-list");
   const attachmentStatus = document.querySelector("#attachment-status");
+  const sharedDialog = document.querySelector("#shared-information-dialog");
+  const sharedForm = document.querySelector("#shared-information-form");
+  const sharedStatus = document.querySelector("#shared-information-status");
+  const sharedList = document.querySelector("#loaded-source-list");
+  const sharedEmpty = document.querySelector("#loaded-source-empty");
+  const sharedModeStatus = document.querySelector("#shared-mode-status");
+  const sharedModeDetail = document.querySelector("#shared-mode-detail");
+  const sharedBar = document.querySelector(".shared-information-bar");
+  const sharedLibrary = window.CapstoneSharedInformation;
+  const sharedStore = sharedLibrary?.createSharedInformationStore({
+    cryptoLike:window.crypto,
+    resolvePortalDestination:window.CapstonePortalNavigation?.resolvePortalDestination
+  }) || null;
   const attachmentPolicy = window.CapstoneAttachmentPolicy;
   const contactPolicy = window.CapstoneContactPolicy;
   const contactFields = contactPolicy.bindContactFields({
@@ -38,6 +51,9 @@
   let identityWasAccount = false;
   let accountRequest = 0;
   let contactAccountKey = null;
+  let lastQuestionPrivate = false;
+  let sharedRoutingLock = false;
+  let sharedExpiryTimer = null;
 
   function openChat() {
     chatPanel.hidden = false;
@@ -79,22 +95,22 @@
     } else log.scrollTop = log.scrollHeight;
   }
 
-  function addUserMessage(text) {
+  function addUserMessage(text, { sensitive=false } = {}) {
     const message = createElement("article", "message user-message");
     message.append(createElement("div", "message-label", "YOU"));
     message.append(createElement("p", "", text));
     log.append(message);
-    if (!window.CapstonePortal) conversation.push({ role: "User", text });
+    if (!window.CapstonePortal && !sensitive) conversation.push({ role: "User", text });
     scrollToLatest();
   }
 
-  function addAssistantText(text, note) {
+  function addAssistantText(text, note, { sensitive=false } = {}) {
     const message = createElement("article", "message assistant-message");
     message.append(createElement("div", "message-label", "CAPSTONE - AI"));
     message.append(createElement("p", "", text));
     if (note) message.append(createElement("p", "message-note", note));
     log.append(message);
-    if (!window.CapstonePortal) conversation.push({ role: "Assistant", text });
+    if (!window.CapstonePortal && !sensitive) conversation.push({ role: "Assistant", text });
     scrollToLatest();
     return message;
   }
@@ -114,6 +130,17 @@
     try {
       const url = new URL(value);
       return url.origin === "https://capstone.cs.fiu.edu" && !url.username && !url.password;
+    } catch { return false; }
+  }
+
+  function isReviewedPortalDestination(match) {
+    if (match?.sourceKind !== "portal-navigation") return false;
+    try {
+      const url = new URL(match.url);
+      return !url.username && !url.password && (
+        (url.origin === "https://capstone.cs.fiu.edu" && url.pathname === "/portal") ||
+        (url.origin === "https://fiu.instructure.com" && url.pathname === "/courses/262782" && !url.search && !url.hash)
+      );
     } catch { return false; }
   }
 
@@ -142,7 +169,7 @@
 
   function sourceHref(match) {
     let href;
-    if (isCapstoneUrl(match.url)) href = match.url;
+    if (isCapstoneUrl(match.url) || isReviewedPortalDestination(match)) href = match.url;
     else if (/^pages\/syllabus\.html#(?:syllabus-[a-z0-9-]+|canvas-assignments|contact-help|sprint-planning|dashboard-personal)$/.test(match.url)) href = new URL(match.url, api.baseUrl).href;
     return href || "";
   }
@@ -152,12 +179,17 @@
     if (!href) return;
     const source = createElement("a", "source-card");
     source.href = href;
-    source.target = "_blank";
-    source.rel = "noopener noreferrer";
-    const kind = match.sourceKind === "portal-navigation" ? "PORTAL SHORTCUT · LIVE DATA NOT CONNECTED" : match.sourceKind === "syllabus" ? "SYLLABUS · pages " + match.sourcePages : match.sourceKind === "prototype" ? "PROTOTYPE LIMITATION" : match.access === "authenticated" ? "SIGN-IN REQUIRED" : "CAPSTONE SOURCE";
+    if (match.sourceKind !== "portal-navigation") {
+      source.target = "_blank";
+      source.rel = "noopener noreferrer";
+    }
+    const exactPortal = match.sourceKind === "portal-navigation" && ["exact-section", "exact-external"].includes(match.navigationCapability);
+    const kind = match.sourceKind === "portal-navigation" ? "PORTAL LINK · PERSONAL DATA STAYS IN PORTAL" : match.sourceKind === "syllabus" ? "SYLLABUS · pages " + match.sourcePages : match.sourceKind === "prototype" ? "PROTOTYPE LIMITATION" : match.access === "authenticated" ? "SIGN-IN REQUIRED" : "CAPSTONE SOURCE";
     const label = createElement("span", "source-kicker", `${kind} · ${match.section}`);
     const title = createElement("strong", "", match.sourceTitle || match.title);
-    const actionText = match.sourceKind === "portal-navigation" ? "Open in portal ↗ · then choose " + match.portalSection : match.access === "authenticated" ? "Open in portal ↗ · sign-in required" : "Open this section ↗";
+    const actionText = match.sourceKind === "portal-navigation"
+      ? match.navigationCapability === "exact-external" ? "Open " + match.portalSection + " →" : exactPortal ? "Open " + match.portalSection + " in portal →" : "Open portal → · then choose " + match.portalSection
+      : match.access === "authenticated" ? "Open in portal ↗ · sign-in required" : "Open this section ↗";
     const action = createElement("span", "source-action", actionText);
     source.append(label, title, action);
     container.append(source);
@@ -168,6 +200,130 @@
     button.type = "button";
     button.addEventListener("click", action);
     return button;
+  }
+
+  function resetConversation(notice, { sensitive=false } = {}) {
+    searchSequence++;
+    const messages = log.querySelectorAll(".user-message, .assistant-message, .result-choices, .feedback-row");
+    messages.forEach((message, index) => { if (index > 0) message.remove(); });
+    conversation.length = 0;
+    lastQuestion = "";
+    lastQuestionPrivate = false;
+    lastTopic = "";
+    input.disabled = false;
+    form.querySelector("button[type='submit']").disabled = false;
+    input.value = "";
+    if (notice) addAssistantText(notice, sensitive ? "Temporary local session · nothing was sent to Supabase, tickets, or an AI provider" : undefined, { sensitive });
+  }
+
+  function sharedSourceDescription(source) {
+    const context = [source.term,source.sprint].filter(Boolean).join(" · ");
+    return `${source.label} · ${source.category}${context ? " · " + context : ""} · expires ${new Date(source.expiresAt).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}`;
+  }
+
+  function renderSharedSources(state = sharedStore?.status()) {
+    if (!sharedStore || !state || !sharedList) return;
+    const all = [...state.shared,...state.sample];
+    sharedList.replaceChildren();
+    sharedList.hidden = !all.length;
+    sharedEmpty.hidden = Boolean(all.length);
+    for (const source of all) {
+      const item=createElement("li",source.mode === state.activeMode ? "active-shared-source" : "");
+      const copy=createElement("div","");
+      copy.append(createElement("strong","",source.title),createElement("span","",sharedSourceDescription(source)));
+      item.append(copy);
+      if (source.mode === "shared") item.append(createActionButton("Remove this source","secondary-action",()=>{
+        if (!sharedStore.remove(source.id)) return;
+        sharedRoutingLock=false;
+        resetConversation("That shared source and its dependent answers were removed.",{sensitive:true});
+        refreshSharedUi();
+      }));
+      else item.append(createElement("span","","Fictional sample"));
+      sharedList.append(item);
+    }
+    const activateShared=document.querySelector("#activate-shared-information");
+    const activateSample=document.querySelector("#activate-sample-information");
+    if(activateShared)activateShared.hidden=!state.shared.length||state.activeMode==="shared";
+    if(activateSample)activateSample.hidden=!state.sample.length||state.activeMode==="sample";
+  }
+
+  function scheduleSharedExpiry(state) {
+    if (sharedExpiryTimer) window.clearTimeout(sharedExpiryTimer);
+    sharedExpiryTimer=null;
+    if (!state?.nextExpiry) return;
+    const delay=Math.max(0,state.nextExpiry-Date.now()+25);
+    sharedExpiryTimer=window.setTimeout(()=>refreshSharedUi(),Math.min(delay,2147483647));
+  }
+
+  function refreshSharedUi() {
+    if (!sharedStore) return null;
+    const state=sharedStore.status();
+    if (state.expiredCount) {
+      sharedRoutingLock=true;
+      resetConversation("Your temporary information expired after five minutes. Share an updated copy before asking another question about it.",{sensitive:true});
+    }
+    if (sharedModeStatus && sharedModeDetail) {
+      sharedBar?.classList.toggle("sample-active",state.activeMode==="sample");
+      if (state.activeMode==="shared") {
+        sharedModeStatus.textContent=`Shared information active · ${state.shared.length} source${state.shared.length===1?"":"s"}`;
+        sharedModeDetail.textContent="User-provided, unverified text · local browser memory · expires within five minutes.";
+      } else if (state.activeMode==="sample") {
+        sharedModeStatus.textContent="Sample data — not your account";
+        sharedModeDetail.textContent="Fictional local sources are active and will never be substituted for live data.";
+      } else if (sharedRoutingLock) {
+        sharedModeStatus.textContent="Shared information expired";
+        sharedModeDetail.textContent="Start a new demo session or share an updated copy; personal questions will not be sent elsewhere.";
+      } else {
+        sharedModeStatus.textContent="No shared information loaded";
+        sharedModeDetail.textContent="Public and course answers are active.";
+      }
+    }
+    renderSharedSources(state);
+    scheduleSharedExpiry(state);
+    return state;
+  }
+
+  function addSharedDestination(container,destination) {
+    if (!destination) return;
+    const reviewed={sourceKind:"portal-navigation",url:destination.url};
+    if (!isReviewedPortalDestination(reviewed)) return;
+    const link=createElement("a","source-card");
+    link.href=destination.url;
+    link.append(
+      createElement("span","source-kicker","SUGGESTED PORTAL DESTINATION · CURRENT CONTENTS NOT CHECKED"),
+      createElement("strong","",destination.label),
+      createElement("span","source-action",destination.signedInVerified?`Open ${destination.label} in portal →`:`Open portal → then choose ${destination.label}`)
+    );
+    container.append(link);
+  }
+
+  function renderSharedAnswer(result) {
+    if (result.status==="expired") sharedRoutingLock=true;
+    const sample=result.mode==="sample";
+    const note=sample?"Sample data — not your account · fictional browser-memory source":"Based only on user-provided, unverified text · not a live account connection";
+    const message=addAssistantText(result.answer,note,{sensitive:true});
+    lastTopic=(result.sources||[]).map(source=>source.sourceId).join(",");
+    for(const source of result.sources||[]){
+      const section=createElement("section","shared-evidence");
+      section.append(
+        createElement("div","shared-source-label",source.label.toUpperCase()),
+        createElement("h3","",source.title),
+        createElement("blockquote","",source.excerpt),
+        createElement("p","message-note",`${source.category}${source.term?" · "+source.term:""}${source.sprint?" · "+source.sprint:""} · Added ${new Date(source.addedAt).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}. Added time is not a portal publication time.`)
+      );
+      addSharedDestination(section,source.destination);
+      message.append(section);
+    }
+    if (!(result.sources||[]).length) addSharedDestination(message,result.destination);
+    const actions=createElement("div","follow-up-questions");
+    actions.setAttribute("aria-label","Shared-information actions");
+    if ((result.sources||[]).length) {
+      actions.append(createActionButton("Where does it say that?","follow-up-button",()=>submitQuestion("Where does it say that?",lastTopic)));
+      if ((result.sources||[]).some(source=>source.destination)) actions.append(createActionButton("Take me there","follow-up-button",()=>submitQuestion("Take me there",lastTopic)));
+    }
+    actions.append(createActionButton("Manage shared information","follow-up-button",()=>sharedDialog?.showModal()));
+    message.append(actions);
+    scrollToLatest(message);
   }
 
   function updateAccountControls() {
@@ -305,8 +461,13 @@
       return;
     }
     const questionField = supportForm.elements.question;
-    if (question && !questionField.value) questionField.value = question;
-    supportStatus.textContent = "";
+    if (!lastQuestionPrivate && question && !questionField.value) questionField.value = question;
+    if (lastQuestionPrivate) {
+      questionField.value="";
+      supportForm.elements.includeTranscript.checked=false;
+      supportStatus.className="form-status";
+      supportStatus.textContent="Temporary shared text and questions are excluded. Enter only information you deliberately want saved as a fictional support request.";
+    } else supportStatus.textContent = "";
     supportDialog.showModal();
     await loadAccount();
     if (supportDialog.open) {
@@ -349,7 +510,7 @@
     message.append(followUps);
     addFeedback(message);
     scrollToLatest(message);
-    if (result.navigationRequested && answerMatches.length === 1 && /^(?:take me there|open it|open that|open this section|show me (?:the )?instructions|show me that section|where does it say that|open the (?:first|second|third) source)[.!?]*$/i.test(lastQuestion.trim())) {
+    if (result.navigationRequested && answerMatches.length === 1 && answerMatches[0].sourceKind !== "portal-navigation" && /^(?:take me there|open it|open that|open this section|show me (?:the )?instructions|show me that section|where does it say that|open the (?:first|second|third) source)[.!?]*$/i.test(lastQuestion.trim())) {
       const href = sourceHref(answerMatches[0]);
       if (href) window.open?.(href, "_blank", "noopener,noreferrer");
     }
@@ -472,14 +633,25 @@
 
   async function search(question, contextId) {
     const sequence = ++searchSequence;
+    const sharedState=refreshSharedUi();
+    const localSharedMode=Boolean(sharedState?.activeMode)||sharedRoutingLock;
     lastQuestion = question;
-    addUserMessage(question);
+    lastQuestionPrivate=localSharedMode;
+    addUserMessage(question,{sensitive:localSharedMode});
     const loading = addLoadingMessage();
     form.querySelector("button[type='submit']").disabled = true;
     input.disabled = true;
     chatPanel.focus({ preventScroll: true });
 
     try {
+      if(localSharedMode){
+        await Promise.resolve();
+        if(sequence!==searchSequence)return{status:"cancelled",sources:[]};
+        loading.remove();
+        const result=sharedState?.activeMode?sharedStore.ask(question):{status:"expired",mode:null,privateLocal:true,answer:"Your shared information expired or was cleared. Start a new demo session or share an updated copy; this question was not sent to the public search.",sources:[]};
+        renderSharedAnswer(result);
+        return result;
+      }
       const response = await api.fetch(`/api/search?q=${encodeURIComponent(question)}${contextId ? "&context=" + encodeURIComponent(contextId) : ""}`);
       const result = await api.readJson(response);
       if (sequence !== searchSequence) return { status:"cancelled", matches:[], links:[] };
@@ -538,17 +710,52 @@
   });
 
   clearButton?.addEventListener("click", () => {
-    searchSequence++;
-    const messages = log.querySelectorAll(".user-message, .assistant-message, .result-choices, .feedback-row");
-    messages.forEach((message, index) => { if (index > 0) message.remove(); });
-    conversation.length = 0;
-    lastQuestion = "";
-    lastTopic = "";
-    input.disabled = false;
-    form.querySelector("button[type='submit']").disabled = false;
-    input.value = "";
+    resetConversation();
     input.focus();
   });
+
+  document.querySelector("#open-shared-information")?.addEventListener("click",()=>{
+    refreshSharedUi();
+    sharedDialog?.showModal();
+  });
+  document.querySelector("#close-shared-information")?.addEventListener("click",()=>sharedDialog?.close());
+  sharedDialog?.addEventListener("cancel",()=>refreshSharedUi());
+  sharedForm?.addEventListener("submit",event=>{
+    event.preventDefault();
+    const fields=new FormData(sharedForm);
+    try{
+      const added=sharedStore.add({category:fields.get("category"),title:fields.get("title"),term:fields.get("term"),sprint:fields.get("sprint"),text:fields.get("text")});
+      sharedRoutingLock=false;
+      sharedStatus.className="form-status success";
+      sharedStatus.textContent=`${added.title} is available only in this temporary browser session for up to five minutes.`;
+      sharedForm.elements.text.value="";
+      sharedForm.elements.title.value="";
+      resetConversation("Shared information is active. Ask only about the selected text you supplied; it is not a live portal connection.",{sensitive:true});
+      refreshSharedUi();
+      openChat();
+    }catch(error){sharedStatus.className="form-status error";sharedStatus.textContent=error.message;}
+  });
+  document.querySelector("#load-sample-information")?.addEventListener("click",()=>{
+    sharedStore.loadSample();sharedRoutingLock=false;
+    resetConversation("Sample data — not your account. Ask about the fictional task, sprint, or component scores.",{sensitive:true});
+    refreshSharedUi();openChat();
+  });
+  document.querySelector("#activate-shared-information")?.addEventListener("click",()=>{
+    sharedStore.activate("shared");sharedRoutingLock=false;resetConversation("Your user-provided, unverified text is active again.",{sensitive:true});refreshSharedUi();
+  });
+  document.querySelector("#activate-sample-information")?.addEventListener("click",()=>{
+    sharedStore.activate("sample");sharedRoutingLock=false;resetConversation("Sample data — not your account.",{sensitive:true});refreshSharedUi();
+  });
+  document.querySelector("#clear-shared-information")?.addEventListener("click",()=>{
+    sharedStore.clearShared();sharedRoutingLock=false;resetConversation("Shared information and its dependent answers were cleared.",{sensitive:true});refreshSharedUi();
+  });
+  document.querySelector("#new-shared-session")?.addEventListener("click",()=>{
+    sharedStore.newSession();sharedRoutingLock=false;resetConversation("A new demo session started. No shared or sample information is loaded.",{sensitive:true});refreshSharedUi();
+  });
+  document.addEventListener?.("visibilitychange",()=>{if(document.visibilityState==="visible")refreshSharedUi();});
+  window.addEventListener?.("pageshow",()=>refreshSharedUi());
+  window.addEventListener?.("focus",()=>refreshSharedUi());
+  refreshSharedUi();
 
   supportDialog?.addEventListener("click", (event) => {
     if (event.target === supportDialog && !submittingTicket) supportDialog.close();
@@ -654,6 +861,8 @@
       },
       annotations: { readOnlyHint: true, untrustedContentHint: false },
       async execute(value) {
+        const temporary=sharedStore?.status();
+        if(temporary?.activeMode||sharedRoutingLock)throw new Error("Browser tools are unavailable while temporary shared information is loaded or awaiting clearance.");
         const question = String(value?.question || "").trim();
         if (question.length < 2) throw new Error("A question is required.");
         const result = await submitQuestion(question);
