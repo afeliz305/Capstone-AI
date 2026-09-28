@@ -105,6 +105,20 @@ function routeMira(entries, question, contextId, toPublic) {
     missingEvidence:"The linked Daily Scrum template and its usage guide conflict on cadence and submission wording.",
     answer:entry=>entry.answer+" Because the two current linked documents disagree, MIRA will not choose a cadence silently. Confirm the active requirement with the instructor."
   });
+  const asksBrandColors=/\b(?:fiu|official|brand)\b.*\b(?:colors?|colours?|palette|hex)\b|\b(?:colors?|colours?|palette|hex)\b.*\b(?:fiu|official|brand)\b/.test(text);
+  const asksBrandLogo=/\b(?:fiu|official|brand)\b.*\b(?:logo|logos|mark|lockup)\b|\b(?:logo|logos|mark|lockup)\b.*\b(?:fiu|official|brand)\b/.test(text);
+  if(asksBrandColors && asksBrandLogo) return result(entries,toPublic,{
+    status:"clarification_needed",ids:["brand-logo","brand-colors"],accessScope:"public-brand-guide",
+    missingEvidence:"The question covers two separate official brand references."
+  });
+  if(asksBrandColors) return result(entries,toPublic,{status:"answered",ids:["brand-colors"],accessScope:"public-brand-guide"});
+  if(asksBrandLogo) return result(entries,toPublic,{status:"answered",ids:["brand-logo"],accessScope:"public-brand-guide"});
+  if(!/^open (?:portal )?brand (?:and )?templates$/.test(text) && /\b(?:brand|branding|powerpoint|presentation|letterhead)\b.*\b(?:templates?|downloads?)\b|\b(?:templates?|downloads?)\b.*\b(?:brand|branding|powerpoint|presentation|letterhead)\b/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:["brand-downloads"],accessScope:"public-brand-guide"
+  });
+  if(/\b(?:sprint|scrum|ceremony|team meeting)\b.*\b(?:minutes|records|notes|templates?)\b|\b(?:minutes|records|notes|templates?)\b.*\b(?:sprint|scrum|ceremony|team meeting)\b/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:["minutes-overview"],accessScope:"public-linked-document"
+  });
   if(/sprint retrospective|\bretro\b|process improvement/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["sprint-retrospective-template","syllabus-sprint-retrospective"],accessScope:"authenticated-linked-document"
   });

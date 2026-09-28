@@ -1,8 +1,8 @@
 # Capstone - AI pre-integration proof of concept
 
-Updated September 26, 2026. This is the current demonstration guide and capability boundary. It does not require portal source code, a portal API, a browser extension, or professor-side installation for the public Ocelot demonstration.
+Updated September 28, 2026. This is the current demonstration guide and capability boundary. It does not require portal source code, a portal API, a browser extension, or professor-side installation for the public Ocelot demonstration. The completed acceptance evidence is recorded in [PROOF_OF_CONCEPT_ACCEPTANCE.md](PROOF_OF_CONCEPT_ACCEPTANCE.md).
 
-Final local verification: the complete suite discovered 293 tests, with **292 passed, 0 failed, and 1 optional hosted-PHP integration test skipped**. The generated Supabase Ocelot website contains **24 manifest-matched public files (4,407,676 bytes)**; its checksum record is `dist/release-records/ocelot-upload-6GmSUX/`. A normal generated-folder browser walkthrough passed public evidence, sample and user-shared retrieval, source follow-up, missing information, copied-table ambiguity, and new-session clearing with no console warnings/errors. No upload, deployment, Git push, database change, ticket creation, or portal mutation was performed.
+Final local verification: the complete suite discovered 298 tests, with **297 passed, 0 failed, and 1 optional hosted-PHP integration test skipped**. The generated Supabase Ocelot website contains **24 manifest-matched public files (4,923,599 bytes)**; its checksum record is `dist/release-records/ocelot-upload-mfovxi/`. The hosted/public, fictional authenticated-support, attachment, privacy, and concurrency results are documented separately in the acceptance record. The current packaging verification did not upload files, change deployment, mutate Supabase, or modify the professor portal.
 
 ## What the demonstration proves
 

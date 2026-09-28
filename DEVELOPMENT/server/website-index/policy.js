@@ -6,13 +6,25 @@ const defaults = require("./config.json");
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 function configuration(input = {}) {
   const config = { ...defaults, ...input };
+  // Tests and approved secondary indexes may replace the origin list. Do not
+  // inherit origin-specific production rules into that different scope.
+  if (Object.hasOwn(input,"allowedOrigins") && !Object.hasOwn(input,"originPaths")) config.originPaths=Object.fromEntries(config.allowedOrigins.map(origin=>[origin,config.allowedPaths]));
+  if (Object.hasOwn(input,"allowedOrigins") && !Object.hasOwn(input,"pageBudgets")) config.pageBudgets=[];
   if (!/^[a-z0-9][a-z0-9-]{0,50}$/.test(config.siteId)) throw new Error("Invalid site ID.");
-  for (const key of ["allowedOrigins", "allowedPaths", "excludedPaths", "allowedQueryParameters", "seedUrls"]) {
+  for (const key of ["allowedOrigins", "allowedPaths", "excludedPaths", "allowedQueryParameters", "seedUrls", "priorityUrls", "deprioritizedPathPrefixes"]) {
     if (!Array.isArray(config[key]) || config[key].length > 100 || config[key].some(x => typeof x !== "string" || x.length > 2048)) throw new Error("Invalid " + key);
   }
   if (!config.allowedOrigins.length || config.allowedOrigins.some(origin => { const u = new URL(origin); return u.origin !== origin || u.protocol !== "https:" || u.port || u.username || u.password; })) throw new Error("Only explicit HTTPS origins on port 443 are supported.");
   if (config.allowedPaths.concat(config.excludedPaths).some(p => !p.startsWith("/") || /[?#\\%]/.test(p))) throw new Error("Paths must be plain absolute path prefixes.");
-  for (const [key, min, max] of [["maxPages",1,200],["maxSitemaps",0,30],["maxDepth",0,10],["concurrency",1,4],["delayMs",0,60000],["timeoutMs",100,30000],["retries",0,3],["backoffMs",0,10000],["maxBytes",1000,4000000],["maxSectionsPerPage",1,200],["maxSectionChars",500,40000],["maxResults",1,5],["refreshHours",1,720]]) {
+  if (!config.originPaths || typeof config.originPaths !== "object" || Array.isArray(config.originPaths)) throw new Error("Invalid originPaths.");
+  for (const [origin, paths] of Object.entries(config.originPaths)) {
+    if (!config.allowedOrigins.includes(origin) || !Array.isArray(paths) || !paths.length || paths.length > 50 || paths.some(p => typeof p !== "string" || !p.startsWith("/") || /[?#\\%]/.test(p))) throw new Error("Invalid originPaths entry.");
+  }
+  if (!Array.isArray(config.pageBudgets) || config.pageBudgets.length > 50) throw new Error("Invalid pageBudgets.");
+  for (const rule of config.pageBudgets) {
+    if (!rule || typeof rule !== "object" || !config.allowedOrigins.includes(rule.origin) || typeof rule.pathPrefix !== "string" || !rule.pathPrefix.startsWith("/") || /[?#\\%]/.test(rule.pathPrefix) || !Number.isInteger(rule.maxPages) || rule.maxPages < 0 || rule.maxPages > 200 || (rule.query !== undefined && typeof rule.query !== "boolean") || typeof rule.label !== "string" || !/^[a-z0-9-]{1,50}$/.test(rule.label)) throw new Error("Invalid page budget.");
+  }
+  for (const [key, min, max] of [["maxPages",1,200],["maxDiscoveredPages",1,5000],["maxSitemaps",0,30],["maxDepth",0,10],["concurrency",1,4],["delayMs",0,60000],["timeoutMs",100,30000],["retries",0,3],["backoffMs",0,10000],["maxBytes",1000,4000000],["maxSectionsPerPage",1,200],["maxSectionChars",500,40000],["maxResults",1,5],["refreshHours",1,720]]) {
     if (!Number.isInteger(config[key]) || config[key] < min || config[key] > max) throw new Error("Out-of-range " + key);
   }
   for (const key of ["minScore", "minCoverage"]) if (!Number.isFinite(config[key]) || config[key] < 0.1 || config[key] > 1) throw new Error("Invalid retrieval threshold.");
@@ -31,7 +43,8 @@ function normalizeUrl(value, config, base = config.startUrl, { infrastructure = 
     const decoded = decodeURIComponent(url.pathname);
     // Avoid encoded path separators, nested escapes and ambiguous server normalization.
     if (/[\\%\u0000-\u001f]/.test(decoded) || /%2f/i.test(url.pathname)) return null;
-    if ((!infrastructure && !config.allowedPaths.some(p => prefixMatch(decoded,p))) || config.excludedPaths.some(p => prefixMatch(decoded.toLowerCase(),p.toLowerCase()))) return null;
+    const originPaths=config.originPaths?.[url.origin] || config.allowedPaths;
+    if ((!infrastructure && !originPaths.some(p => prefixMatch(decoded,p))) || config.excludedPaths.some(p => prefixMatch(decoded.toLowerCase(),p.toLowerCase()))) return null;
     if (/\/(?:logout|signout|delete|remove|purchase|checkout|unsubscribe|activate|verify|reset-password)(?:\/|$)/i.test(decoded)) return null;
     for (const key of [...url.searchParams.keys()]) {
       if (/^(?:utm_.+|gclid|fbclid|msclkid)$/i.test(key)) url.searchParams.delete(key);

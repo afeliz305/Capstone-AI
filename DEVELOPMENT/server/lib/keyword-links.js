@@ -1,4 +1,7 @@
 const SITE_ORIGIN = "https://capstone.cs.fiu.edu";
+const REVIEWED_BRAND_PATHS = new Set([
+  "/downloads/", "/logos/", "/visual-styles/colors/"
+]);
 
 const ALIASES = new Map([
   ["tutorials", "tutorial"], ["templates", "template"], ["minutes", "minute"],
@@ -16,7 +19,9 @@ function tokens(value) {
 function isCapstoneUrl(value) {
   try {
     const url = new URL(value);
-    return url.origin === SITE_ORIGIN && !url.username && !url.password;
+    if (url.username || url.password || url.protocol !== "https:" || url.port) return false;
+    if (url.origin === SITE_ORIGIN) return true;
+    return url.origin === "https://brand.fiu.edu" && REVIEWED_BRAND_PATHS.has(url.pathname) && !url.search;
   } catch { return false; }
 }
 

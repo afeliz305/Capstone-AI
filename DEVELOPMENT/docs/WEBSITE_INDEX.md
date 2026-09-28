@@ -1,14 +1,12 @@
 # Indexed website knowledge and source navigation
 
-Updated September 25, 2026. This feature is implemented in development and the isolated Supabase preview. **The stable upload folder, Ocelot website and GitHub have not been updated for this feature.** Existing tickets, attachments, staff accounts and private `data/` were not changed.
+Updated September 28, 2026. This feature is implemented and locally verified in development. **The Ocelot website, Supabase data and GitHub have not been changed by this acceptance-fix pass.** Existing tickets, attachments, staff accounts and private `data/` were not changed.
 
 ## Scope and current verification
 
 The request's `[WEBSITE_URL]` placeholder is interpreted as **https://capstone.cs.fiu.edu/**, the previously selected project site. Only anonymously accessible, configured public pages are indexed. This does **not** connect the logged-in portal, private messages, personal grades or Canvas records. The 19 [portal shortcuts](PORTAL_NAVIGATION.md) remain navigation-only.
 
-The first successful bounded live crawl on September 25 saved **34 active public pages and 190 sections**, reaching its 35-page request limit. One `/go/attend` destination was excluded for login/no-index content. The crawl discovered 142 URLs, so this is **not a complete index of every project/archive page**. Use `index:status` for the current run rather than treating these recorded counts as permanent.
-
-The final full suite passed **237 tests, zero failures and zero skips**, including optional PHP integration with PHP 8.4.25, on Node 24.15.0/npm 11.12.0. Deterministic fixtures cover retrieval and lifecycle behavior separately from the live smoke test. Chrome verified: type a project-proposal question, view its extracted passage/date, click the source link, and type **Take me there**. Both navigation actions opened `https://capstone.cs.fiu.edu/engage#lanes`, whose existing container includes the proposal heading; the original chat remained open. No portal form was submitted. A second live refresh completed at 12:31:49 UTC and recognized all 34 pages as unchanged; the active section count remained 190. It again excluded the login/no-index destination and reported no fetch failures.
+The September 28 refresh discovered **953** approved public URLs, fetched the configured **50-page** budget, and published **34 active pages with 422 searchable sections**. It skipped **zero high-value URLs**. Category budgets prevented archive/catalog permutations from displacing the Capstone homepage, Resources, Tutorials, Showcase, About, Engage, Sponsor and Judge pages or the three reviewed public FIU brand pages. Twenty-three older catalog pages were changed to the non-searchable `deprioritized` status. The run reported 37 category-limit skips, 866 page-limit skips, three duplicate brand aliases, ten public exclusions, and two blocked unsafe redirects. See [the dated crawl report](WEBSITE_INDEX_REPORT.md) for the exact coverage and source findings. This remains a bounded index, not an exhaustive archive.
 
 ## Architecture and files
 
@@ -86,8 +84,8 @@ It runs a refresh, then repeats at `refreshHours` from configuration (24 hours b
 
 ## Crawl and storage behavior
 
-- Discovers configured seeds, robots-listed sitemaps, `/sitemap.xml`, nested sitemap indexes and public internal/navigation links. Default budget: 35 pages, 8 sitemaps, depth 3, two workers, 800-ms request spacing, 12-second fetch/DNS deadlines, one retry, and 2-MB responses. Larger robot crawl delays are honored; a delay/retry request exceeding this bounded job's limit defers work.
-- HTTPS origins are explicitly allowlisted; default scope is the FIU Capstone host. Private portal/API/login/account paths and obvious state-changing action paths are excluded. Only GET is issued: no forms, submissions, clicks, purchases or writes to the source site.
+- Discovers configured seeds, robots-listed sitemaps, `/sitemap.xml`, nested sitemap indexes and public internal/navigation links. Default budget: 50 fetched pages, up to 1,200 discovered URLs, 8 sitemaps, depth 3, two workers, 800-ms request spacing, 12-second fetch/DNS deadlines, one retry, and 2-MB responses. Priority URLs and category budgets keep student resources ahead of large project/archive catalogs. Larger robot crawl delays are honored; a delay/retry request exceeding this bounded job's limit defers work.
+- HTTPS origins and per-origin paths are explicitly allowlisted. Default scope is the public FIU Capstone host plus only the reviewed FIU Brand colors, logos and downloads pages. Private portal/API/login/account paths, unrelated brand-site paths and obvious state-changing action paths are excluded. Only GET is issued: no forms, submissions, clicks, purchases or writes to the source site.
 - Tracking parameters are removed. Allowed content-changing parameters are retained and sorted. Unknown query parameters cause the destination to be excluded, **not silently collapsed into another page**. Extend the allowlist only after reviewing their meaning.
 - No cookie jar, browser session or Authorization header is used. Public DNS answers are checked, including mixed/private/mapped-address responses, and pinned to the HTTPS connection. Each redirect is scope-checked and subject to robots. No TLS bypass or anti-bot workaround is implemented.
 - Reads robots before crawling; failures other than missing robots stop that origin. Honors robots disallow, nofollow and noindex metadata/headers. HTTP `Cache-Control` controls HTTP caching, not whether a public document is included in this application index; anonymously fetched content still must pass scope and noindex/login checks. The source site currently sends `private, no-store` even on its anonymous homepage. No session-derived content is indexed.
@@ -148,7 +146,9 @@ Live saved-index examples verified during implementation:
 
 - **How do I propose a project?** → [Engage, proposal/mentor section](https://capstone.cs.fiu.edu/engage#lanes).
 - **How do I become a judge?** → [Engage, Judge section](https://capstone.cs.fiu.edu/engage#lanes).
-- **Presentation materials** → [Resources](https://capstone.cs.fiu.edu/resources), with the heading identified because no unique section ID was found.
+- **Presentation materials** → [Resources](https://capstone.cs.fiu.edu/resources) for Capstone showcase resources or the [official FIU downloads page](https://brand.fiu.edu/downloads/) for current PowerPoint/brand templates.
+- **Sprint meeting minutes** → the verified public Capstone Word templates and usage guide; no unsupported ceremony name is invented.
+- **Official FIU colors and logos** → the current public [color guide](https://brand.fiu.edu/visual-styles/colors/) and [logo guide](https://brand.fiu.edu/logos/).
 - **How can I sponsor a team?** → choices between relevant sponsorship sections, including [Sponsor a team](https://capstone.cs.fiu.edu/sponsor#pkgheading).
 - **Mars spaceship fuel quota** → “I couldn’t find that information in the indexed website content.”
 

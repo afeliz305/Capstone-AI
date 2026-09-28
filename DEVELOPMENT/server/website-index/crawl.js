@@ -11,7 +11,7 @@ async function crawl({ config, directory, get = publicGet, now = timestamp }) {
   await fs.mkdir(directory,{recursive:true});
   const lock=path.join(directory,"refresh.lock");
   try { await fs.mkdir(lock); } catch(error) { if(error.code==="EEXIST") throw new Error("Index refresh already running; inspect the owner-only lock after an interrupted process."); throw error; }
-  const report={startedAt:now(),finishedAt:null,siteId:config.siteId,successful:[],unchanged:[],deleted:[],excluded:[],failures:[],discovered:0,limited:false};
+  const report={startedAt:now(),finishedAt:null,siteId:config.siteId,successful:[],unchanged:[],deleted:[],excluded:[],failures:[],duplicates:[],skipped:[],skippedByReason:{},highValueSkipped:[],discovered:0,fetched:0,configuredPageLimit:config.maxPages,discoveryLimit:config.maxDiscoveredPages,limited:false};
   try {
     const old=await readIndex(directory), version=new Date().toISOString().replace(/[:.]/g,"-")+"-"+randomUUID().slice(0,8);
     if (old && old.siteId !== config.siteId) throw new Error("A different site's index exists here. Use a separate index directory.");
@@ -65,12 +65,29 @@ async function crawl({ config, directory, get = publicGet, now = timestamp }) {
       robots.set(origin,rules); return rules;
     }
     for(const origin of config.allowedOrigins) await rulesFor(origin);
-    const queue=[],queued=new Set(),visited=new Set();
+    const queue=[],queued=new Set(),visited=new Set(),priorityUrls=new Set(config.priorityUrls.map(url=>normalizeUrl(url,config)).filter(Boolean)),budgetCounts=new Map();
+    const startsWithPath=(url,prefix)=>{const path=new URL(url).pathname;return path===prefix||path.startsWith(prefix.endsWith("/")?prefix:prefix+"/");};
+    const priorityFor=(url,depth)=>{
+      const parsed=new URL(url); let score=priorityUrls.has(url)?1000:0;
+      if(config.deprioritizedPathPrefixes.some(prefix=>startsWithPath(url,prefix)))score-=100;
+      if(parsed.search)score-=50;
+      return score-depth;
+    };
+    const budgetFor=url=>{const parsed=new URL(url);return config.pageBudgets.find(rule=>rule.origin===parsed.origin&&startsWithPath(url,rule.pathPrefix)&&(rule.query===undefined||rule.query===Boolean(parsed.search)));};
+    const skip=(item,reason,detail="")=>{
+      const record={url:item.url,reason,...(detail?{detail}:{})};report.skipped.push(record);
+      report.skippedByReason[reason]=(report.skippedByReason[reason]||0)+1;
+      if(item.priority>0)report.highValueSkipped.push(record);
+      if(reason==="category-limit" || (reason==="page-limit" && budgetFor(item.url))){
+        const previous=pages.get(item.url);
+        if(previous){previous.status="deprioritized";previous.reason=detail;previous.lastCheckedAt=now();}
+      }
+    };
     function enqueue(value,depth=0) {
       const url=normalizeUrl(value,config);
-      if(!url || queued.has(url) || depth>config.maxDepth || queued.size>=config.maxPages*10) return;
+      if(!url || queued.has(url) || depth>config.maxDepth || queued.size>=config.maxDiscoveredPages) return;
       if(/\.(?:pdf|zip|png|jpe?g|gif|svg|woff2?|mp4|mp3|css|js|docx?|xlsx?)$/i.test(new URL(url).pathname)) return;
-      queued.add(url); queue.push({url,depth}); report.discovered++;
+      queued.add(url); queue.push({url,depth,priority:priorityFor(url,depth)}); report.discovered++;
     }
     enqueue(config.startUrl); for(const url of config.seedUrls) enqueue(url);
     // Recheck previously indexed URLs, including pages no longer linked anywhere.
@@ -84,7 +101,7 @@ async function crawl({ config, directory, get = publicGet, now = timestamp }) {
         if(response.status!==200) throw new Error("Sitemap HTTP "+response.status);
         const parsed=sitemap(response.body.toString("utf8"));
         parsed.nested.slice(0,config.maxSitemaps).forEach(x=>sitemapQueue.push(x));
-        for(const page of parsed.pages.slice(0,config.maxPages*2)) enqueue(page.url);
+        for(const page of parsed.pages.slice(0,config.maxDiscoveredPages)) enqueue(page.url);
       } catch(error) { report.failures.push({url,stage:"sitemap",reason:error.message}); }
     }
     async function indexPage({url,depth}) {
@@ -123,16 +140,24 @@ async function crawl({ config, directory, get = publicGet, now = timestamp }) {
     }
     while(queue.length && visited.size<config.maxPages) {
       // Prefer ordinary linked pages over large archive query permutations.
-      queue.sort((a,b)=>Number(Boolean(new URL(a.url).search))-Number(Boolean(new URL(b.url).search)) || a.depth-b.depth);
+      queue.sort((a,b)=>b.priority-a.priority || Number(Boolean(new URL(a.url).search))-Number(Boolean(new URL(b.url).search)) || a.depth-b.depth || a.url.localeCompare(b.url));
       const batch=[];
-      while(queue.length && batch.length<config.concurrency && visited.size+batch.length<config.maxPages) { const item=queue.shift(); if(!visited.has(item.url)) batch.push(item); }
+      while(queue.length && batch.length<config.concurrency && visited.size+batch.length<config.maxPages) {
+        const item=queue.shift(); if(visited.has(item.url))continue;
+        const budget=budgetFor(item.url),used=budget?budgetCounts.get(budget.label)||0:0;
+        if(budget&&used>=budget.maxPages){skip(item,"category-limit",budget.label+" limit "+budget.maxPages);continue;}
+        if(budget)budgetCounts.set(budget.label,used+1);
+        batch.push(item);
+      }
       await Promise.all(batch.map(indexPage));
     }
-    report.limited=queue.length>0;
+    report.fetched=visited.size;
+    for(const item of queue)skip(item,"page-limit","Configured page limit "+config.maxPages);
+    report.limited=report.skipped.length>0;
     // Remove duplicate active pages without losing URL evidence or audit history.
     const hashes=new Map();
     for(const page of [...pages.values()].sort((a,b)=>a.url.localeCompare(b.url))) if(page.status==="active") {
-      const duplicate=hashes.get(page.contentHash); if(duplicate) {page.status="duplicate";page.duplicateOf=duplicate;} else hashes.set(page.contentHash,page.id);
+      const duplicate=hashes.get(page.contentHash); if(duplicate) {page.status="duplicate";page.duplicateOf=duplicate;report.duplicates.push({url:page.url,duplicateOf:duplicate});} else hashes.set(page.contentHash,page.id);
     }
     const next={schemaVersion:1,siteId:config.siteId,version,indexedAt:now(),scope:config,pages:[...pages.values()],lastSuccessfulRun:now()};
     if(!report.successful.length && !report.unchanged.length && report.failures.length && !report.deleted.length && !report.excluded.length) throw new Error("No successful page fetch; previous index remains published.");

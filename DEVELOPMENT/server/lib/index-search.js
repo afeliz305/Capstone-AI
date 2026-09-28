@@ -10,8 +10,9 @@ function safeUrl(url, index) {
     const parsed=new URL(url), scope=index.scope;
     const prefix=(path,p)=>p==="/" || path===p || path.startsWith(p.endsWith("/")?p:p+"/");
     const decoded=decodeURIComponent(parsed.pathname);
+    const originPaths=scope.originPaths?.[parsed.origin] || scope.allowedPaths;
     return parsed.protocol==="https:" && !parsed.username && !parsed.password && !parsed.port && scope.allowedOrigins.includes(parsed.origin)
-      && scope.allowedPaths.some(p=>prefix(decoded,p)) && !scope.excludedPaths.some(p=>prefix(decoded.toLowerCase(),p.toLowerCase())) && !/[\\%\u0000-\u001f]/.test(decoded);
+      && originPaths.some(p=>prefix(decoded,p)) && !scope.excludedPaths.some(p=>prefix(decoded.toLowerCase(),p.toLowerCase())) && !/[\\%\u0000-\u001f]/.test(decoded);
   } catch {return false;}
 }
 function records(index) {

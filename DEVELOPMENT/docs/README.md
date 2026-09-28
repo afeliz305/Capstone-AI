@@ -2,6 +2,8 @@
 
 ## Upload and test
 
+- [Proof-of-concept acceptance record](PROOF_OF_CONCEPT_ACCEPTANCE.md) - completed hosted MIRA, navigation, temporary-information, authenticated ticket, attachment, privacy, and stale-edit results; includes the final capability matrix and professor-ready statement.
+
 - [Pre-integration proof-of-concept demo](PROOF_OF_CONCEPT_DEMO.md) - current three-mode capability boundary, browser-only shared information, five-minute presentation, privacy limits, and verification steps.
 
 - [Supabase FileZilla upload checklist](OCELOT_SUPABASE_UPLOAD.md) - shared-queue package, exact remote paths, permissions and after-upload tests. Use this instead of the browser-only steps for the Supabase release.

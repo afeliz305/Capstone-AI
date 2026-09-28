@@ -133,6 +133,13 @@
     } catch { return false; }
   }
 
+  function isReviewedPublicSource(value) {
+    try {
+      const url = new URL(value);
+      return !url.username && !url.password && url.origin === "https://brand.fiu.edu" && ["/logos/","/downloads/","/visual-styles/colors/"].some(path=>url.pathname===path||url.pathname.startsWith(path));
+    } catch { return false; }
+  }
+
   function isReviewedPortalDestination(match) {
     if (match?.sourceKind !== "portal-navigation") return false;
     try {
@@ -169,7 +176,7 @@
 
   function sourceHref(match) {
     let href;
-    if (isCapstoneUrl(match.url) || isReviewedPortalDestination(match)) href = match.url;
+    if (isCapstoneUrl(match.url) || isReviewedPublicSource(match.url) || isReviewedPortalDestination(match)) href = match.url;
     else if (/^pages\/syllabus\.html#(?:syllabus-[a-z0-9-]+|canvas-assignments|contact-help|sprint-planning|dashboard-personal)$/.test(match.url)) href = new URL(match.url, api.baseUrl).href;
     return href || "";
   }

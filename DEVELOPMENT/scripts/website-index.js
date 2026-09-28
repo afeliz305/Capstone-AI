@@ -8,8 +8,11 @@ async function main(args=process.argv.slice(2)) {
   if(command==="status") {
     const index=await readIndex(directory); let lastRun=null;
     try {lastRun=JSON.parse(await fs.readFile(path.join(directory,"last-run.json"),"utf8"));}catch(error){if(error.code!=="ENOENT") throw error;}
+    const pages=index?.pages||[],active=pages.filter(p=>p.status==="active");
+    const statusCounts=pages.reduce((all,page)=>{all[page.status]=(all[page.status]||0)+1;return all;},{});
     console.log(JSON.stringify({siteId:config.siteId,mode:"extractive-keyword",semanticSearch:false,version:index?.version||null,lastSuccessfulRun:index?.lastSuccessfulRun||null,
-      pages:(index?.pages||[]).map(p=>({url:p.url,status:p.status,sections:p.chunks.length,indexedAt:p.indexedAt,lastFetchedAt:p.lastFetchedAt})),lastRun},null,2)); return;
+      coverage:{discovered:lastRun?.discovered||0,fetched:lastRun?.fetched||0,activePages:active.length,indexedSections:active.reduce((n,p)=>n+p.chunks.filter(c=>c.status==="active").length,0),configuredPageLimit:config.maxPages,discoveryLimit:config.maxDiscoveredPages,statusCounts,skippedByReason:lastRun?.skippedByReason||{},failures:lastRun?.failures||[],highValueSkipped:lastRun?.highValueSkipped||[]},
+      pages:pages.map(p=>({url:p.url,status:p.status,sections:p.chunks.length,indexedAt:p.indexedAt,lastFetchedAt:p.lastFetchedAt})),lastRun},null,2)); return;
   }
   if(command!=="refresh" && command!=="watch") throw new Error("Use status, refresh or watch.");
   // OS account permissions authorize this maintenance command. There is no

@@ -256,7 +256,7 @@ test("related choices include direct keyword links and keep them on the chosen a
   const before = descendants(ui.log).filter(node => node.className === "keyword-link");
   assert.equal(before.length, 1);
   assert.match(before[0].href, /Sprint_Planning_Minutes_Template\.docx$/);
-  assert.match(before[0].children[2].textContent, /Sign-in required/);
+  assert.match(before[0].children[2].textContent, /Public page/);
   const choice = descendants(ui.log).find(node => node.className === "result-choice" && node.textContent === "Sprint Planning template");
   choice.emit("click");
   assert.equal(descendants(ui.log).filter(node => node.className === "keyword-link").length, 2);
@@ -358,6 +358,19 @@ test("source cards reject external, traversing and script URLs while text stays 
     assert.equal(descendants(ui.log).filter(n=>n.className==="source-card").length,0);
     const answer=ui.log.children.at(-1).children[1];
     assert.equal(answer.textContent,"<script>not executed</script>");assert.equal(answer.innerHTML,undefined);
+  }
+});
+
+test("source cards allow only the reviewed public FIU brand pages",async()=>{
+  for(const url of ["https://brand.fiu.edu/logos/","https://brand.fiu.edu/downloads/","https://brand.fiu.edu/visual-styles/colors/"]){
+    const ui=mount(async()=>({ok:true,json:async()=>({status:"matched",matches:[{id:"brand",answer:"Verified public brand source.",url,sourceKind:"reviewed-public-page",access:"public",section:"Branding"}],links:[]})}));
+    await ui.topic.emit("click");
+    assert.equal(descendants(ui.log).filter(n=>n.className==="source-card").length,1,url);
+  }
+  for(const url of ["https://brand.fiu.edu.evil.test/logos/","https://brand.fiu.edu/tools/","http://brand.fiu.edu/logos/"]){
+    const ui=mount(async()=>({ok:true,json:async()=>({status:"matched",matches:[{id:"brand",answer:"Rejected source.",url,sourceKind:"reviewed-public-page",access:"public",section:"Branding"}],links:[]})}));
+    await ui.topic.emit("click");
+    assert.equal(descendants(ui.log).filter(n=>n.className==="source-card").length,0,url);
   }
 });
 

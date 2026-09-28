@@ -30,6 +30,10 @@ test("crawl scope normalizes tracking only, preserves meaningful queries, and re
   assert.equal(normalizeUrl("/policy?term=spring",config),"https://example.test/policy?term=spring");
   for(const url of ["http://example.test/","https://evil.test/","https://user:pw@example.test/","/portal","/portal/team","/logout","/delete/item","/purchase","/policy?token=secret","/x%2fportal","/x%252fportal","javascript:alert(1)"]) assert.equal(normalizeUrl(url,config),null,url);
   assert.throws(()=>configuration({concurrency:100}));assert.throws(()=>configuration({allowedOrigins:["http://example.test"]}));
+  const production=configuration();
+  assert.equal(normalizeUrl("https://brand.fiu.edu/logos/",production),"https://brand.fiu.edu/logos/");
+  assert.equal(normalizeUrl("https://brand.fiu.edu/tools/",production),null);
+  assert.equal(normalizeUrl("https://capstone.cs.fiu.edu/portal",production),null);
 });
 test("SSRF rejects private, loopback, metadata, mapped and mixed DNS addresses",async()=>{
   for(const value of ["127.0.0.1","10.0.0.1","172.16.0.1","192.168.0.1","169.254.169.254","0.0.0.0","::1","fc00::1","fe80::1","::ffff:127.0.0.1","100.64.0.1","224.1.1.1"]) assert.equal(isPublicAddress(value),false,value);
@@ -185,4 +189,35 @@ test("confirmed removals are retired even when the rest of a refresh is temporar
 test("duplicate observed anchors fall back to page URLs and page-specific robots metadata is respected",()=>{
   const document=extract('<html><head><meta name="robots" content="noindex,nofollow"></head><body><main><h1>Guide</h1><h2 id="dup">One</h2><p>First complete section of meaningful text with no invented anchor.</p><h2 id="dup">Two</h2><p>Second complete section of meaningful text with no invented anchor.</p><a href="/policy">Policy</a></main></body></html>',"https://example.test/",config);
   assert.equal(document.noindex,true);assert.equal(document.nofollow,true);assert.deepEqual(document.links,[]);assert.ok(document.chunks.every(c=>c.anchor===null));
+});
+
+test("crawl priority protects required resources, budgets catalog pages, and reports real coverage",async t=>{
+  const directory=await fs.mkdtemp(path.join(os.tmpdir(),"capstone-priority-test-"));
+  t.after(async()=>{assert.equal(path.dirname(directory),os.tmpdir());await fs.rm(directory,{recursive:true,force:true});});
+  const scoped=configuration({
+    siteId:"priority-fixture",startUrl:"https://example.test/",allowedOrigins:["https://example.test"],allowedPaths:["/"],
+    originPaths:{"https://example.test":["/"]},excludedPaths:["/portal"],seedUrls:["https://example.test/resources","https://example.test/guide"],
+    priorityUrls:["https://example.test/","https://example.test/resources","https://example.test/guide"],deprioritizedPathPrefixes:["/projects/"],
+    pageBudgets:[{label:"project-detail",origin:"https://example.test",pathPrefix:"/projects/",query:false,maxPages:1}],
+    maxPages:5,maxDiscoveredPages:20,maxSitemaps:1,maxDepth:2,concurrency:1,delayMs:0,backoffMs:0,retries:0
+  });
+  const pages=new Map([
+    ["/robots.txt",response("User-agent: *\nAllow: /")],
+    ["/sitemap.xml",response('<urlset><url><loc>https://example.test/projects/a</loc></url><url><loc>https://example.test/resources?utm_source=duplicate</loc></url><url><loc>https://example.test/projects/b</loc></url><url><loc>https://example.test/portal</loc></url><url><loc>https://example.test/guide</loc></url></urlset>')],
+    ["/",response(fixture.simple("Student instructions","Public student instructions with enough verified text for the fixture index."))],
+    ["/resources",response(fixture.simple("Templates and resources","Required public templates and student resources are available on this page."))],
+    ["/guide",response(fixture.simple("Sprint guidance","Required sprint and project guidance is available on this page."))],
+    ["/projects/a",response(fixture.simple("Project A","A useful current project example with a public description."))],
+    ["/projects/b",response(fixture.simple("Project B","Another project catalog entry that must not consume the student-resource budget."))]
+  ]),calls=[];
+  const get=async url=>{const target=new URL(url);calls.push(target.pathname+target.search);return pages.get(target.pathname+target.search)||pages.get(target.pathname)||response("",404);};
+  const stamp="2026-09-28T12:00:00.000Z",report=await crawl({config:scoped,directory,get,now:()=>stamp}),index=await readIndex(directory),published=publicSnapshot(index);
+  assert.equal(report.configuredPageLimit,5);assert.equal(report.discoveryLimit,20);assert.equal(report.fetched,4);
+  assert.equal(report.skippedByReason["category-limit"],1);assert.deepEqual(report.highValueSkipped,[]);
+  assert.ok(published.pages.some(page=>page.url==="https://example.test/resources"));
+  assert.ok(published.pages.some(page=>page.url==="https://example.test/guide"));
+  assert.equal(published.pages.filter(page=>page.url.includes("/projects/")).length,1);
+  assert.ok(!published.pages.some(page=>page.url.includes("/portal")));
+  assert.equal(calls.filter(value=>value==="/resources").length,1,"normalized duplicate URLs share one crawl slot");
+  assert.equal(index.lastSuccessfulRun,stamp);assert.equal(report.finishedAt,stamp);
 });

@@ -10,13 +10,13 @@ test("keyword links point to reviewed pages and exact document URLs", () => {
     ["daily scrum", "daily-scrum", "/static/templates/Daily_Scrum_Minutes_Template.docx"],
     ["showcase", "showcase-prep", "/resources"],
     ["tutorials", "tutorials", "/tutorials"],
-    ["past projects", "projects-archive", "/projects"],
-    ["logo", "brand-logo", "/portal"]
+    ["past projects", "projects-archive", "https://capstone.cs.fiu.edu/projects"],
+    ["logo", "brand-logo", "https://brand.fiu.edu/logos/"]
   ];
-  for (const [question, id, pathname] of cases) {
+  for (const [question, id, expectedUrl] of cases) {
     const [link] = findKeywordLinks(knowledge, question);
     assert.equal(link.id, id, question);
-    assert.equal(link.url, "https://capstone.cs.fiu.edu" + pathname);
+    assert.equal(link.url, expectedUrl.startsWith("https://") ? expectedUrl : "https://capstone.cs.fiu.edu" + expectedUrl);
     assert.ok(link.keywords.length);
     assert.ok(["public", "authenticated"].includes(link.access));
   }
@@ -72,6 +72,9 @@ test("keyword navigation rejects unsafe URLs, lookalike domains, and credentials
     assert.deepEqual(findKeywordLinks([{ id: "bad", url, linkKeywords: ["tutorial"] }], "tutorial"), []);
   }
   assert.equal(isCapstoneUrl("https://capstone.cs.fiu.edu/tutorials"), true);
+  assert.equal(isCapstoneUrl("https://brand.fiu.edu/logos/"), true);
+  assert.equal(isCapstoneUrl("https://brand.fiu.edu/logos/tools/"), false);
+  assert.equal(isCapstoneUrl("https://brand.fiu.edu.evil.test/logos/"), false);
 });
 
 test("all curated navigation entries reference existing knowledge sources and omit runtime data", () => {

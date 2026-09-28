@@ -50,7 +50,7 @@ function publicSnapshot(index) {
   const config=configuration(index.scope);
   validateIndex(index,config);
   return { schemaVersion:1,siteId:index.siteId,version:index.version,indexedAt:index.indexedAt,
-    mode:"extractive-keyword",semanticSearch:false,scope:{allowedOrigins:config.allowedOrigins,allowedPaths:config.allowedPaths,excludedPaths:config.excludedPaths},
+    mode:"extractive-keyword",semanticSearch:false,scope:{allowedOrigins:config.allowedOrigins,allowedPaths:config.allowedPaths,originPaths:config.originPaths,excludedPaths:config.excludedPaths},
     retrieval:{minScore:config.minScore,minCoverage:config.minCoverage,maxResults:config.maxResults,aliases:config.aliases},
     pages:index.pages.filter(p=>p.status==="active").map(p=>({id:p.id,siteId:p.siteId,url:p.url,title:p.title,description:p.description,tags:p.tags,breadcrumbs:p.breadcrumbs,status:p.status,indexedAt:p.indexedAt,lastFetchedAt:p.lastFetchedAt,sourceModifiedAt:p.sourceModifiedAt,
       chunks:p.chunks.filter(c=>c.status==="active").map(c=>({id:c.id,heading:c.heading,hierarchy:c.hierarchy,anchor:c.anchor,url:c.url,text:c.text,context:c.context,blocks:c.blocks,contentHash:c.contentHash,status:c.status}))})) };

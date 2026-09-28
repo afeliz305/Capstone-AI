@@ -85,6 +85,23 @@ test("generic chat launcher is accessible, self-contained, and excludes the reti
   assert.equal((await fetch(base + "/css/images/ask-roary-transparent.png")).status, 404);
 });
 
+test("every public HTML entry point declares a working favicon", async () => {
+  const pages = [
+    ["/", "css/images/capstone-chat.svg"],
+    ["/pages/staff.html", "../css/images/capstone-chat.svg"],
+    ["/pages/syllabus.html", "../css/images/capstone-chat.svg"]
+  ];
+  for (const [pageUrl, faviconHref] of pages) {
+    const response = await fetch(base + pageUrl);
+    assert.equal(response.status, 200, pageUrl);
+    const html = await response.text();
+    assert.match(html, new RegExp(`<link rel="icon" type="image/svg\\+xml" href="${faviconHref.replaceAll(".", "\\.")}">`));
+    const favicon = await fetch(new URL(faviconHref, response.url));
+    assert.equal(favicon.status, 200, `${pageUrl} favicon`);
+    assert.equal(favicon.headers.get("content-type"), "image/svg+xml");
+  }
+});
+
 test("old staff bookmarks redirect to the canonical page and its relative assets", async () => {
   const response = await fetch(base + "/staff.html", { redirect: "manual" });
   assert.equal(response.status, 302);
@@ -99,7 +116,7 @@ test("search API includes approved multi-topic keyword destinations without expo
   assert.equal(response.status, 200);
   const result = await response.json();
   assert.deepEqual(result.links.map(link => link.id), ["sprint-planning", "tutorials"]);
-  assert.equal(result.links[0].access, "authenticated");
+  assert.equal(result.links[0].access, "public");
   assert.equal(result.links[1].url, "https://capstone.cs.fiu.edu/tutorials");
   assert.equal((await fetch(base + "/server/lib/keyword-links.js")).status, 404);
 });

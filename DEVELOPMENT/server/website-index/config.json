@@ -1,12 +1,41 @@
 {
   "siteId": "capstone-public",
   "startUrl": "https://capstone.cs.fiu.edu/",
-  "allowedOrigins": ["https://capstone.cs.fiu.edu"],
+  "allowedOrigins": ["https://capstone.cs.fiu.edu", "https://brand.fiu.edu"],
   "allowedPaths": ["/"],
+  "originPaths": {
+    "https://capstone.cs.fiu.edu": ["/"],
+    "https://brand.fiu.edu": ["/visual-styles/colors/", "/logos/", "/downloads/"]
+  },
   "excludedPaths": ["/portal", "/api", "/auth", "/login", "/logout", "/signin", "/signout", "/admin", "/account", "/profile", "/talent"],
   "allowedQueryParameters": ["page", "term", "year", "category", "id", "slug"],
-  "seedUrls": [],
-  "maxPages": 35,
+  "seedUrls": [
+    "https://capstone.cs.fiu.edu/privacy",
+    "https://brand.fiu.edu/visual-styles/colors/",
+    "https://brand.fiu.edu/logos/",
+    "https://brand.fiu.edu/downloads/"
+  ],
+  "priorityUrls": [
+    "https://capstone.cs.fiu.edu/",
+    "https://capstone.cs.fiu.edu/resources",
+    "https://capstone.cs.fiu.edu/tutorials",
+    "https://capstone.cs.fiu.edu/showcase",
+    "https://capstone.cs.fiu.edu/about",
+    "https://capstone.cs.fiu.edu/privacy",
+    "https://capstone.cs.fiu.edu/engage",
+    "https://capstone.cs.fiu.edu/sponsor",
+    "https://capstone.cs.fiu.edu/judge",
+    "https://brand.fiu.edu/visual-styles/colors/",
+    "https://brand.fiu.edu/logos/",
+    "https://brand.fiu.edu/downloads/"
+  ],
+  "deprioritizedPathPrefixes": ["/projects/"],
+  "pageBudgets": [
+    {"label":"project-detail", "origin":"https://capstone.cs.fiu.edu", "pathPrefix":"/projects/", "query":false, "maxPages":12},
+    {"label":"project-results", "origin":"https://capstone.cs.fiu.edu", "pathPrefix":"/projects", "query":true, "maxPages":4}
+  ],
+  "maxPages": 50,
+  "maxDiscoveredPages": 1200,
   "maxSitemaps": 8,
   "maxDepth": 3,
   "concurrency": 2,
