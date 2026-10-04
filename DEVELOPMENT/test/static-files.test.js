@@ -46,7 +46,8 @@ test("root homepage and staff page serve with all referenced local assets in the
   await checkFile(new URL("/", base));
   await checkFile(new URL("/index.html", base));
   await checkFile(new URL("/pages/staff.html", base));
-  for (const asset of ["css/fonts/mulish-var.woff2", "css/images/FIU_mark_white.svg", "css/images/icons.svg", "css/images/capstone-chat.svg", "js/chat/capstone-chat.js", "js/staff/staff.js", "js/shared/contact-policy.js"]) assert.ok(checked.has(`${base}/${asset}`), asset);
+  await checkFile(new URL("/pages/recover.html", base));
+  for (const asset of ["css/fonts/mulish-var.woff2", "css/images/FIU_mark_white.svg", "css/images/icons.svg", "css/images/capstone-chat.svg", "js/chat/capstone-chat.js", "js/staff/staff.js", "js/staff/password-recovery.js", "js/shared/contact-policy.js"]) assert.ok(checked.has(`${base}/${asset}`), asset);
   assert.equal((await (await fetch(base + "/api/health")).json()).status, "ok");
 });
 
@@ -57,7 +58,7 @@ test("only the sidebar exposes the public syllabus PDF while the searchable refe
   assert.equal(links.length, 1);
   assert.match(html, /<aside class="side-nav"[\s\S]*?<a href="documents\/Fall-Term-2026-CIS-4951-RVC-Capstone-II-public\.pdf" target="_blank" rel="noreferrer">Fall 2026 syllabus<\/a>[\s\S]*?<\/aside>/);
   assert.doesNotMatch(html, /view-syllabus-home|view-syllabus-chat|syllabus-shortcut/);
-  for (const appRoot of [base + "/", base + "/Capstone%20-%20AI/"]) {
+  for (const appRoot of [base + "/", base + "/MIRA/"]) {
     assert.equal(new URL(publicPdf, appRoot).href, appRoot + publicPdf);
   }
   const pdfResponse = await fetch(base + "/" + publicPdf);
@@ -74,8 +75,8 @@ test("only the sidebar exposes the public syllabus PDF while the searchable refe
 
 test("generic chat launcher is accessible, self-contained, and excludes the retired mascot", async () => {
   const html = await (await fetch(base + "/")).text();
-  assert.match(html, /<title>Capstone - AI · Site support<\/title>/);
-  assert.match(html, /id="chat-launcher" aria-label="Open Capstone - AI chat"[^>]+aria-expanded="false"/);
+  assert.match(html, /<title>MIRA \| Messaging, Information &amp; Resolution Assistant<\/title>/);
+  assert.match(html, /id="chat-launcher" aria-label="Open MIRA chat"[^>]+aria-expanded="false"/);
   assert.match(html, /class="chat-launcher-art"[^>]+src="css\/images\/capstone-chat\.svg"[^>]+alt=""/);
   assert.match(html, /<span>Let's chat<\/span>/);
   assert.doesNotMatch(html, /roary|ask-roary/i);
@@ -89,6 +90,7 @@ test("every public HTML entry point declares a working favicon", async () => {
   const pages = [
     ["/", "css/images/capstone-chat.svg"],
     ["/pages/staff.html", "../css/images/capstone-chat.svg"],
+    ["/pages/recover.html", "../css/images/capstone-chat.svg"],
     ["/pages/syllabus.html", "../css/images/capstone-chat.svg"]
   ];
   for (const [pageUrl, faviconHref] of pages) {

@@ -1,11 +1,13 @@
 "use strict";
-const { normalizeContact } = require("./contact-policy");
+const { normalizeContact, validEmail } = require("./contact-policy");
 const policy = require("./attachment-policy");
 const { searchKnowledge } = require("../../server/lib/search");
 
-const fail = (message, statusCode = 400) => Object.assign(new Error(message), { statusCode });
+const fail = (message, statusCode = 400, classification) => Object.assign(new Error(message), { statusCode, ...(classification ? { classification } : {}) });
 const reply = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 const setupError = "Supabase database setup is not complete. Ask the project owner to follow SUPABASE_SETUP.md. No save was confirmed.";
+const MIRA_RECOVERY_URL = "https://ocelot.aul.fiu.edu/~afeli016/MIRA/pages/recover.html";
+const RESET_CONFIRMATION = "If an eligible staff account exists for that email, a password reset message has been sent.";
 function serviceError(error) {
   if (!error) return;
   if (["PGRST202", "PGRST205", "42P01", "42883"].includes(error.code)) throw fail(setupError, 503);
@@ -35,11 +37,23 @@ async function filesFor(input) {
   }));
 }
 
-function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, siteIndex = null, staffSessions, uuid = () => crypto.randomUUID() }) {
+function verifiedRecoveryUrl(value = MIRA_RECOVERY_URL) {
+  const target = new URL(value);
+  if (target.href !== MIRA_RECOVERY_URL || target.protocol !== "https:" || target.username || target.password || target.search || target.hash) {
+    throw fail("Password recovery is not configured for the approved MIRA destination.", 503);
+  }
+  return target.href;
+}
+
+function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, siteIndex = null, staffSessions,
+  recoveryState = null, recoveryUrl = MIRA_RECOVERY_URL, uuid = () => crypto.randomUUID() }) {
   const base = new URL(baseUrl);
+  const approvedRecoveryUrl = verifiedRecoveryUrl(recoveryUrl);
   const pending = new Map(); // In-memory idempotency IDs, not ticket persistence.
   let guestStart;
   let changingPassword = false;
+  let requestingReset = false;
+  let recoveringPassword = false;
   function routeUrl(route) {
     if (!/^\/api\//.test(route)) throw fail("Invalid API route.");
     const target = new URL(route.slice(1), base);
@@ -52,9 +66,18 @@ function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, siteI
     return result.data;
   }
   async function staffSession() {
-    const { data, error } = await staffClient.auth.getSession(); serviceError(error);
-    if (!data.session) throw fail("Sign in with your staff email and password.", 401);
-    return rpc(staffClient, "capstone_staff_session");
+    const { data, error } = await staffClient.auth.getSession();
+    if (error) throw fail("Your staff session could not be verified. Please sign in again.", 401, "AUTH_SESSION_FAILED");
+    if (!data.session) throw fail("Your staff session has ended. Please sign in again.", 401, "AUTH_SESSION_FAILED");
+    try { return await rpc(staffClient, "capstone_staff_session"); }
+    catch (authorizationError) {
+      if (authorizationError.statusCode !== 403) throw authorizationError;
+      const detail = authorizationError.message || "";
+      const classification = /STAFF_BINDING_INACTIVE/i.test(detail) ? "STAFF_BINDING_INACTIVE"
+        : /STAFF_IDENTITY_MISMATCH/i.test(detail) ? "STAFF_IDENTITY_MISMATCH"
+        : "STAFF_BINDING_MISSING";
+      throw fail("This account is not currently authorized for the MIRA Staff Queue. Contact the project owner.", 403, classification);
+    }
   }
   async function requester() {
     // One anonymous Auth session, created only when the user submits a form.
@@ -116,6 +139,59 @@ function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, siteI
       throw fail("No password change was confirmed. Check your connection, then try signing in with your new password before retrying.", 503);
     } finally { changingPassword = false; }
   }
+  async function requestPasswordReset(input) {
+    if (requestingReset) throw fail("A password reset request is already in progress.", 409);
+    if (!validEmail(input.email)) throw fail("Enter a valid email address.");
+    requestingReset = true;
+    try {
+      const result = await staffClient.auth.resetPasswordForEmail(input.email.trim().toLowerCase(), { redirectTo: approvedRecoveryUrl });
+      if (result?.error?.status === 429) throw fail("Please wait before requesting another reset email.", 429);
+      // Some hosted configurations deliberately hide an unknown user behind a
+      // successful or user_not_found result. Keep those outcomes identical.
+      if (result?.error && !["user_not_found","email_not_found"].includes(result.error.code)) {
+        throw fail("Password recovery is not available right now. No reset email was confirmed.", 503);
+      }
+      return { ok:true, message:RESET_CONFIRMATION };
+    } catch (error) {
+      if (error.statusCode) throw error;
+      throw fail("The reset request could not be submitted. Check your connection and try again later.", 503);
+    } finally { requestingReset = false; }
+  }
+  async function recoveryStatus() {
+    await recoveryState?.ready;
+    const result = await staffClient.auth.getSession();
+    const recoverySession = recoveryState?.session;
+    if (result.error || !result.data?.session || !recoverySession || result.data.session.user?.id !== recoverySession.user?.id) {
+      throw fail("This recovery link is invalid or has expired. Request a new reset email from the MIRA Staff Queue.", 401);
+    }
+    return { ready:true };
+  }
+  async function recoverPassword(input) {
+    if (recoveringPassword) throw fail("A password update is already in progress.", 409);
+    const { newPassword, confirmPassword } = input;
+    if (typeof newPassword !== "string" || newPassword.length < 8 || newPassword.length > 128 || !newPassword.trim()) throw fail("Use a new password with 8–128 characters.");
+    if (newPassword !== confirmPassword) throw fail("The new passwords do not match.");
+    recoveringPassword = true;
+    try {
+      await recoveryStatus();
+      const userId = recoveryState.session.user.id;
+      const result = await staffClient.auth.updateUser({ password:newPassword });
+      if (result.error) {
+        if (result.error.status === 429) throw fail("Please wait before trying to update the password again.", 429);
+        if (result.error.code === "weak_password") throw fail("Choose a stronger password that meets this project's password requirements.");
+        if (result.error.code === "same_password") throw fail("Choose a password different from the previous password.");
+        if (["session_not_found","user_not_found"].includes(result.error.code)) throw fail("This recovery link is invalid or has expired. Request a new reset email from the MIRA Staff Queue.", 401);
+        throw fail("The password update could not be confirmed. Request a new recovery link before retrying.", 503);
+      }
+      if (result.data?.user?.id !== userId) throw fail("The password update could not be confirmed. Request a new recovery link before retrying.", 503);
+      try { await staffClient.auth.signOut({ scope:"local" }); }
+      finally { staffSessions?.clear(); if (recoveryState) recoveryState.session = null; }
+      return { ok:true };
+    } catch (error) {
+      if (error.statusCode) throw error;
+      throw fail("The password update could not be confirmed. Request a new recovery link before retrying.", 503);
+    } finally { recoveringPassword = false; }
+  }
   async function submit(input, staffCreated) {
     const files = await filesFor(input.attachments);
     const session = staffCreated ? await staffSession() : null;
@@ -166,13 +242,23 @@ function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, siteI
         return reply({ question, ...searchKnowledge(knowledge,question,target.searchParams.get("context"),siteIndex) });
       }
       if (method === "GET" && pathname === "/api/session") return reply({ status:"guest",account:null,identityContext:"supabase-requester-v1",demoAvailable:false });
+      if (method === "POST" && pathname === "/api/staff/password/reset-request") return reply(await requestPasswordReset(input));
+      if (method === "GET" && pathname === "/api/staff/password/recovery-session") return reply(await recoveryStatus());
+      if (method === "POST" && pathname === "/api/staff/password/recover") return reply(await recoverPassword(input));
       if (method === "POST" && pathname === "/api/staff/login") {
         await staffClient.auth.signOut({ scope:"local" });
         staffSessions?.beginLogin();
         if (typeof input.email!=="string" || typeof input.password!=="string" || !input.password) throw fail("Enter your staff email and password.",401);
         try {
           const result = await staffClient.auth.signInWithPassword({ email:input.email.trim().toLowerCase(), password:input.password });
-          if (result.error) throw fail("Sign-in failed. Check your Supabase staff account email and password.",401);
+          if (result.error) {
+            const authCode = result.error.code || "", authMessage = result.error.message || "";
+            if (authCode === "invalid_credentials" || /invalid (?:login )?credentials/i.test(authMessage)) throw fail("Email or password was not accepted. Check your details or use Forgot password.",401,"INVALID_CREDENTIALS");
+            if (authCode === "email_not_confirmed" || /email not confirmed/i.test(authMessage)) throw fail("Email or password was not accepted. Check your details or use Forgot password.",401,"EMAIL_UNCONFIRMED");
+            if (result.error.status === 429) throw fail("Staff sign-in is temporarily unavailable. Please wait and try again.",429,"UNKNOWN_AUTH_ERROR");
+            throw fail("Staff sign-in is temporarily unavailable. Please try again.",503,"UNKNOWN_AUTH_ERROR");
+          }
+          if (!result.data?.user?.id) throw fail("Staff sign-in is temporarily unavailable. Please try again.",503,"AUTH_SESSION_FAILED");
           const session = await staffSession(); // Never remember an unprovisioned account.
           if (input.rememberMe === true && staffSessions) {
             try { session.rememberedUntil = staffSessions.remember(); }
@@ -211,7 +297,8 @@ function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, siteI
       if (method === "GET" && (!match[2] || match[2] === "requester-preview")) return reply(await rpc(staffClient,match[2] ? "capstone_requester_preview" : "capstone_get",{ ticket_id:match[1] }));
       throw fail("Unsupported operation.",405);
     } catch(error) {
-      return reply({ error:error.statusCode ? error.message : "Supabase request failed. No success was confirmed; keep your draft and check the queue before retrying.",loginMode:"password" },error.statusCode||503);
+      return reply({ error:error.statusCode ? error.message : "Supabase request failed. No success was confirmed; keep your draft and check the queue before retrying.",loginMode:"password",
+        ...(error.classification ? { classification:error.classification } : {}) },error.statusCode||503);
     }
   }
   async function download(route, filename) {
@@ -223,4 +310,4 @@ function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, siteI
   }
   return { baseUrl:base.href,storageMode:"supabase",onSessionEnded:staffSessions?.onEnded,url:route=>{routeUrl(route);return "#private-document";},fetch:request,readJson:response=>response.json(),download };
 }
-module.exports={createSupabaseApi,filesFor};
+module.exports={createSupabaseApi,filesFor,MIRA_RECOVERY_URL,RESET_CONFIRMATION,verifiedRecoveryUrl};

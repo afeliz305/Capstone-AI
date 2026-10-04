@@ -10,7 +10,7 @@ const { createOcelotPackage } = require("../scripts/package-ocelot");
 const { createPreview } = require("../scripts/preview-ocelot");
 const { searchKnowledge } = require("../server/lib/search");
 const root = path.resolve(__dirname, "..");
-const baseUrl = "https://example.edu/~student/Capstone%20-%20AI/";
+const baseUrl = "https://example.edu/~student/MIRA/";
 const fixture = { name: "Fictional Tester", email: "fictional@example.edu", category: "Attendance", question: "TEST attendance", details: "Fictional browser test", identityContext: "browser-demo-guest-v1" };
 function memoryStore() {
   let state = { version: 1, tickets: [], documents: {} }, queue = Promise.resolve();
@@ -147,6 +147,6 @@ test("browser bundle bootstraps explicitly and package excludes all PHP and runt
   const server = createPreview({ root: built.uploadDirectory }).listen(0, "127.0.0.1");
   await once(server, "listening"); t.after(() => new Promise(resolve => server.close(resolve)));
   const origin = "http://127.0.0.1:" + server.address().port;
-  for (const entry of built.manifest) assert.equal((await fetch(origin + "/Capstone%20-%20AI/" + entry.file)).status, 200, entry.file);
-  for (const route of ["data/tickets.json", "api/tickets", "server/server.js", "../DEVELOPMENT/package.json"]) assert.equal((await fetch(origin + "/Capstone%20-%20AI/" + route)).status, 404);
+  for (const entry of built.manifest) assert.equal((await fetch(origin + "/MIRA/" + entry.file)).status, 200, entry.file);
+  for (const route of ["data/tickets.json", "api/tickets", "server/server.js", "../DEVELOPMENT/package.json"]) assert.equal((await fetch(origin + "/MIRA/" + route)).status, 404);
 });

@@ -29,8 +29,8 @@ LINE = HexColor("#cbd5df")
 PALE = HexColor("#f1f5f9")
 PLAN = HexColor("#fff7e1")
 c = canvas.Canvas(str(OUTPUT), pagesize=(W, H), pageCompression=1)
-c.setTitle("Capstone - AI - Project Workflow and Technology Sheet")
-c.setAuthor("Capstone - AI project team")
+c.setTitle("MIRA - Project Workflow and Technology Sheet")
+c.setAuthor("MIRA project team")
 c.setSubject("Current browser demo and planned Supabase shared-data architecture")
 
 def rect(x, top, w, h, fill=white, stroke=LINE, radius=8, dashed=False):

@@ -1,4 +1,4 @@
-# Capstone - AI pre-integration proof of concept
+# MIRA pre-integration proof of concept
 
 Updated September 28, 2026. This is the current demonstration guide and capability boundary. It does not require portal source code, a portal API, a browser extension, or professor-side installation for the public Ocelot demonstration. The completed acceptance evidence is recorded in [PROOF_OF_CONCEPT_ACCEPTANCE.md](PROOF_OF_CONCEPT_ACCEPTANCE.md).
 

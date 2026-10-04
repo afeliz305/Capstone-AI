@@ -12,9 +12,9 @@ async function createOcelotPackage({ root = path.resolve(__dirname, ".."), outpu
   root = await fs.realpath(root);
   if (siteIndex === undefined) siteIndex = await loadPublicIndex(root);
   await fs.mkdir(outputRoot, { recursive: true });
-  const destination = await fs.mkdtemp(path.join(outputRoot, "ocelot-upload-"));
+  const destination = await fs.mkdtemp(path.join(outputRoot, "mira-upload-"));
   // The user-requested project name is also the remote application folder name.
-  const uploadDirectory = path.join(destination, "Capstone - AI");
+  const uploadDirectory = path.join(destination, "MIRA");
   const manifest = [];
   async function source(file) {
     const resolved = await fs.realpath(path.join(root, file));
@@ -83,14 +83,14 @@ async function createOcelotPackage({ root = path.resolve(__dirname, ".."), outpu
   }
   await write("css/fonts/OFL.txt", await source("docs/licenses/Mulish-OFL.txt"));
   const totalBytes = manifest.reduce((sum, entry) => sum + entry.bytes, 0);
-  const instructions = `# Capstone - AI build record\n\n` +
+  const instructions = `# MIRA build record\n\n` +
     `Generated: ${new Date().toISOString()}\n\n` +
     `- Transport: ${transport}\n` +
-    `- Website folder: Capstone - AI\n` +
+    `- Website folder: MIRA\n` +
     `- Public files: ${manifest.length}\n` +
     `- Total public bytes: ${totalBytes}\n` +
     `- Checksums: manifest.json in this record folder\n\n` +
-    `Upload only the generated **Capstone - AI** website folder into public_html. ` +
+    `Upload only the generated **MIRA** website folder into public_html. ` +
     `Do not upload this record folder, DEVELOPMENT, source tests, local data, credentials, or archives. ` +
     `Use directories 755 and ordinary files 644; never use 777. Hard-refresh after transfer.\n\n` +
     `For the complete current FileZilla checklist and backend-specific acceptance steps, read ` +
@@ -143,7 +143,7 @@ async function prepareOcelotUpload({ root = path.resolve(__dirname, ".."), works
     if (error.code === "EEXIST") throw new Error("An Ocelot package build is already running, or its lock remains after an interruption. Check dist/.ocelot-package.lock before retrying.");
     throw error;
   }
-  const destination = path.join(workspace, "Capstone - AI");
+  const destination = path.join(workspace, "MIRA");
   let archivedDirectory = null;
   try {
     // Validate the current release before building; never follow an output link.
@@ -154,7 +154,7 @@ async function prepareOcelotUpload({ root = path.resolve(__dirname, ".."), works
     const recordDirectory = path.join(records, path.basename(built.destination));
     if (await checkMoveTarget(recordDirectory, false)) throw new Error("Release record already exists; refusing to overwrite it.");
     await fs.rename(built.destination, recordDirectory);
-    const stagedApp = path.join(recordDirectory, "Capstone - AI");
+    const stagedApp = path.join(recordDirectory, "MIRA");
     await checkMoveTarget(stagedApp, true);
     if (hasPrevious) {
       const archive = await fs.mkdtemp(path.join(archives, new Date().toISOString().replace(/[:.]/g, "-") + "-"));

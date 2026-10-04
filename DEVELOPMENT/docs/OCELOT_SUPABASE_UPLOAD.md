@@ -1,5 +1,13 @@
 # Upload the Supabase version to Ocelot
 
+## Current MIRA migration candidate - September 29, 2026
+
+The approved local package location is the sibling `MIRA/` folder, not `Capstone - AI/`. It contains 26 files totaling 4,953,116 bytes; every generated SHA-256 and byte count matched `dist/release-records/mira-upload-XhWgUH/manifest.json`. The new target is `public_html/MIRA/`. Do not upload yet: first follow the ordered redirect, upload, Site URL, recovery, and legacy-compatibility sequence in [MIRA rename and Supabase migration plan](MIRA_RENAME_AND_SUPABASE_MIGRATION.md). Keep the old hosted folder intact for rollback. No live Supabase setting, recovery email, password, database record, Ocelot file, or Git remote was changed during preparation.
+
+The Staff Queue now uses a top-right staff profile. Change password is under **Profile -> Settings**, and Sign out is in the Profile menu. Forgot password remains signed-out only. Desktop, 390 px, and 320 px browser checks passed.
+
+The dated sections below document previous packages and hosted observations. They are historical evidence, not the package/path to use for the MIRA migration.
+
 ## Prepared proof-of-concept release - September 26, 2026
 
 The current sibling `Capstone - AI` folder is the zero-install pre-integration demo. It includes reviewed public/course search, centralized verified portal navigation, and **Use information I share** with five-minute browser-memory sources. It does not include or require the local extension/helper or portal-owner package. The build has **24 manifest-matched public files (4,407,676 bytes)**; the local checksum/instruction record is `dist/release-records/ocelot-upload-6GmSUX/`, and the previous website is preserved under `dist/archive/ocelot/2026-09-26T18-17-34-489Z-qnAP17/release/`. The full suite reported 292 passed, 0 failed, and one optional hosted-PHP integration skip. Generated-folder browser checks passed with no console warnings/errors. This preparation did not upload Ocelot files or change Supabase/portal data. See [the current proof-of-concept demonstration guide](PROOF_OF_CONCEPT_DEMO.md).

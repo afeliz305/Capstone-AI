@@ -62,13 +62,13 @@ test("former staff assignments are shown as historical, disabled choices in the 
 async function mount({ createResponse, workspaceResponse, authResponse, localStorage, storageMode, baseUrl = "http://localhost/", readFile = (reader, file) => { reader.result = "data:text/plain;base64," + file.data; reader.onload(); }, confirm = () => false, redirectFactory = helpers.createIdleRedirect, initialTickets = records } = {}) {
   class Element {
     constructor(tag = "div") { this.tag = tag; this.children = []; this.listeners = {}; this.attributes = {}; this.dataset = {}; this.value = ""; this.textContent = ""; this.checked = false; this.disabled = false; }
-    append(...nodes) { this.children.push(...nodes); }
-    replaceChildren(...nodes) { this.children = nodes; }
+    append(...nodes) { nodes.forEach(node => { node.parent = this; }); this.children.push(...nodes); }
+    replaceChildren(...nodes) { nodes.forEach(node => { node.parent = this; }); this.children = nodes; }
     setAttribute(name, value) { this.attributes[name] = value; }
     setCustomValidity(message) { this.validationMessage = message; }
     addEventListener(type, handler) { this.listeners[type] = handler; }
     emit(type, event = {}) { return this.listeners[type]?.({ preventDefault() {}, ...event }); }
-    focus() { this.focused = true; }
+    focus() { this.focused = true; document.activeElement = this; }
     showModal() { this.open = true; }
     close() { this.open = false; this.emit("close"); }
     reportValidity() { return this.valid !== false; }
@@ -77,8 +77,11 @@ async function mount({ createResponse, workspaceResponse, authResponse, localSto
       return this.children.flatMap(node => [...(matches(node) ? [node] : []), ...node.querySelectorAll(selector)]);
     }
     querySelector(selector) { return this.querySelectorAll(selector)[0]; }
+    contains(target) { return this === target || this.children.some(node => node.contains(target)); }
   }
-  const elements = new Map([...html.matchAll(/id="([^"]+)"/g)].map(match => ["#" + match[1], new Element()]));
+  const elements = new Map([...html.matchAll(/<[^>]+id="([^"]+)"[^>]*>/g)].map(match => {
+    const element = new Element(); element.hidden = /\shidden(?:\s|>)/.test(match[0]); return ["#" + match[1], element];
+  }));
   const loginSubmit = new Element("button"); loginSubmit.setAttribute("type", "submit");
   elements.get("#staff-login-form").append(loginSubmit);
   elements.get("#staff-ticket-form").reset = () => {
@@ -154,7 +157,10 @@ async function mount({ createResponse, workspaceResponse, authResponse, localSto
   if (storageMode) api.storageMode = storageMode;
   let endSession;
   if (storageMode === "supabase") api.onSessionEnded = listener => { endSession = listener; };
-  const context = vm.createContext({ document, URL, FileReader: class { readAsDataURL(file) { readFile(this, file); } }, window: { CapstoneApi: api, get localStorage() { return typeof localStorage === "function" ? localStorage() : localStorage; }, CapstoneAttachmentPolicy: require("../js/shared/attachment-policy"), CapstoneContactPolicy: require("../js/shared/contact-policy"), CapstoneStaffView: { ...helpers, createIdleRedirect: redirectFactory }, crypto: { randomUUID }, confirm, addEventListener() {}, setInterval() {} } });
+  const windowListeners = {};
+  const windowObject = { CapstoneApi: api, get localStorage() { return typeof localStorage === "function" ? localStorage() : localStorage; }, CapstoneAttachmentPolicy: require("../js/shared/attachment-policy"), CapstoneContactPolicy: require("../js/shared/contact-policy"), CapstoneStaffView: { ...helpers, createIdleRedirect: redirectFactory }, crypto: { randomUUID }, confirm,
+    addEventListener(type, listener) { (windowListeners[type] ||= []).push(listener); }, setInterval() {} };
+  const context = vm.createContext({ document, URL, FileReader: class { readAsDataURL(file) { readFile(this, file); } }, window: windowObject });
   vm.runInContext(workspaceScript, context);
   vm.runInContext(script, context);
   await flush();
@@ -162,7 +168,7 @@ async function mount({ createResponse, workspaceResponse, authResponse, localSto
     const visit = node => [...(predicate(node) ? [node] : []), ...node.children.flatMap(visit)];
     return visit(elements.get("#ticket-grid"));
   };
-  return { elements, buttons, find, requests, creations, workRequests, endSession:()=>endSession?.(), button: view => buttons.find(button => button.dataset.view === view), visible: () => find(node => node.className === "ticket-id").map(node => node.textContent), count: view => Number(buttons.find(button => button.dataset.view === view).querySelector("[data-view-count]").textContent) };
+  return { document, elements, buttons, find, requests, creations, workRequests, endSession:()=>endSession?.(), emitWindow:(type,event={})=>(windowListeners[type]||[]).forEach(listener=>listener(event)), button: view => buttons.find(button => button.dataset.view === view), visible: () => find(node => node.className === "ticket-id").map(node => node.textContent), count: view => Number(buttons.find(button => button.dataset.view === view).querySelector("[data-view-count]").textContent) };
 }
 
 function memoryEmailStorage(value) {
@@ -232,6 +238,82 @@ test("password visibility is disabled in email-only mode and reset after a rejec
   assert.equal(ui.elements.get("#staff-password").value,"");
   assert.equal(ui.elements.get("#toggle-staff-password").textContent,"Show");
 });
+test("Forgot password appears only for signed-out Supabase mode and never submits the sign-in form",async()=>{
+  for(const storageMode of [undefined,"browser-demo","php"]) {
+    const ui=await mount({storageMode,authResponse:signedOutSession});
+    assert.equal(ui.elements.get("#forgot-staff-password").hidden,true);
+  }
+  const ui=await mount({storageMode:"supabase",authResponse:signedOutSession});
+  const button=ui.elements.get("#forgot-staff-password");
+  assert.equal(button.hidden,false);
+  button.emit("click");
+  assert.equal(ui.elements.get("#forgot-password-dialog").open,true);
+  assert.equal(ui.requests.filter(url=>url==="/api/staff/login").length,0);
+});
+
+test("invalid credentials remain on sign-in with Forgot password available, while valid nonstaff Auth is denied",async()=>{
+  const credentials=await mount({storageMode:"supabase",authResponse:url=>url==="/api/staff/login"
+    ?authResult(401,{error:"Email or password was not accepted. Check your details or use Forgot password.",classification:"INVALID_CREDENTIALS"})
+    :signedOutSession(url)});
+  credentials.elements.get("#staff-email").value="fictional@example.edu";
+  credentials.elements.get("#staff-password").value="fictional-wrong-secret";
+  await credentials.elements.get("#staff-login-form").emit("submit");
+  assert.equal(credentials.elements.get("#staff-login").hidden,false);
+  assert.equal(credentials.elements.get("#staff-denied").hidden,true);
+  assert.equal(credentials.elements.get("#forgot-staff-password").hidden,false);
+  assert.match(credentials.elements.get("#staff-login-status").textContent,/Email or password was not accepted/);
+
+  const nonstaff=await mount({storageMode:"supabase",authResponse:url=>url==="/api/staff/login"
+    ?authResult(403,{error:"This account is not currently authorized for the MIRA Staff Queue. Contact the project owner.",classification:"STAFF_BINDING_MISSING"})
+    :signedOutSession(url)});
+  nonstaff.elements.get("#staff-email").value="fictional@example.edu";
+  nonstaff.elements.get("#staff-password").value="fictional-correct-secret";
+  await nonstaff.elements.get("#staff-login-form").emit("submit");
+  assert.equal(nonstaff.elements.get("#staff-denied").hidden,false);
+  assert.match(nonstaff.elements.get("#staff-denied-message").textContent,/not currently authorized/);
+});
+
+test("access denied offers explicit choices without an automatic redirect countdown",()=>{
+  assert.match(html,/>Back to MIRA<\/a>/);
+  assert.match(html,/>Try signing in again<\/button>/);
+  assert.doesNotMatch(html,/staff-return-seconds|Returning to the student assistant in/);
+  assert.doesNotMatch(script,/redirect\.start\(\)|location\.replace\("\.\.\/index\.html"\)/);
+});
+
+test("Forgot password validates email, confirms neutrally, prevents duplicates, and clears on cancel",async()=>{
+  let release;let requests=0;
+  const ui=await mount({storageMode:"supabase",authResponse:(url,options)=>{
+    if(url==="/api/staff/session") return authResult(401,{error:"Sign in required",loginMode:"password"});
+    if(url==="/api/staff/password/reset-request") {
+      requests++;assert.deepEqual(JSON.parse(options.body),{email:"fictional@example.edu"});
+      return new Promise(resolve=>{release=()=>resolve(authResult(200,{ok:true,message:"If an eligible staff account exists for that email, a password reset message has been sent."}));});
+    }
+  }});
+  ui.elements.get("#forgot-staff-password").emit("click");
+  ui.elements.get("#forgot-password-email").value="invalid";
+  await ui.elements.get("#forgot-password-form").emit("submit");
+  assert.match(ui.elements.get("#forgot-password-status").textContent,/valid email/);assert.equal(requests,0);
+  ui.elements.get("#forgot-password-email").value="fictional@example.edu";
+  const pending=ui.elements.get("#forgot-password-form").emit("submit");await flush();
+  assert.equal(ui.elements.get("#send-reset-email").disabled,true);
+  await ui.elements.get("#forgot-password-form").emit("submit");assert.equal(requests,1);
+  ui.elements.get("#cancel-forgot-password").emit("click");assert.equal(ui.elements.get("#forgot-password-dialog").open,true);
+  release();await pending;
+  assert.match(ui.elements.get("#forgot-password-status").textContent,/If an eligible staff account exists/);
+  assert.equal(ui.elements.get("#forgot-password-email").value,"");
+  assert.equal(ui.elements.get("#cancel-forgot-password").textContent,"Done");
+  ui.elements.get("#cancel-forgot-password").emit("click");
+  assert.equal(ui.elements.get("#forgot-password-dialog").open,false);
+  assert.equal(ui.elements.get("#forgot-password-status").textContent,"");
+});
+
+test("Forgot password exposes only safe rate-limit wording and allows retry",async()=>{
+  const ui=await mount({storageMode:"supabase",authResponse:(url)=>url==="/api/staff/password/reset-request"?authResult(429,{error:"Please wait before requesting another reset email."}):signedOutSession(url)});
+  ui.elements.get("#forgot-staff-password").emit("click");ui.elements.get("#forgot-password-email").value="fictional@example.edu";
+  await ui.elements.get("#forgot-password-form").emit("submit");
+  assert.equal(ui.elements.get("#forgot-password-status").textContent,"Please wait before requesting another reset email.");
+  assert.equal(ui.elements.get("#send-reset-email").disabled,false);
+});
 test("change password is available only for signed-in Supabase staff; cancel clears secrets", async () => {
   for (const storageMode of [undefined,"browser-demo","php"]) {
     const ui = await mount({ storageMode });
@@ -250,7 +332,71 @@ test("change password is available only for signed-in Supabase staff; cancel cle
   ui.elements.get("#cancel-change-password").emit("click");
   assertPasswordsCleared(ui);
   assert.equal(ui.elements.get("#staff-password-dialog").open, false);
-  assert.equal(ui.elements.get("#change-staff-password").focused, true);
+  assert.equal(ui.elements.get("#staff-profile-trigger").focused, true);
+});
+
+test("verified staff profile owns Settings, Change password and Sign out with accessible close behavior", async () => {
+  const header = html.slice(html.indexOf('<header class="site-header">'), html.indexOf('</header>') + 9);
+  assert.match(header, /id="staff-profile"[\s\S]*id="staff-settings"[\s\S]*id="staff-logout"/);
+  assert.doesNotMatch(header, /id="change-staff-password"/);
+  const settingsMarkup = html.slice(html.indexOf('id="staff-settings-dialog"'), html.indexOf('id="staff-password-dialog"'));
+  assert.match(settingsMarkup, /id="change-staff-password"/);
+
+  const signedOut = await mount({ storageMode:"supabase", authResponse:signedOutSession });
+  assert.equal(signedOut.elements.get("#staff-profile").hidden, true);
+
+  const ui = await mount({ storageMode:"supabase" });
+  const trigger = ui.elements.get("#staff-profile-trigger");
+  assert.equal(ui.elements.get("#staff-profile").hidden, false);
+  assert.equal(ui.elements.get("#staff-profile-trigger-name").textContent, members[0].name);
+  assert.match(trigger.attributes["aria-label"], /Alex Example/);
+  trigger.emit("click");
+  assert.equal(ui.elements.get("#staff-profile-menu").hidden, false);
+  assert.equal(trigger.attributes["aria-expanded"], "true");
+  assert.equal(ui.elements.get("#staff-profile-name").textContent, members[0].name);
+  assert.equal(ui.elements.get("#staff-profile-email").textContent, members[0].email);
+  assert.match(ui.elements.get("#staff-profile-verification").textContent, /Verified/);
+
+  ui.emitWindow("keydown", { key:"Escape", preventDefault() { this.prevented = true; } });
+  assert.equal(ui.elements.get("#staff-profile-menu").hidden, true);
+  assert.equal(trigger.attributes["aria-expanded"], "false");
+  assert.equal(trigger.focused, true);
+
+  trigger.emit("click");
+  ui.emitWindow("click", { target:{} });
+  assert.equal(ui.elements.get("#staff-profile-menu").hidden, true);
+  trigger.emit("click");
+  ui.elements.get("#staff-settings").emit("click");
+  assert.equal(ui.elements.get("#staff-settings-dialog").open, true);
+  assert.equal(ui.elements.get("#staff-settings-name").value, members[0].name);
+  assert.equal(ui.elements.get("#staff-settings-email").value, members[0].email);
+  assert.equal(ui.elements.get("#change-staff-password").hidden, false);
+
+  ui.elements.get("#close-staff-settings").emit("click");
+  assert.equal(ui.elements.get("#staff-settings-dialog").open, false);
+  assert.equal(ui.elements.get("#staff-profile-menu").hidden, true);
+  assert.equal(ui.document.activeElement, trigger);
+
+  trigger.emit("click");
+  ui.elements.get("#staff-settings").emit("click");
+  let settingsCancelPrevented = false;
+  ui.elements.get("#staff-settings-dialog").emit("cancel", { preventDefault() { settingsCancelPrevented = true; } });
+  assert.equal(settingsCancelPrevented, true);
+  assert.equal(ui.elements.get("#staff-settings-dialog").open, false);
+  assert.equal(ui.elements.get("#staff-profile-menu").hidden, true);
+  assert.equal(ui.document.activeElement, trigger);
+
+  trigger.emit("click");
+  ui.elements.get("#staff-settings").emit("click");
+  ui.elements.get("#change-staff-password").emit("click");
+  assert.equal(ui.elements.get("#staff-settings-dialog").open, false);
+  assert.equal(ui.elements.get("#staff-password-dialog").open, true);
+  ui.elements.get("#cancel-change-password").emit("click");
+  assert.equal(ui.elements.get("#staff-settings-dialog").open, true);
+  assert.equal(ui.document.activeElement, ui.elements.get("#change-staff-password"));
+  ui.elements.get("#close-staff-settings").emit("click");
+  assert.equal(ui.elements.get("#staff-settings-dialog").open, false);
+  assert.equal(ui.document.activeElement, trigger);
 });
 test("change password validates confirmation and shows verified success without storing secrets", async () => {
   const localStorage = memoryEmailStorage(); let calls=0;
@@ -267,7 +413,7 @@ test("change password validates confirmation and shows verified success without 
   fillPasswordForm(ui);
   await ui.elements.get("#change-password-form").emit("submit");
   assert.equal(calls,1);assertPasswordsCleared(ui);
-  assert.match(ui.elements.get("#change-password-status").textContent,/Password updated/);
+  assert.match(ui.elements.get("#change-password-status").textContent,/password updated successfully/i);
   assert.equal(ui.elements.get("#save-change-password").disabled,true);
   assert.equal(ui.elements.get("#cancel-change-password").textContent,"Done");
   assert.deepEqual([...localStorage.saved],[["capstone-ai-chat:last-staff-email",email]]);
@@ -282,7 +428,7 @@ test("password errors clear fields, allow retry, and never report an unconfirmed
     ui.elements.get("#change-staff-password").emit("click");fillPasswordForm(ui);
     await ui.elements.get("#change-password-form").emit("submit");
     assertPasswordsCleared(ui);
-    assert.doesNotMatch(ui.elements.get("#change-password-status").textContent,/Password updated/);
+    assert.doesNotMatch(ui.elements.get("#change-password-status").textContent,/password updated successfully/i);
     assert.equal(ui.elements.get("#save-change-password").disabled,false);
     assert.equal(ui.elements.get("#staff-password-dialog").open,true);
   }
@@ -414,7 +560,7 @@ test("a valid existing session and a different successful login replace the reme
 test("failed login preserves the remembered email and keeps the attempted email editable on retry", async () => {
   const localStorage = memoryEmailStorage(email);
   const ui = await mount({ localStorage, redirectFactory: () => ({ start() {}, stop() {}, respond() {} }),
-    authResponse: url => url === "/api/staff/login" ? authResult(401, { error: "Unauthorized access" }) : signedOutSession(url) });
+    authResponse: url => url === "/api/staff/login" ? authResult(403, { error: "This account is not currently authorized for the MIRA Staff Queue." }) : signedOutSession(url) });
   ui.elements.get("#staff-email").value = "mistyped@example.edu";
   ui.elements.get("#staff-password").value = "fictional-wrong-secret";
   await ui.elements.get("#staff-login-form").emit("submit");
@@ -458,7 +604,7 @@ test("HTML from static hosting produces actionable login guidance and preserves 
 
 test("remembered staff email is isolated by app folder and warns about blocked storage", async () => {
   const storage = memoryEmailStorage();
-  const baseUrl = "https://example.edu/~student/Capstone%20-%20AI/";
+  const baseUrl = "https://example.edu/~student/MIRA/";
   await mount({ baseUrl, localStorage: storage });
   const reloaded = await mount({ baseUrl, localStorage: storage, authResponse: signedOutSession });
   assert.equal(reloaded.elements.get("#staff-email").value, email);
@@ -467,6 +613,18 @@ test("remembered staff email is isolated by app folder and warns about blocked s
   assert.equal(other.elements.get("#staff-email").value, "");
   const blocked = await mount({ localStorage: () => { throw new Error("blocked"); }, authResponse: signedOutSession });
   assert.match(blocked.elements.get("#staff-remember-email-note").textContent, /blocking saved preferences/);
+});
+
+test("MIRA path migrates only the legacy remembered email preference", async () => {
+  const oldKey="capstone-ai-chat:last-staff-email:/~student/Capstone%20-%20AI/";
+  const newKey="capstone-ai-chat:last-staff-email:/~student/MIRA/";
+  const saved=new Map([[oldKey,"alex@example.edu"],["capstone-supabase:legacy:remembered-v1","must-not-move"]]);
+  const storage={getItem:key=>saved.get(key)??null,setItem:(key,value)=>saved.set(key,String(value))};
+  const ui=await mount({baseUrl:"https://example.edu/~student/MIRA/",localStorage:storage,authResponse:signedOutSession});
+  assert.equal(ui.elements.get("#staff-email").value,"alex@example.edu");
+  assert.equal(saved.get(newKey),"alex@example.edu");
+  assert.equal(saved.get("capstone-supabase:legacy:remembered-v1"),"must-not-move");
+  assert.equal([...saved.keys()].filter(key=>/remembered-v1/.test(key)).length,1);
 });
 
 test("visible view buttons render groups, reset filters, and lock resolved views", async () => {

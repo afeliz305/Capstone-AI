@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Secure MIRA staff-password recovery.">
+    <meta name="application-name" content="MIRA">
+    <title>Reset your MIRA staff password</title>
+    <link rel="icon" type="image/svg+xml" href="../css/images/capstone-chat.svg">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/staff.css">
+    <script src="../js/shared/api-client.js" defer></script>
+    <script src="../js/staff/password-recovery.js" defer></script>
+  </head>
+  <body class="staff-page recovery-page">
+    <header class="site-header">
+      <a class="brand" href="../index.html" aria-label="Return to MIRA">
+        <img class="brand-fiu" src="../css/images/FIU_mark_white.svg" alt="FIU" width="79" height="38">
+        <span class="brand-copy">
+          <strong>Knight Foundation School of Computing &amp; Information Sciences</strong>
+          <span>MIRA · PROTOTYPE</span>
+        </span>
+      </a>
+      <nav aria-label="Recovery navigation"><a href="staff.html">Staff Queue</a></nav>
+    </header>
+    <main class="staff-access">
+      <section class="staff-access-card" aria-labelledby="recovery-title">
+        <p class="eyebrow">MIRA STAFF ACCOUNT</p>
+        <h1 id="recovery-title">Reset your MIRA staff password</h1>
+        <p id="recovery-note">Use a unique password with 8–128 characters. Supabase may require a stronger password.</p>
+        <p class="staff-setup-note">This changes only your MIRA staff password. It does not change your FIU password.</p>
+        <form id="recovery-form" hidden>
+          <fieldset id="recovery-fields">
+            <legend class="sr-only">New MIRA staff password</legend>
+            <label for="recovery-new-password">New password</label>
+            <div class="password-control">
+              <input id="recovery-new-password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required aria-describedby="recovery-note">
+              <button class="staff-secondary password-toggle" id="toggle-recovery-new-password" type="button" aria-label="Show new password" aria-controls="recovery-new-password" aria-pressed="false">Show</button>
+            </div>
+            <label for="recovery-confirm-password">Confirm new password</label>
+            <div class="password-control">
+              <input id="recovery-confirm-password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+              <button class="staff-secondary password-toggle" id="toggle-recovery-confirm-password" type="button" aria-label="Show confirmed password" aria-controls="recovery-confirm-password" aria-pressed="false">Show</button>
+            </div>
+          </fieldset>
+          <button class="staff-primary" id="save-recovery-password" type="submit">Update password</button>
+        </form>
+        <p class="staff-login-status recovery-status" id="recovery-status" role="status" aria-live="polite">Verifying your recovery link…</p>
+        <div id="recovery-success" hidden>
+          <p><strong>MIRA staff password updated successfully.</strong></p>
+          <p>You have been signed out. Sign in normally with your new password; Remember me remains off unless you choose it.</p>
+        </div>
+        <a class="staff-back" id="return-to-staff" href="staff.html">Return to Staff Queue</a>
+      </section>
+    </main>
+  </body>
+</html>

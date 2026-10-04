@@ -1,6 +1,10 @@
 # Project guides
 
+Current rename/release authority: [MIRA rename and Supabase migration plan](MIRA_RENAME_AND_SUPABASE_MIGRATION.md). It records the `/MIRA/` package, read-only Supabase audit, Staff Queue profile design, exact post-approval migration sequence, tests, and actions intentionally not performed. Dated documents may retain old paths where historically accurate.
+
 ## Upload and test
+
+- [Supabase setup and MIRA password recovery](SUPABASE_SETUP.md#forgot-your-mira-staff-password) - exact recovery callback, pending dashboard/email-template owner actions, safe reset behavior, signed-in password change, and staff authorization boundary.
 
 - [Proof-of-concept acceptance record](PROOF_OF_CONCEPT_ACCEPTANCE.md) - completed hosted MIRA, navigation, temporary-information, authenticated ticket, attachment, privacy, and stale-edit results; includes the final capability matrix and professor-ready statement.
 

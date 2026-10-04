@@ -17,7 +17,7 @@ async function cleanup(temp) {
   await fs.rm(temp, { recursive: true, force: true });
 }
 test('PHP transport preserves folder, query, and authenticated attachment routes', () => {
-  for (const baseUrl of ['https://example.edu/', 'https://example.edu/~user/Capstone%20-%20AI/']) {
+  for (const baseUrl of ['https://example.edu/', 'https://example.edu/~user/MIRA/']) {
     const api = createApiClient({ baseUrl, transport: 'php' });
     const url = new URL(api.url('/api/search?q=attendance%20%26%20grades&route=evil'));
     assert.equal(url.pathname, new URL(baseUrl).pathname + 'api/index.php');
@@ -31,7 +31,7 @@ test('Ocelot package includes only public assets and credential-free PHP, never 
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'capstone-ocelot-test-'));
   t.after(() => cleanup(temp));
   const result = await createOcelotPackage({ outputRoot: temp });
-  assert.equal(path.basename(result.uploadDirectory), 'Capstone - AI');
+  assert.equal(path.basename(result.uploadDirectory), 'MIRA');
   for (const item of result.manifest) {
     assert.doesNotMatch(item.file, /^(?:data|server|scripts|test|docs|node_modules|\.git)(?:\/|$)|state\.json|credentials|\.env/);
     const bytes = await fs.readFile(path.join(result.uploadDirectory, item.file));
@@ -56,7 +56,7 @@ test('current Ocelot upload has one stable location and archives previous files 
   const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'capstone-ocelot-test-'));
   t.after(() => cleanup(workspace));
   const first = await prepareOcelotUpload({ workspace });
-  assert.equal(first.destination, path.join(workspace, 'Capstone - AI'));
+  assert.equal(first.destination, path.join(workspace, 'MIRA'));
   assert.equal(first.uploadDirectory, first.destination);
   assert.deepEqual((await fs.readdir(first.destination)).sort(), ['css','documents','index.html','js','pages']);
   assert.ok(first.recordDirectory.startsWith(path.join(workspace, 'DEVELOPMENT', 'dist', 'release-records') + path.sep));
@@ -83,7 +83,7 @@ test('upload publishing rejects linked destinations and overlapping builds witho
   const protectedFolder = path.join(workspace, 'private-example');
   await fs.mkdir(protectedFolder);
   await fs.writeFile(path.join(protectedFolder, 'keep.txt'), 'Fictional private data');
-  const linkedDestination = path.join(workspace, 'Capstone - AI');
+  const linkedDestination = path.join(workspace, 'MIRA');
   await fs.symlink(protectedFolder, linkedDestination, process.platform === 'win32' ? 'junction' : 'dir');
   await assert.rejects(prepareOcelotUpload({ workspace }), /linked or non-directory/);
   assert.equal(await fs.readFile(path.join(protectedFolder, 'keep.txt'), 'utf8'), 'Fictional private data');
@@ -98,7 +98,7 @@ test('PHP hosted integration: shared durable queue, documents, conflicts, search
   const php = process.env.CAPSTONE_PHP_BIN;
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'capstone-ocelot-test-'));
   const publicRoot = path.join(temp, 'home', 'public_html');
-  const app = path.join(publicRoot, 'Capstone - AI');
+  const app = path.join(publicRoot, 'MIRA');
   const processes = [];
   async function stop(child) { if (child.exitCode === null && child.signalCode === null) { child.kill(); await once(child, 'exit'); } }
   t.after(async () => { for (const child of processes) await stop(child); await cleanup(temp); });
@@ -118,7 +118,7 @@ test('PHP hosted integration: shared durable queue, documents, conflicts, search
     const child = spawn(php, args, { windowsHide: true, stdio: ['ignore','pipe','pipe'] });
     processes.push(child);
     let log = ''; child.stdout.on('data', b => { log += b; }); child.stderr.on('data', b => { log += b; });
-    const base = 'http://127.0.0.1:' + port + '/Capstone%20-%20AI/';
+    const base = 'http://127.0.0.1:' + port + '/MIRA/';
     for (let retry = 0; retry < 80; retry++) {
       if (child.exitCode !== null) throw new Error('PHP failed to start: ' + log);
       try { const response = await fetch(base); if (response.ok) return { child, base }; } catch {}
@@ -141,7 +141,7 @@ test('PHP hosted integration: shared durable queue, documents, conflicts, search
   assert.equal(alice.data.members.length, 5);
   assert.equal(alice.data.members.some(member => member.email === 'ralva037@fiu.edu'), false);
   assert.equal(alice.status, 200); assert.equal(alice.data.staff.name, 'Anthony Feliz');
-  assert.match(alice.response.headers.get('set-cookie'), /Path=\/Capstone%20-%20AI\/api\/; HttpOnly; SameSite=Strict/);
+  assert.match(alice.response.headers.get('set-cookie'), /Path=\/MIRA\/api\/; HttpOnly; SameSite=Strict/);
   const bob = await request('/staff/login', {method:'POST',body:{email:'zrich010@fiu.edu'},base:secondary.base}); assert.equal(bob.status, 200);
   assert.equal((await request('/staff/session', {cookie:alice.cookie})).data.loginMode, 'email-demo');
   assert.equal((await request('/staff/login', {method:'POST',body:{email:'afeli016@fiu.edu'},headers:{Origin:'https://evil.invalid'}})).status, 403);

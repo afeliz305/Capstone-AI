@@ -3,8 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Local support-request queue for the Capstone - AI prototype.">
-    <title>Support Queue · Capstone - AI</title>
+    <meta name="description" content="MIRA Staff Queue for the Messaging, Information &amp; Resolution Assistant proof of concept.">
+    <meta name="application-name" content="MIRA">
+    <title>MIRA Staff Queue</title>
     <link rel="icon" type="image/svg+xml" href="../css/images/capstone-chat.svg">
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/staff.css">
@@ -17,26 +18,46 @@
   </head>
   <body class="staff-page">
     <header class="site-header">
-      <a class="brand" href="../index.html" aria-label="Return to Capstone - AI">
+      <a class="brand" href="../index.html" aria-label="Return to MIRA">
         <img class="brand-fiu" src="../css/images/FIU_mark_white.svg" alt="FIU" width="79" height="38">
         <span class="brand-copy">
           <strong>Knight Foundation School of Computing &amp; Information Sciences</strong>
-          <span>CAPSTONE - AI SUPPORT · PROTOTYPE</span>
+          <span>MIRA STAFF QUEUE · PROTOTYPE</span>
         </span>
       </a>
       <nav aria-label="Staff navigation">
         <a href="../index.html">Student assistant</a>
         <button class="refresh-button" id="refresh-tickets" type="button" hidden>Refresh queue</button>
-        <button class="refresh-button" id="change-staff-password" type="button" aria-haspopup="dialog" aria-controls="staff-password-dialog" hidden>Change password</button>
-        <button class="refresh-button" id="staff-logout" type="button" hidden>Sign out</button>
+        <div class="staff-profile" id="staff-profile" hidden>
+          <button class="staff-profile-trigger" id="staff-profile-trigger" type="button" aria-label="Open staff account menu" aria-haspopup="menu" aria-controls="staff-profile-menu" aria-expanded="false">
+            <span class="staff-profile-avatar" id="staff-profile-trigger-avatar" aria-hidden="true">--</span>
+            <span class="staff-profile-trigger-name" id="staff-profile-trigger-name"></span>
+            <span class="staff-profile-caret" aria-hidden="true">&#9662;</span>
+          </button>
+          <div class="staff-profile-menu" id="staff-profile-menu" role="menu" aria-labelledby="staff-profile-trigger" hidden>
+            <p class="staff-profile-menu-title">MIRA Staff Account</p>
+            <div class="staff-profile-identity">
+              <span class="staff-profile-avatar staff-profile-avatar-large" id="staff-profile-menu-avatar" aria-hidden="true">--</span>
+              <div>
+                <strong id="staff-profile-name"></strong>
+                <span id="staff-profile-email"></span>
+                <small id="staff-profile-verification"></small>
+              </div>
+            </div>
+            <div class="staff-profile-actions">
+              <button id="staff-settings" type="button" role="menuitem" aria-haspopup="dialog" aria-controls="staff-settings-dialog">Settings</button>
+              <button id="staff-logout" type="button" role="menuitem">Sign out</button>
+            </div>
+          </div>
+        </div>
       </nav>
     </header>
 
     <main class="staff-access" id="staff-access">
       <section class="staff-access-card" id="staff-checking" role="status">Checking staff access…</section>
       <section class="staff-access-card" id="staff-login" aria-labelledby="staff-login-title" hidden>
-        <p class="eyebrow">CAPSTONE - AI SUPPORT</p>
-        <h1 id="staff-login-title">Staff sign-in</h1>
+        <p class="eyebrow">MIRA STAFF QUEUE</p>
+        <h1 id="staff-login-title">MIRA staff sign-in</h1>
         <p>Sign in to view and manage support requests.</p>
         <form id="staff-login-form">
           <label for="staff-email">Staff email</label>
@@ -55,6 +76,7 @@
           </div>
           <p class="staff-login-status" id="staff-login-status" role="status" aria-live="polite"></p>
           <button class="staff-primary" type="submit">Sign in</button>
+          <button class="staff-forgot-password" id="forgot-staff-password" type="button" aria-haspopup="dialog" aria-controls="forgot-password-dialog" hidden>Forgot password?</button>
         </form>
         <p class="staff-setup-note" id="staff-remember-email-note">After a successful sign-in, your email is remembered on this browser at this site address. Failed sign-ins do not replace it. Your password is never saved by this app.</p>
         <p class="staff-demo-warning" id="staff-login-demo-warning" hidden>Temporary email-only demo: passwords are disabled. Anyone who knows an approved email can access all tickets. Email ownership is not verified. Use fictional test data only.</p>
@@ -65,9 +87,8 @@
         <p class="eyebrow">STAFF ACCESS ONLY</p>
         <h1 id="staff-denied-title" tabindex="-1">Unauthorized access</h1>
         <p id="staff-denied-message" role="alert">Your account is not authorized for the staff queue.</p>
-        <p>Returning to the student assistant in <strong id="staff-return-seconds">15</strong> seconds without a response.</p>
         <div class="staff-denied-actions">
-          <a class="staff-primary" href="../index.html">Back to the student assistant</a>
+          <a class="staff-primary" href="../index.html">Back to MIRA</a>
           <button class="staff-secondary" id="staff-retry" type="button">Try signing in again</button>
         </div>
       </section>
@@ -88,7 +109,7 @@
 
       <section class="queue-heading">
         <div>
-          <p class="eyebrow">STAFF SUPPORT QUEUE</p>
+          <p class="eyebrow">MIRA STAFF QUEUE</p>
           <h1 id="staff-welcome">Support requests</h1>
           <p id="staff-identity"></p>
           <button class="staff-primary" id="create-staff-ticket" type="button" aria-haspopup="dialog" aria-controls="staff-ticket-dialog">Create ticket</button>
@@ -128,12 +149,36 @@
       <section class="ticket-grid" id="ticket-grid" aria-label="Support tickets"></section>
     </main>
 
+    <dialog class="staff-ticket-dialog staff-settings-dialog" id="staff-settings-dialog" aria-labelledby="staff-settings-title" aria-describedby="staff-settings-note">
+      <div>
+        <div class="staff-ticket-heading">
+          <p class="eyebrow">MIRA STAFF ACCOUNT</p>
+          <h2 id="staff-settings-title">MIRA Staff Settings</h2>
+        </div>
+        <section class="staff-settings-section" aria-labelledby="staff-settings-account-title">
+          <h3 id="staff-settings-account-title">Account</h3>
+          <label for="staff-settings-name">Name</label>
+          <input id="staff-settings-name" type="text" readonly>
+          <label for="staff-settings-email">Email</label>
+          <input id="staff-settings-email" type="email" readonly>
+        </section>
+        <section class="staff-settings-section" aria-labelledby="staff-settings-security-title">
+          <h3 id="staff-settings-security-title">Security</h3>
+          <p id="staff-settings-note">Your MIRA staff password is separate from your FIU password.</p>
+          <button class="staff-secondary" id="change-staff-password" type="button" aria-haspopup="dialog" aria-controls="staff-password-dialog" hidden>Change password</button>
+        </section>
+        <div class="staff-ticket-actions">
+          <button class="staff-primary" id="close-staff-settings" type="button">Done</button>
+        </div>
+      </div>
+    </dialog>
+
     <dialog class="staff-ticket-dialog staff-password-dialog" id="staff-password-dialog" aria-labelledby="change-password-title" aria-describedby="change-password-note">
       <form id="change-password-form">
         <div class="staff-ticket-heading">
           <p class="eyebrow">YOUR STAFF ACCOUNT</p>
-          <h2 id="change-password-title">Change password</h2>
-          <p id="change-password-note">Changes only your Capstone - AI staff password, not your FIU password. Use a unique password with 8–128 characters. Supabase may require a stronger password. This app never saves your password.</p>
+          <h2 id="change-password-title">Change your MIRA staff password</h2>
+          <p id="change-password-note">This changes only your MIRA staff password. It does not change your FIU password. Use a unique password with 8–128 characters. Supabase may require a stronger password. This app never saves your password.</p>
         </div>
         <fieldset id="change-password-fields">
           <legend class="sr-only">Password change</legend>
@@ -163,10 +208,31 @@
       </form>
     </dialog>
 
+    <dialog class="staff-ticket-dialog staff-password-dialog" id="forgot-password-dialog" aria-labelledby="forgot-password-title" aria-describedby="forgot-password-note">
+      <form id="forgot-password-form">
+        <div class="staff-ticket-heading">
+          <p class="eyebrow">MIRA STAFF ACCOUNT</p>
+          <h2 id="forgot-password-title">Reset your MIRA staff password</h2>
+          <p id="forgot-password-note">Enter the FIU email associated with your approved MIRA staff account. If an eligible account exists, you will receive a password reset email.</p>
+        </div>
+        <fieldset id="forgot-password-fields">
+          <legend class="sr-only">Password reset request</legend>
+          <label for="forgot-password-email">Email address</label>
+          <input id="forgot-password-email" type="email" autocomplete="email" maxlength="254" required>
+        </fieldset>
+        <p class="staff-setup-note">This changes only your MIRA staff password. It does not change your FIU password.</p>
+        <p class="staff-ticket-status" id="forgot-password-status" role="status" aria-live="polite"></p>
+        <div class="staff-ticket-actions">
+          <button class="staff-secondary" id="cancel-forgot-password" type="button">Cancel</button>
+          <button class="staff-primary" id="send-reset-email" type="submit">Send reset email</button>
+        </div>
+      </form>
+    </dialog>
+
     <dialog class="staff-ticket-dialog" id="staff-ticket-dialog" aria-labelledby="staff-ticket-title" aria-describedby="staff-ticket-note">
       <form id="staff-ticket-form">
         <div class="staff-ticket-heading">
-          <p class="eyebrow">STAFF SUPPORT QUEUE</p>
+          <p class="eyebrow">MIRA STAFF QUEUE</p>
           <h2 id="staff-ticket-title">Create ticket</h2>
           <p id="staff-ticket-note">Track a task, improvement, or site issue. Tickets start as Open and are saved on this app's server. No emails are sent.</p>
         </div>

@@ -3,7 +3,7 @@ const path = require("node:path");
 const { createHash } = require("node:crypto");
 const { buildPortalNative } = require("./build-portal-native");
 
-const PACKAGE_NAME = "Capstone-AI-Portal-Owner-Review";
+const PACKAGE_NAME = "MIRA-Portal-Owner-Review";
 
 function crc32(bytes) {
   let value = 0xffffffff;

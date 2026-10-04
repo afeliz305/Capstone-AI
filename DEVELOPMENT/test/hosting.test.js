@@ -22,7 +22,7 @@ async function removeTestDirectory(directory, prefix) {
 
 test("browser bootstrap discovers the app folder from its own script URL on either page", async () => {
   const source = await fs.readFile(path.join(__dirname, "../js/shared/api-client.js"), "utf8");
-  for (const base of ["http://localhost:3000/", "https://example.edu/~student/Capstone%20-%20AI/"]) {
+  for (const base of ["http://localhost:3000/", "https://example.edu/~student/MIRA/"]) {
     for (const page of ["index.html", "pages/staff.html"]) {
       const window = { fetch: async () => {} };
       vm.runInNewContext(source, { window, URL, document: { currentScript: { src: base + "js/shared/api-client.js" }, baseURI: base + page } });
@@ -33,7 +33,7 @@ test("browser bootstrap discovers the app folder from its own script URL on eith
 });
 
 test("API URLs work at the site root and inside an encoded hosting folder", async () => {
-  for (const baseUrl of ["http://localhost:3000/", "https://example.edu/~student/Capstone%20-%20AI/"]) {
+  for (const baseUrl of ["http://localhost:3000/", "https://example.edu/~student/MIRA/"]) {
     const requests = [];
     const api = createApiClient({ baseUrl, fetchImpl: async (...args) => { requests.push(args); return new Response('{"ok":true}', { headers: { "Content-Type": "application/json" } }); } });
     const response = await api.fetch("/api/staff/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: '{}' });
@@ -67,8 +67,8 @@ test("network and file-page failures fail closed without displaying secrets", as
 });
 
 test("hosting configuration rejects unsafe paths and untrusted public origins", () => {
-  assert.equal(normalizeBasePath("/~student/Capstone - AI/"), "/~student/Capstone%20-%20AI");
-  assert.equal(normalizeBasePath("/~student/Capstone%20-%20AI"), "/~student/Capstone%20-%20AI");
+  assert.equal(normalizeBasePath("/~student/MIRA/"), "/~student/MIRA");
+  assert.equal(normalizeBasePath("/~student/MIRA"), "/~student/MIRA");
   for (const value of ["https://example.edu", "/../app", "/a/%2fapi", "/x; Secure", "/x?y", "/x#y", "/x\\y", "/a//b"]) assert.throws(() => normalizeBasePath(value));
   assert.equal(normalizePublicOrigin("https://example.edu"), "https://example.edu");
   for (const value of ["http://example.edu", "https://example.edu/app", "https://user:pass@example.edu", "https://example.edu/?x=1"]) assert.throws(() => normalizePublicOrigin(value));
@@ -88,7 +88,7 @@ test("mounted backend serves assets, authenticates staff, scopes cookies, and re
   await setStaffPassword(STAFF[0].email, password, { file });
   await setStaffPassword(STAFF[1].email, password, { file });
   await setStaffPassword(STAFF[2].email, "demo1234", { file, localTestOnly: true });
-  const prefix = "/~student/Capstone%20-%20AI";
+  const prefix = "/~student/MIRA";
   const server = createServer({ staffAuth: createStaffAuth({ file }), sessions: createSessionService({ enableDemo: true }), basePath: prefix, publicOrigin: "https://example.edu" });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");

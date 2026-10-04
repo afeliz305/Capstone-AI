@@ -106,7 +106,7 @@
 
   function addAssistantText(text, note, { sensitive=false } = {}) {
     const message = createElement("article", "message assistant-message");
-    message.append(createElement("div", "message-label", "CAPSTONE - AI"));
+    message.append(createElement("div", "message-label", "MIRA"));
     message.append(createElement("p", "", text));
     if (note) message.append(createElement("p", "message-note", note));
     log.append(message);

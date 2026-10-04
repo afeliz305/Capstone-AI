@@ -1,4 +1,6 @@
-# Capstone - AI — shared testing, site integration, and future go-live
+# MIRA — shared testing, site integration, and future go-live
+
+Current user-facing name: **MIRA (Messaging, Information & Resolution Assistant)**. The active release target is `public_html/MIRA/`; the old `Capstone - AI` deployment is retained temporarily for rollback. Historical release notes and internal technical identifiers may retain Capstone naming. The [MIRA rename and Supabase migration plan](MIRA_RENAME_AND_SUPABASE_MIGRATION.md) is authoritative for current URLs and sequencing.
 
 September 26 pre-integration phase: the immediate deliverable is an independent hosted proof of concept, not owner-installed personalization. Ocelot demonstrates reviewed public/course retrieval and verified navigation plus an explicit browser-memory **Use information I share** mode. The existing local live connector remains a separate presenter-only capability. The portal-native package and owner handoff are preserved but paused until after the demonstration. See [the proof-of-concept capability table, five-minute script, and data-handling boundary](PROOF_OF_CONCEPT_DEMO.md).
 

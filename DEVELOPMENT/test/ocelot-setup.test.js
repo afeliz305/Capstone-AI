@@ -11,7 +11,7 @@ const quiet = () => {};
 
 test("Ocelot URLs and SSH targets accept usernames only", () => {
   assert.equal(validateAccount("afeli016"), "afeli016");
-  assert.equal(healthUrl("afeli016"), "https://ocelot.aul.fiu.edu/~afeli016/Capstone%20-%20AI/api/index.php?route=%2Fhealth");
+  assert.equal(healthUrl("afeli016"), "https://ocelot.aul.fiu.edu/~afeli016/MIRA/api/index.php?route=%2Fhealth");
   for (const input of ["", "-oProxyCommand=x", "a;touch x", "a'", "../a", "a@evil.com", "a\nsh", "a b", "a".repeat(33)]) {
     assert.throws(() => healthUrl(input));
     assert.throws(() => sshArguments(input));

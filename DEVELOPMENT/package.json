@@ -2,7 +2,7 @@
   "name": "capstone-ai",
   "version": "0.1.0",
   "private": true,
-  "description": "Zero-token, site-grounded support assistant for the FIU KFSCIS Capstone portal.",
+  "description": "MIRA: Messaging, Information & Resolution Assistant for the FIU KFSCIS Capstone portal.",
   "scripts": {
     "index:site": "node scripts/website-index.js refresh",
     "index:refresh": "node scripts/website-index.js refresh",

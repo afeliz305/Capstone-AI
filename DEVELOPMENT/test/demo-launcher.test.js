@@ -14,13 +14,13 @@ test("demo probe distinguishes absent, own, unknown, redirected and unresponsive
   assert.deepEqual(await probePreview(3003, async () => { throw new Error("timeout"); }), { occupied: true });
   const result = await probePreview(3003, async (url, options) => {
     assert.equal(url, "http://127.0.0.1:3003/__capstone_demo"); assert.equal(options.redirect, "error");
-    return new Response('{"application":"Capstone - AI"}', { headers: { "content-type": "application/json" } });
+    return new Response('{"application":"MIRA"}', { headers: { "content-type": "application/json" } });
   });
-  assert.equal(result.identity.application, "Capstone - AI");
+  assert.equal(result.identity.application, "MIRA");
 });
 
 test("demo refuses conflicting projects before rebuilding or starting a listener", async () => {
-  for (const identity of [undefined, { application: "HelpDesk INC" }, { application: "Capstone - AI", mode: "static-preview", rootId: "another-folder" }]) {
+  for (const identity of [undefined, { application: "HelpDesk INC" }, { application: "MIRA", mode: "static-preview", rootId: "another-folder" }]) {
     let built = false;
     await assert.rejects(startDemo({ probe: async () => ({ occupied: true, identity }), build: async () => { built = true; }, log() {} }), /already in use/);
     assert.equal(built, false);

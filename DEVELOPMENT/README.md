@@ -1,8 +1,12 @@
-# Capstone - AI — development
+# MIRA — development
+
+**Product name:** **MIRA (Messaging, Information & Resolution Assistant)**. The active package and planned production path are now `MIRA/`. Earlier release records, the temporary rollback deployment, the repository name, and internal technical identifiers may retain Capstone naming. The Supabase project, API contracts, tables, policies, buckets, keys, users, bindings, and records are intentionally not renamed or recreated. See the [rename and migration authority](docs/MIRA_RENAME_AND_SUPABASE_MIGRATION.md).
+
+**MIRA staff password recovery:** the signed-out Supabase Staff Queue includes **Forgot password?**, a non-enumerating reset request, and a dedicated recovery page. Signed-in staff use **Profile -> Settings -> Change password**, which still verifies the current credential. Recovery is intentionally hidden in Node, PHP, and browser-demo modes. Before hosted use, the owner must add the exact `/MIRA/` callback in Supabase Auth URL Configuration and approve the MIRA email template described in [Supabase setup](docs/SUPABASE_SETUP.md#forgot-your-mira-staff-password). No real reset email, password change, hosted setting, deployment, or Git push was performed for this implementation.
 
 **Current goal — pre-integration proof of concept:** the public Ocelot build now keeps three capabilities visibly separate: reviewed public/course answers with verified portal navigation, a user-initiated **Use information I share** browser-memory mode, and the existing presenter-only local connector. Pasted text is labeled unverified, expires within five minutes, is excluded from tickets and remote search, and is never called a live account connection. The portal-native owner package is preserved for later but is not a demo prerequisite. See the [five-minute proof-of-concept guide and capability table](docs/PROOF_OF_CONCEPT_DEMO.md).
 
-**Prepared build:** the generated sibling **Capstone - AI** folder contains 24 manifest-matched public files (4,407,676 bytes). The full suite reported 292 passed, 0 failed, and one optional hosted-PHP integration skip; a generated-folder browser walkthrough passed with no console warnings/errors. No upload, deployment, Git push, database/ticket change, or portal mutation was performed.
+**Prepared build (September 29):** the generated sibling **MIRA** folder contains 26 manifest-matched public files (4,953,116 bytes). All 26 SHA-256 hashes and byte counts matched. The complete suite found 322 tests: 321 passed, none failed, and one optional hosted-PHP integration test was skipped. A real-browser walkthrough passed the Staff Queue profile, Settings, sign-out, recovery layout, and desktop/390 px/320 px checks. No upload, live Supabase change, recovery email, password change, Git push, database/ticket change, or portal mutation was performed.
 
 The September 26 portal navigation update gives Ocelot verified signed-in links to sections such as Grade, Messages, Team, and Standing. Hosted Ocelot remains navigation-only for private information. The owner-review portal-native bundle is the zero-install path for future personal answers; it is not installed in the live portal yet. See [verified navigation](docs/PORTAL_NAVIGATION.md) and [portal owner handoff](docs/PORTAL_OWNER_HANDOFF.md).
 
@@ -12,7 +16,7 @@ The September 26 portal navigation update gives Ocelot verified signed-in links 
 
 **Public syllabus PDF (September 25):** the single sidebar syllabus link opens a 26-page public viewing copy of the owner-supplied Fall 2026 syllabus. The private Zoom join URL and mobile number are removed; the original download is unchanged. MIRA keeps using the searchable reviewed HTML reference for exact topic anchors and citations. The complete suite passed 260/260 runnable tests with the optional PHP hosted integration skipped, and the generated 22-file Supabase upload folder is current.
 
-This is the **DEVELOPMENT** folder, not the upload website. Run npm commands here. The ready-to-upload website is the sibling **Capstone - AI** folder; documents, tests, local data, and archives stay here. The outer workspace has a short start-here guide.
+This is the **DEVELOPMENT** folder, not the upload website. Run npm commands here. The ready-to-upload website is the sibling **MIRA** folder; documents, tests, local data, and archives stay here. The old sibling **Capstone - AI** folder is retained temporarily for rollback and is not the primary package.
 
 **MIRA source-grounding release (September 25):** the existing chat routes the 15 requested sprint/workflow/grade/team questions through reviewed public, Fall 2026 course, authenticated-navigation, or verified-local scopes. Supported facts cite the syllabus/index; missing Review/Retro/template/Verify/Done/acceptance-criteria details remain explicit coverage gaps with verified destinations instead of generic Scrum guesses. Source follow-ups support **Take me there**, **Show me the instructions**, and numbered-source selection. The complete suite passed 261/261 and the generated Supabase **Capstone - AI** folder is prepared for FileZilla upload; this does not itself upload Ocelot files, change cloud data, or push Git. See the [source map and 15-row acceptance record](docs/MIRA_SOURCE_COVERAGE.md).
 
@@ -34,13 +38,13 @@ See [CAPSTONE_AI_PROJECT_PLAN.md](docs/CAPSTONE_AI_PROJECT_PLAN.md) for the appr
 
 **Uploaded website verified:** the owner uploaded this Supabase release to [Ocelot](https://ocelot.aul.fiu.edu/~afeli016/Capstone%20-%20AI/). All 21 public files match the prepared build; live chat, contextual answers and syllabus viewing work. Ocelot-origin ticket save/read-back/download remains the next manual test. See [current hosted verification](docs/OCELOT_SUPABASE_UPLOAD.md). No GitHub push occurred; the preparation note below describes the earlier packaging step.
 
-**Current Ocelot group-test package:** the sibling **Capstone - AI** folder now contains the Supabase shared version, including the syllabus viewing buttons. Live staff read/download/edit/preview/reload checks passed on the existing fictional test ticket. Follow the [Supabase FileZilla upload checklist](docs/OCELOT_SUPABASE_UPLOAD.md) and [remaining acceptance checks](docs/SUPABASE_SETUP.md#current-upload-preparation). Rebuild with `npm.cmd run package:ocelot:supabase`; the default browser-only packaging instructions farther below describe a separate alternative, not this prepared release. No Ocelot upload or GitHub push has occurred.
+**Current local release candidate:** the sibling **MIRA** folder contains the Supabase shared version. Rebuild it with `npm.cmd run package:ocelot:supabase`. Upload and Supabase URL changes are intentionally deferred; follow the [ordered MIRA migration sequence](docs/MIRA_RENAME_AND_SUPABASE_MIGRATION.md#post-approval-deployment-sequence). The currently hosted old path remains a rollback deployment until the new path is approved, uploaded, and verified.
 
-**Supabase staff passwords:** signed-in staff can select **Change password** in the queue header to verify their current password and set a new one. This changes only their own app account; it is not FIU password reset or forgotten-password recovery. [Instructions](docs/SUPABASE_SETUP.md#change-your-staff-password). Email-only demo variants remain unchanged.
+**Supabase staff accounts:** signed-out staff can use **Forgot password?** after the new hosted callback is approved. Signed-in staff use **Profile -> Settings -> Change password**. **Sign out** is in the Profile menu. These operations change only the MIRA credential/session, never the FIU password or roster authorization. [Recovery and migration instructions](docs/MIRA_RENAME_AND_SUPABASE_MIGRATION.md). Email-only demo variants remain unchanged.
 
 **Shared Supabase testing:** the selected project has its initial setup and Anthony's staff access configured; remaining teammate provisioning and broader acceptance are recorded in [the setup guide](docs/SUPABASE_SETUP.md). Do not rerun the initial migration on that project. Use Node 22+, run `npm.cmd install`, then `npm.cmd run demo:supabase` for an isolated candidate on port 3004. The default `demo` and `package:ocelot` still select browser-only mode and replace the current upload folder, so do not use them to prepare the shared release. No existing data is migrated automatically.
 
-**For a local presentation:** double-click [Start Capstone Demo.cmd](scripts/Start Capstone Demo.cmd) or run `npm.cmd run demo` here. It rebuilds the browser demo and starts <http://127.0.0.1:3003/Capstone%20-%20AI/>. Use the [short demo guide](docs/LOCAL_DEMO.md). No PHP setup or manual folder switching is needed; existing server/browser tickets are preserved.
+**For a local presentation:** double-click [Start Capstone Demo.cmd](scripts/Start Capstone Demo.cmd) or run `npm.cmd run demo` here. It rebuilds the browser demo and starts <http://127.0.0.1:3003/MIRA/>. Use the [short demo guide](docs/LOCAL_DEMO.md). No PHP setup or manual folder switching is needed; existing server/browser tickets are preserved.
 
 For the **Ocelot group test**, the default package is now a browser-only demo: one website link, but a separate ticket queue on each browser/device. No GitHub download or local setup is required after upload. This avoids the blocked PHP storage setup; it does not fix or replace the server store. See the [upload guide](docs/OCELOT_UPLOAD_GUIDE.md) and [future shared-queue/integration plan](docs/DEPLOYMENT_AND_INTEGRATION_PLAN.md). Use fictional information only.
 
@@ -50,13 +54,13 @@ Follow the maintained [VS Code setup and testing guide](docs/TEAM_SETUP_GUIDE.md
 
 ## Project folders
 
-**Uploading to Ocelot?** From the outer workspace, transfer only the inner **Capstone - AI** website folder. Do not upload `DEVELOPMENT` or the entire outer workspace. Rebuild the shared website with `npm.cmd run package:ocelot:supabase` from this development folder; previous packages are preserved in `dist/archive/`.
+**Uploading to Ocelot after approval?** From the outer workspace, transfer only the inner **MIRA** website folder into `public_html/MIRA/`. Do not upload `DEVELOPMENT` or the entire outer workspace, and do not overwrite the old rollback folder during the first migration phase. Rebuild the shared website with `npm.cmd run package:ocelot:supabase`; previous MIRA packages are preserved in `dist/archive/`.
 
 The homepage is **`index.html` at the project root**. Other files are organized by purpose:
 
 ```text
 index.html          Student assistant homepage
-pages/              Other HTML pages (staff.html)
+pages/              Other HTML pages (staff.html, recover.html, syllabus.html)
 css/                Stylesheets, with images/ and fonts/ inside
 js/                 Browser code: chat/, staff/, shared/
 docs/               Guides, previews, and font license (start with docs/README.md)
@@ -64,7 +68,8 @@ server/             Node backend, PHP hosting backend, server-only helpers
 scripts/            Password setup and sample-ticket commands
 data/               Knowledge base and private local runtime data
 test/               Automated tests and fictional fixtures
-../Capstone - AI/ The sibling generated website; the only folder to upload
+../MIRA/          The sibling generated website; the only current folder to upload
+../Capstone - AI/ Temporary rollback copy; do not update as the primary release
 dist/               Archived packages, Node builds, and temporary build staging
 ```
 
@@ -76,7 +81,7 @@ After getting this folder update, restart with `npm.cmd start` (now runs `server
 
 The same frontend now keeps API requests and document downloads within its app folder, whether served at localhost's root or a hosted subfolder. HTML error pages produce a clear backend-setup message instead of `Unexpected token '<'`. Email remembering remains tied to a successful sign-in on the same browser, site address, and app folder; localhost preferences do not transfer to the hosted site.
 
-**For Ocelot:** run `npm.cmd run package:ocelot` from `DEVELOPMENT`. Upload only the generated sibling **Capstone - AI** folder into `public_html`. It contains `index.html` and frontend assets, including the browser-demo bundle, with no PHP requirement. Guides/checksums stay in `DEVELOPMENT/dist/release-records/`; previous websites are preserved in `DEVELOPMENT/dist/archive/ocelot/`. Follow the [upload guide](docs/OCELOT_UPLOAD_GUIDE.md). Run `npm.cmd run preview:ocelot` to test that package at <http://127.0.0.1:3003/Capstone%20-%20AI/>. Use HTTP/HTTPS, not double-clicked HTML.
+**For Ocelot:** run the intended package command from `DEVELOPMENT` and upload only the generated sibling **MIRA** folder into `public_html/MIRA/` after approval. The current shared candidate uses `npm.cmd run package:ocelot:supabase`; the default `package:ocelot` remains a separate browser-only alternative. Guides/checksums stay in `DEVELOPMENT/dist/release-records/`; previous MIRA websites are preserved in `DEVELOPMENT/dist/archive/ocelot/`. Preview at <http://127.0.0.1:3003/MIRA/>. Use HTTP/HTTPS, not double-clicked HTML, and follow the [migration plan](docs/MIRA_RENAME_AND_SUPABASE_MIGRATION.md).
 
 **Browser-only storage:** tickets and documents are committed together in IndexedDB, scoped by site and app folder. No failed server request silently falls back to this mode. Clearing site data/private browsing can remove records; export backups privately with **Export browser tickets**. Different browsers/devices have different queues. The first queue is empty; Node/PHP tickets are not imported or erased. Email entry selects a demo identity, not secure access, and no professor email is sent.
 
@@ -98,7 +103,7 @@ npm.cmd start
 
 The first command must return **True**; otherwise open the correct project folder before continuing. Run each command separately and stop if one fails. Open <http://localhost:3000> for the student assistant and <http://localhost:3000/pages/staff.html> for the local support queue.
 
-The chat starts minimized. Select the generic chat-bubble **Capstone - AI / Let's chat** button in the bottom-right corner to open it. Use **Minimize chat** (the minus button) or press **Escape** inside the chat to collapse it. Messages and unsent text stay in place until you refresh or leave the page. Selecting a popular topic also opens the chat. Restart the local server and hard-refresh after updating; the new SVG replaces the retired mascot.
+The chat starts minimized. Select the generic chat-bubble **MIRA / Let's chat** button in the bottom-right corner to open it. Use **Minimize chat** (the minus button) or press **Escape** inside the chat to collapse it. Messages and unsent text stay in place until you refresh or leave the page. Selecting a popular topic also opens the chat. Restart the local server and hard-refresh after updating; the new SVG replaces the retired mascot.
 
 ## Test
 
@@ -146,7 +151,7 @@ Select **Create ticket** beneath your signed-in identity to log a staff task. Ch
 
 For an explicitly local, fictional-data test, `npm.cmd run staff:password -- your-approved-email@fiu.edu --local-test-only` allows an 8–128-character password for that account only. Enter it at the hidden prompt; there is still no bundled password. The account is then restricted to localhost/loopback requests outside production mode. Reset it with the normal command and a 12–128-character password to remove the exception. Restart the server after updating the code and refresh the sign-in page. See [staff access details](docs/STAFF_ACCESS.md).
 
-An invalid sign-in shows **Unauthorized access**, a return link, and a 15-second inactivity countdown. **Try signing in again** cancels the redirect. Staff sessions expire after one hour or on server restart; **Sign out** ends the session immediately. See [staff access details](docs/STAFF_ACCESS.md).
+An invalid password remains on the sign-in screen with safe guidance and **Forgot password?** available. A valid Auth user without an active staff binding sees **Unauthorized access** with explicit back/retry choices; there is no automatic redirect. Staff sessions expire according to the selected backend, and **Profile -> Sign out** ends the session immediately. See [staff access details](docs/STAFF_ACCESS.md).
 
 The staff sign-in page remembers the last email accepted by the backend on this browser at this site address and app folder, and prefills it after logout or a later visit. In email-only mode, that is a selected demo identity, not a verified email owner. You can edit it to switch accounts; only a successful sign-in replaces the saved email. This email preference alone never grants access. Separately, Supabase staff login offers an unchecked **Remember me for 7 days** option: after verified login it saves session tokens, never passwords, with a browser-enforced seven-day deadline. Use it only on personal computers; Sign out clears the remembered session. Local preview and Ocelot require separate logins. Restart the preview after changes and refresh with **Ctrl+Shift+R**. See [remembered sessions](docs/SUPABASE_SETUP.md#remember-me-for-7-days) and [remembered email checks](docs/TEAM_SETUP_GUIDE.md#remembered-staff-email).
 
@@ -185,7 +190,7 @@ Existing tickets are preserved, with a local backup at `data/tickets.json.seed-b
 
 ## Try account autofill
 
-1. Start the app, refresh <http://localhost:3000>, and select **Capstone - AI / Let's chat**.
+1. Start the app, refresh <http://localhost:3000>, and select **MIRA / Let's chat**.
 2. Ask an unsupported question (for example, “Where can I park my car?”).
 3. Select **Create support request**, then **Try sample signed-in account**.
 4. Name and email fill with **Demo Student / demo.student@example.edu** and become read-only. Complete the help details and create a request.

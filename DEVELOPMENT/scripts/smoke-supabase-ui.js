@@ -11,7 +11,7 @@ async function main() {
     await context.route("**/*",route=>new URL(route.request().url()).hostname==="127.0.0.1" ? route.continue() : route.fulfill({status:503,contentType:"application/json",body:'{"message":"Isolated UI test: external network blocked"}'}));
     const page=await context.newPage(),errors=[];
     page.on("pageerror",error=>errors.push(error.message));
-    const base="http://127.0.0.1:3004/Capstone%20-%20AI/";
+    const base="http://127.0.0.1:3004/MIRA/";
     await page.goto(base);
     await page.locator("#chat-launcher").waitFor({state:"visible"});
     assert.equal(await page.evaluate(()=>window.CapstoneApi.storageMode),"supabase");

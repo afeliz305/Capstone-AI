@@ -50,7 +50,7 @@ function createPortalServer({root,sourceRoot,service,extensionBridge=null,pairin
     if(req.headers.origin&&req.headers.origin!==origin) return send(res,403,{error:'Foreign origins are not allowed.'});
     if(req.headers['sec-fetch-site']&&!['same-origin','none'].includes(req.headers['sec-fetch-site'])) return send(res,403,{error:'Cross-site requests are not allowed.'});
     if(url.search) return send(res,400,{error:'Query strings are not accepted by this private preview.'});
-    if(url.pathname==='/__portal/health'&&req.method==='GET') return send(res,200,{helper:true,mode:'local-read-only',application:'Capstone - AI'});
+    if(url.pathname==='/__portal/health'&&req.method==='GET') return send(res,200,{helper:true,mode:'local-read-only',application:'MIRA'});
     if(url.pathname.startsWith('/__portal/')) {
       if(req.method!=='POST'||req.headers.origin!==origin||!/^application\/json(?:;|$)/i.test(req.headers['content-type']||'')) return send(res,403,{error:'Same-origin JSON POST required.'});
       if(!budget('all',100))return send(res,429,{error:'Please wait before retrying.'});

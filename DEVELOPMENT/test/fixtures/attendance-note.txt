@@ -1,4 +1,4 @@
-Capstone - AI attachment test
+MIRA attachment test
 
 This is a fictional attendance note for testing document uploads.
 It contains no real student, medical, or account information.

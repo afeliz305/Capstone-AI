@@ -293,11 +293,11 @@ test("syllabus answers link to a safe nested-folder reference and support contex
     const parsed=new URL(url,"https://example.test"); requests.push(parsed);
     const result=searchKnowledge(knowledge,parsed.searchParams.get("q"),parsed.searchParams.get("context"));
     return {ok:true,json:async()=>result};
-  },"https://example.test/~student/Capstone%20-%20AI/");
+  },"https://example.test/~student/MIRA/");
   ui.topic.dataset.question="What should I do for Sprint 2?";
   await ui.topic.emit("click");
   const source=descendants(ui.log).find(n=>n.className==="source-card");
-  assert.equal(source.href,"https://example.test/~student/Capstone%20-%20AI/pages/syllabus.html#syllabus-sprint-2");
+  assert.equal(source.href,"https://example.test/~student/MIRA/pages/syllabus.html#syllabus-sprint-2");
   assert.match(source.children[0].textContent,/SYLLABUS · pages 9, 13, 20/);
   const suggestions=descendants(ui.log).filter(n=>n.className==="follow-up-button");
   assert.equal(suggestions.length,3);

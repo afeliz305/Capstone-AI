@@ -11,7 +11,7 @@
 .chat-header-actions { display: flex; gap: 4px; }
 .assistant-avatar { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 11px; color: var(--info); background: var(--info-bg); }
 .chat-header h2 { margin: 0; color: var(--ink); font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
-.chat-header p { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
+.chat-header p { margin: 3px 0 0; color: var(--muted); font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
 .chat-header .status-dot { margin-right: 4px; }
 .icon-button { width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: var(--control-radius); color: var(--muted); background: var(--surface); }
 .icon-button:hover { color: var(--ink); background: var(--tint); }

@@ -1,5 +1,7 @@
 # Capstone portal design reference
 
+The current assistant brand is **MIRA (Messaging, Information & Resolution Assistant)**. The unchanged technical Ocelot folder may still contain the previous project name.
+
 Inspected in Chrome on September 10, 2026. This prototype mirrors the **signed-in portal's light workspace**, not the public homepage's dark promotional layout. The live site was not modified. No student profiles, account photos, grades, messages, or other private portal content were copied into the project.
 
 ## Source styles
@@ -27,7 +29,7 @@ The prototype uses its own small stylesheets rather than importing the entire po
 | Context bar | White, 14px 22px padding, blue term chip |
 | Success / warning / error | `#13633A` / `#8A6516` / `#B3261E` on light surfaces |
 
-As of September 24, the project is **Capstone - AI**. Its minimized launcher is a compact navy button with an original white speech-bubble icon, three gold dots, a project-name line, and **Let's chat**. The SVG is drawn from basic geometry with no mascot, raster image, or third-party icon dependency. The button is at least 68px high on desktop and 60px on mobile; the icon is 48px/44px. Its accessible name is **Open Capstone - AI chat**, with visible keyboard focus and an empty decorative image alt. Opening reveals the existing floating non-modal popup; minimizing/Escape restores launcher focus and keeps unsent text. Extra mobile bottom spacing keeps the final content reachable. Search, escalation, account autofill, and ticket storage behavior are unchanged.
+The current project is **MIRA**. Its minimized launcher is a compact navy button with an original white speech-bubble icon, three gold dots, a project-name line, and **Let's chat**. The SVG is drawn from basic geometry with no mascot, raster image, or third-party icon dependency. The button is at least 68px high on desktop and 60px on mobile; the icon is 48px/44px. Its accessible name is **Open MIRA chat**, with visible keyboard focus and an empty decorative image alt. Opening reveals the existing floating non-modal popup; minimizing/Escape restores launcher focus and keeps unsent text. Extra mobile bottom spacing keeps the final content reachable. Search, escalation, account autofill, and ticket storage behavior are unchanged.
 
 ## Assets and attribution
 

@@ -23,7 +23,7 @@ async function start() {
   const service=new PortalService({adapter:useMcp?new BrowserAdapter():new ExtensionAdapter(bridge),publicSearch:async(q,c)=>searchKnowledge(knowledge,q,c,await loadPublicIndex(root))});
   const {server,pairingCode,pairingExpiresAt,origin,extensionPairingCode,extensionPairingExpiresAt}=createPortalServer({root:result.uploadDirectory,sourceRoot:root,service,extensionBridge:bridge,port});
   await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'127.0.0.1',resolve);});
-  console.log('Local private portal demo: '+origin+'/Capstone%20-%20AI/');
+  console.log('Local private portal demo: '+origin+'/MIRA/');
   console.log('Open the local page directly, then choose Connect my portal. Manual app code entry is normally unnecessary.');
   console.log('Advanced setup fallback code (single use; expires '+new Date(pairingExpiresAt).toLocaleTimeString()+'; do not share): '+pairingCode);
   if(useMcp)console.log('MCP development fallback selected. Enable Chrome remote debugging yourself and approve Chrome when prompted.');

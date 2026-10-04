@@ -191,8 +191,8 @@ test('local HTTP requires Host/Origin/pairing/CSRF, rejects owner IDs and expose
   await post('discover');await post('connect',{tabId:7});const result=await post('search',{question:'What is my project?'});assert.equal(result.status,200);assert.match(result.headers.get('cache-control'),/no-store/);assert.match((await result.json()).sources[0].excerpt,/Aurora/);
   assert.equal((await post('search',{question:'my project',owner:'someone-else'})).status,400);
   assert.equal((await post('evaluate',{function:'document.cookie'})).status,400);
-  assert.equal((await fetch(origin+'/Capstone%20-%20AI/server/portal-local/service.js')).status,404);
-  assert.equal((await fetch(origin+'/Capstone%20-%20AI/pages/staff.html')).status,404);
+  assert.equal((await fetch(origin+'/MIRA/server/portal-local/service.js')).status,404);
+  assert.equal((await fetch(origin+'/MIRA/pages/staff.html')).status,404);
   await post('disconnect');assert.equal(f.service.records.length,0);assert.equal((await post('status')).status,401);
   assert.equal((await post('pair',{code:'fictional-pairing-code'},{'X-Capstone-Pair':''})).status,403);
 });
@@ -202,7 +202,7 @@ test('direct local navigation bootstraps once, resumes without a code, and keeps
   const probe=http.createServer();await new Promise(resolve=>probe.listen(0,'127.0.0.1',resolve));const port=probe.address().port;await new Promise(resolve=>probe.close(resolve));
   const {server}=createPortalServer({root,sourceRoot:path.resolve(__dirname,'..'),service:f.service,pairingCode:'single-use-fallback',port});await new Promise(resolve=>server.listen(port,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>server.close(resolve)));
   const origin='http://127.0.0.1:'+port;
-  const page=await new Promise((resolve,reject)=>{const request=http.request(origin+'/Capstone%20-%20AI/',{headers:{'Sec-Fetch-Mode':'navigate','Sec-Fetch-Dest':'document','Sec-Fetch-Site':'none'}},response=>{response.resume();resolve(response);});request.on('error',reject);request.end();});assert.equal(page.statusCode,200);
+  const page=await new Promise((resolve,reject)=>{const request=http.request(origin+'/MIRA/',{headers:{'Sec-Fetch-Mode':'navigate','Sec-Fetch-Dest':'document','Sec-Fetch-Site':'none'}},response=>{response.resume();resolve(response);});request.on('error',reject);request.end();});assert.equal(page.statusCode,200);
   const bootstrapCookie=page.headers['set-cookie'][0].split(';')[0];
   const bootstrap=await fetch(origin+'/__portal/bootstrap',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:bootstrapCookie},body:'{}'});assert.equal(bootstrap.status,200);
   const boot=await bootstrap.json(),sessionCookie=bootstrap.headers.getSetCookie().find(value=>value.startsWith('capstone_portal_local_')).split(';')[0];assert.ok(boot.csrf);

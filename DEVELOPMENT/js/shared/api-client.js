@@ -16,7 +16,7 @@
   }
 })(typeof window === "undefined" ? globalThis : window, function () {
   "use strict";
-  const setupMessage = "The Capstone backend is not available at this address. Start the server version with npm.cmd start from DEVELOPMENT. For browser-only Ocelot testing, upload the complete generated Capstone - AI website from package:ocelot, then hard-refresh; do not upload DEVELOPMENT. If you deliberately chose the PHP shared version, follow the optional PHP health/setup guide. No save was confirmed.";
+  const setupMessage = "The MIRA backend is not available at this address. Start the server version with npm.cmd start from DEVELOPMENT. For browser-only Ocelot testing, upload the complete generated MIRA website from package:ocelot, then hard-refresh; do not upload DEVELOPMENT. If you deliberately chose the PHP shared version, follow the optional PHP health/setup guide. No save was confirmed.";
 
   function createApiClient({ baseUrl, fetchImpl, transport = "node", indexedSearch }) {
     const base = new URL(baseUrl);
@@ -51,7 +51,7 @@
           headers: { Accept: "application/json", ...options.headers }
         });
       } catch {
-        throw new Error("Cannot reach the Capstone backend. Check your connection and that the app server is running. No success was confirmed; check the queue before retrying a ticket submission.");
+        throw new Error("Cannot reach the MIRA backend. Check your connection and that the app server is running. No success was confirmed; check the queue before retrying a ticket submission.");
       }
       return response;
     }
@@ -65,7 +65,7 @@
         if (data === null || typeof data !== "object") throw new Error();
         return data;
       } catch {
-        throw new Error("The Capstone backend returned an invalid response. Contact the project owner; this is not an incorrect-password message.");
+        throw new Error("The MIRA backend returned an invalid response. Contact the project owner; this is not an incorrect-password message.");
       }
     }
     return { baseUrl: base.href, url, fetch: request, readJson };

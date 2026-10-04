@@ -1,5 +1,7 @@
 # Staff sign-in and assignments
 
+User-facing product name: **MIRA (Messaging, Information & Resolution Assistant)**. Earlier dated implementation notes may use the former project name; the existing technical URL and internal identifiers remain unchanged.
+
 September 24 Supabase addition: **Remember me for 7 days** optionally saves Auth session tokens in browser localStorage after active-staff verification. It never saves passwords; leaving it unchecked keeps tab-scoped storage. Use Sign out on shared computers. This browser-side deadline does not replace a production server-side session policy. The cookie-only descriptions below refer to the Node backend, not Supabase. [Behavior and acceptance checks](SUPABASE_SETUP.md#remember-me-for-7-days).
 
 Implemented and tested locally on September 14, 2026. This extends the existing FIU-styled queue. The source repository is now public, but the app is not publicly hosted: staff authentication and ticket data remain local to each installation. Publishing the source does not publish passwords, tickets, or attachments.
@@ -28,11 +30,11 @@ To restore passwords, stop the server, set `staffLoginMode` to `password` in `se
 
 The mode/password configuration above applies to the **Node variant**. The new [Ocelot PHP upload](OCELOT_UPLOAD_GUIDE.md) implements only temporary email-demo access, with the same server-side six-email roster in `server/php/index.php`. It does not read Node configuration or passwords. Its sessions persist in private server storage until logout or one-hour expiry; PHP worker restarts do not revoke them. Tickets/documents persist separately from replaceable app files, shared by staff on that instance. No live Ocelot deployment has been verified. A secure PHP identity integration remains future work.
 
-## Supabase self-service password change
+## Supabase password recovery and self-service change
 
-Signed-in, provisioned Supabase staff can use **Change password** in the queue header. Enter the current password, then the new password and matching confirmation. The current password is verified before the new credential is submitted. The app does not save passwords; it clears the fields after submission or cancellation. This affects only the current Capstone - AI account, not FIU credentials, another teammate, or local Node credentials. It does not create an account or grant staff access. See [Supabase instructions and live acceptance](SUPABASE_SETUP.md#change-your-staff-password).
+Signed-out Supabase staff can use **Forgot password?** after the owner permits the exact recovery callback. It uses Supabase's standard recovery link and a neutral response that does not reveal account or roster status. Signed-in, provisioned Supabase staff can still use **Change password** in the queue header. The app does not save passwords and clears password fields after use. Both flows affect only the current MIRA staff credential, not FIU credentials, another teammate, local Node credentials, or staff authorization. See [Supabase recovery and change instructions](SUPABASE_SETUP.md#forgot-your-mira-staff-password).
 
-This button is not available in Node/PHP/browser-demo modes. The local Node setup/reset command below is unchanged. Forgotten-password recovery is not implemented in the app.
+These web controls are not available in Node/PHP/browser-demo modes. The local Node setup/reset command below is unchanged.
 
 ## Password-mode setup (and password resets)
 

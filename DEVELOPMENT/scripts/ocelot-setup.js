@@ -15,7 +15,7 @@ function validateAccount(account) {
 }
 
 function healthUrl(account) {
-  return `https://${host}/~${validateAccount(account)}/Capstone%20-%20AI/api/index.php?route=%2Fhealth`;
+  return `https://${host}/~${validateAccount(account)}/MIRA/api/index.php?route=%2Fhealth`;
 }
 
 async function checkHealth(account, fetchImpl = fetch) {
@@ -57,7 +57,7 @@ async function run({ checkOnly = false, account = defaultAccount, ask, log = con
   let result = await checkHealth(account, fetchImpl);
   log(result.message);
   if (result.ok) {
-    log("Keep uploading to the same Capstone - AI folder. Leave .capstone-chat-private untouched. Verify shared tickets in two browsers before declaring the site ready.");
+    log("Keep uploading to the same MIRA folder. Leave .capstone-chat-private untouched. Verify shared tickets in two browsers before declaring the site ready.");
     return 0;
   }
   if (checkOnly || result.reason !== "storage") {

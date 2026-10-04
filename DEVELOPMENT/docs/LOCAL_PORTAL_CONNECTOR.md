@@ -18,7 +18,7 @@ Prerequisites:
 Start and install:
 
 1. In VS Code, open `DEVELOPMENT` and run `npm.cmd run demo:portal`.
-2. The command builds `portal-extension/content.bundle.js`, starts the loopback helper at `http://127.0.0.1:3005/Capstone%20-%20AI/`, and prints a separate single-use **extension pairing code**. Keep that terminal open.
+2. The command builds `portal-extension/content.bundle.js`, starts the loopback helper at `http://127.0.0.1:3005/MIRA/`, and prints a separate single-use **extension pairing code**. Keep that terminal open.
 3. In Chrome, open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the repository's `DEVELOPMENT\portal-extension` folder. This installation is a manual browser action.
 4. Open the extension popup. Choose **Grant portal access**. Chrome grants origin-level access to `https://capstone.cs.fiu.edu/*`; the extension additionally enforces the exact `/portal` path with no query string.
 5. Enter the extension pairing code from the terminal. The code is single use and expires after 15 minutes.

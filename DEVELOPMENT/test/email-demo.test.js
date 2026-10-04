@@ -72,7 +72,7 @@ test("unlisted email attempts are still limited in email-only mode", async () =>
 });
 
 async function startBackend(temp, mode) {
-  const env = { ...process.env, CAPSTONE_DATA_FILE: path.join(temp, "tickets.json"), CAPSTONE_STAFF_CREDENTIALS_FILE: path.join(temp, "credentials.json"), CAPSTONE_BASE_PATH: "/~student/Capstone - AI", CAPSTONE_PUBLIC_ORIGIN: "https://example.edu", NODE_ENV: "production" };
+  const env = { ...process.env, CAPSTONE_DATA_FILE: path.join(temp, "tickets.json"), CAPSTONE_STAFF_CREDENTIALS_FILE: path.join(temp, "credentials.json"), CAPSTONE_BASE_PATH: "/~student/MIRA", CAPSTONE_PUBLIC_ORIGIN: "https://example.edu", NODE_ENV: "production" };
   delete env.CAPSTONE_SESSION_ADAPTER;
   if (mode) env.CAPSTONE_STAFF_LOGIN_MODE = mode;
   else delete env.CAPSTONE_STAFF_LOGIN_MODE;
@@ -96,7 +96,7 @@ async function startBackend(temp, mode) {
     });
     assert.ok(Number.isInteger(port) && port > 0);
     return {
-      base: "http://127.0.0.1:" + port + "/~student/Capstone%20-%20AI",
+      base: "http://127.0.0.1:" + port + "/~student/MIRA",
       async stop() {
         if (child.exitCode !== null || child.signalCode !== null) return;
         const exited = once(child, "exit");

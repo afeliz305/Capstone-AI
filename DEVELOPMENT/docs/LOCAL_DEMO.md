@@ -1,6 +1,6 @@
-# Run the local Capstone demo
+# Run the local MIRA demo
 
-Updated September 18, 2026. This is **Capstone - AI**, not HelpDesk INC. Node.js must be installed locally; PHP and SSH are not needed.
+Updated September 29, 2026. This is **MIRA**, not HelpDesk INC. Node.js must be installed locally; PHP and SSH are not needed.
 
 ## Start with one command or double-click
 
@@ -16,8 +16,8 @@ The launcher rebuilds the current **browser-only** release, archives the previou
 
 Open these links yourself after the terminal says the demo is running:
 
-- [Student assistant](http://127.0.0.1:3003/Capstone%20-%20AI/)
-- [Staff queue](http://127.0.0.1:3003/Capstone%20-%20AI/pages/staff.html)
+- [Student assistant](http://127.0.0.1:3003/MIRA/)
+- [Staff queue](http://127.0.0.1:3003/MIRA/pages/staff.html)
 
 Use `afeli016@fiu.edu` for Anthony's demo staff identity; **no password**. Use fictional requester data only. This is not verified FIU login.
 
@@ -39,8 +39,8 @@ A new browser queue starts empty. Previous Node/PHP tickets are untouched, not c
 - Do not use a private/incognito window for records you want to keep. Clearing site data or losing the browser profile can erase tickets and documents. Export first; automatic import/restore is not implemented.
 - **Page cannot be reached:** start the launcher and keep its terminal open. Nothing listens at localhost just because files exist on disk.
 - **Old page/PHP error:** run the launcher, open the exact port-3003 link, and press **Ctrl+Shift+R**. Do not double-click `index.html` or use the optional PHP package for this demo.
-- **Port already in use:** use the existing confirmed Capstone preview if identified. Otherwise inspect/close the conflicting preview's own terminal if appropriate; do not kill unrelated applications. The launcher deliberately avoids switching ports and appearing to lose your browser queue.
+- **Port already in use:** use the existing confirmed MIRA preview if identified. Otherwise inspect/close the conflicting preview's own terminal if appropriate; do not kill unrelated applications. The launcher deliberately avoids switching ports and appearing to lose your browser queue.
 - **Node.js not found:** follow [the setup guide](TEAM_SETUP_GUIDE.md), then reopen the launcher. No npm install is needed for this dependency-free demo on an already configured machine.
 - **Prefer the server-backed local app?** Run `npm.cmd start` from DEVELOPMENT and use <http://localhost:3000/>. Its tickets remain in private local server storage. It is a different testing mode, not the Ocelot browser demo.
 
-Verification on September 18: all **155 automated tests passed** with the optional PHP test enabled. A running local preview returned HTTP 200 for the assistant, staff page, browser bundle, API adapter, and transparent Roary image. Launcher tests cover rebuild/start, reuse, port conflicts, build failures, private-file exclusions, and asset serving. These checks do not replace checking the actual browser interface and persistence before presenting.
+Verification on September 29: the complete suite found 322 tests, with 321 passed, none failed, and one optional hosted-PHP integration skip. A real-browser walkthrough passed the assistant and Staff Queue profile/Settings/sign-out layouts at desktop, 390 px, and 320 px. These checks do not replace checking the actual browser interface and persistence before presenting.

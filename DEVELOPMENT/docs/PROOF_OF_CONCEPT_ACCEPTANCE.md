@@ -1,4 +1,4 @@
-# Capstone - AI proof-of-concept acceptance record
+# MIRA proof-of-concept acceptance record
 
 Acceptance completed September 28, 2026. This record covers the approved pre-integration proof of concept and the clearly fictional shared-queue record **CAP-1002**. It does not authorize or claim professor-portal modification, automatic private-dashboard access, production deployment, or use of real student information.
 

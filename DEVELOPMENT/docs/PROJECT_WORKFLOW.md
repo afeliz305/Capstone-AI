@@ -1,4 +1,6 @@
-# Capstone - AI - project workflow and technology sheet
+# MIRA — project workflow and technology sheet
+
+MIRA means **Messaging, Information & Resolution Assistant**. Technical deployment paths and historical infrastructure names remain unchanged.
 
 Branding updated September 24, 2026. [Printable workflow sheet](output/pdf/Capstone_AI_Workflow.pdf).
 

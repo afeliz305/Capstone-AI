@@ -28,8 +28,8 @@ async function main() {
       await page.setViewportSize(viewport);
       await page.goto(origin + basePath);
       const launcher = page.locator("#chat-launcher");
-      await page.getByRole("button", { name: "Open Capstone - AI chat", exact: true }).waitFor({ state: "visible" });
-      assert.match(await page.title(), /^Capstone - AI/);
+      await page.getByRole("button", { name: "Open MIRA chat", exact: true }).waitFor({ state: "visible" });
+      assert.match(await page.title(), /^MIRA/);
       assert.equal(await page.locator("#assistant").isVisible(), false);
       assert.equal(await page.locator(".chat-launcher-art").evaluate(img => img.complete && img.naturalWidth === 64), true);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
@@ -41,7 +41,7 @@ async function main() {
       await page.keyboard.press("Enter");
       await page.locator("#assistant").waitFor({ state: "visible" });
       assert.equal(await launcher.getAttribute("aria-expanded"), "true");
-      assert.equal(await page.locator("#chat-title").textContent(), "Capstone - AI");
+      assert.equal(await page.locator("#chat-title").textContent(), "MIRA");
       const panel = await page.locator("#assistant").boundingBox();
       assert.ok(panel.x >= 0 && panel.y >= 0 && panel.x + panel.width <= viewport.width && panel.y + panel.height <= viewport.height);
       await page.locator("#chat-input").fill("Fictional unsent test draft");
@@ -57,10 +57,67 @@ async function main() {
     }
     await page.goto(origin + basePath + "pages/staff.html");
     await page.locator("#staff-login").waitFor({ state: "visible" });
-    assert.match(await page.title(), /Capstone - AI/);
+    assert.match(await page.title(), /MIRA/);
+    for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
+      await page.setViewportSize(viewport);
+      await page.evaluate(() => { const dialog=document.querySelector("#forgot-password-dialog"); dialog.showModal(); });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      const dialog=await page.locator("#forgot-password-dialog").boundingBox();
+      assert.ok(dialog.x >= 0 && dialog.x + dialog.width <= viewport.width);
+      await page.evaluate(() => document.querySelector("#forgot-password-dialog").close());
+    }
+    await page.locator("#staff-email").fill("afeli016@fiu.edu");
+    await page.locator("#staff-login-form button[type='submit']").click();
+    await page.locator("#staff-workspace").waitFor({ state: "visible" });
+    assert.equal(await page.locator("#staff-profile").isVisible(), true);
+    assert.equal(await page.locator("#change-staff-password").isVisible(), false, "browser demo has no password control");
+    for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 568 }]) {
+      await page.setViewportSize(viewport);
+      const profileTrigger = page.locator("#staff-profile-trigger");
+      await profileTrigger.click();
+      await page.locator("#staff-profile-menu").waitFor({ state: "visible" });
+      assert.equal(await profileTrigger.getAttribute("aria-expanded"), "true");
+      assert.equal(await page.locator("#staff-profile-name").textContent(), "Anthony Feliz");
+      assert.equal(await page.locator("#staff-profile-email").textContent(), "afeli016@fiu.edu");
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      const menu = await page.locator("#staff-profile-menu").boundingBox();
+      assert.ok(menu.x >= 0 && menu.x + menu.width <= viewport.width);
+      await page.locator("#staff-settings").click();
+      await page.locator("#staff-settings-dialog").waitFor({ state: "visible" });
+      assert.equal(await page.locator("#staff-settings-name").inputValue(), "Anthony Feliz");
+      assert.equal(await page.locator("#staff-settings-email").inputValue(), "afeli016@fiu.edu");
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      const settings = await page.locator("#staff-settings-dialog").boundingBox();
+      assert.ok(settings.x >= 0 && settings.x + settings.width <= viewport.width);
+      await page.locator("#close-staff-settings").click();
+      assert.equal(await page.locator("#staff-settings-dialog").evaluate(dialog => dialog.open), false);
+      assert.equal(await page.locator("#staff-profile-menu").isVisible(), false);
+      assert.equal(await profileTrigger.evaluate(button => button === document.activeElement), true);
+
+      await profileTrigger.click();
+      await page.locator("#staff-profile-menu").waitFor({ state: "visible" });
+      await page.keyboard.press("Escape");
+      assert.equal(await page.locator("#staff-profile-menu").isVisible(), false);
+      assert.equal(await profileTrigger.evaluate(button => button === document.activeElement), true);
+
+      await profileTrigger.click();
+      await page.locator("#staff-settings").click();
+      await page.locator("#staff-settings-dialog").waitFor({ state: "visible" });
+      await page.keyboard.press("Escape");
+      assert.equal(await page.locator("#staff-settings-dialog").evaluate(dialog => dialog.open), false);
+      assert.equal(await page.locator("#staff-profile-menu").isVisible(), false);
+      assert.equal(await profileTrigger.evaluate(button => button === document.activeElement), true);
+    }
+    await page.locator("#staff-profile-trigger").click();
+    await page.locator("#staff-logout").click();
+    await page.locator("#staff-login").waitFor({ state: "visible" });
+    assert.equal(await page.locator("#staff-profile").isVisible(), false);
+    await page.goto(origin + basePath + "pages/recover.html");
+    assert.match(await page.title(), /MIRA/);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.equal((await page.request.get(origin + basePath + "css/images/ask-roary-transparent.png")).status(), 404);
     assert.deepEqual(errors, []);
-    console.log("PASS: generic SVG, renamed branding, keyboard open/minimize/Escape, focus/draft retention, desktop/390px/320px layout, staff title, retired asset excluded. No cloud or ticket writes.");
+    console.log("PASS: MIRA branding, generic SVG, keyboard chat controls, desktop/390px/320px layouts, Staff Queue profile/menu/Settings/sign-out focus, reset dialog/recovery layout, retired asset excluded. No cloud, email, password, or ticket writes.");
   } finally {
     if (browser) await browser.close();
     server.closeAllConnections();

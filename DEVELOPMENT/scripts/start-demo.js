@@ -22,13 +22,13 @@ async function startDemo({ root = path.resolve(__dirname, ".."), workspace = pat
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error("Invalid demo port.");
   root = await fs.realpath(root);
   workspace = await fs.realpath(workspace);
-  const uploadDirectory = path.join(workspace, "Capstone - AI");
+  const uploadDirectory = path.join(workspace, "MIRA");
   const running = port === 0 ? { occupied: false } : await probe(port);
-  const ours = running.identity?.application === "Capstone - AI" && running.identity?.mode === "static-preview" &&
+  const ours = running.identity?.application === "MIRA" && running.identity?.mode === "static-preview" &&
     running.identity?.rootId === previewIdentity(uploadDirectory);
   if (running.occupied && !ours) throw new Error(`Port ${port} is already in use by another or older preview. Nothing was stopped or rebuilt. Close that preview's own terminal if appropriate, then retry. Do not stop HelpDesk INC.`);
 
-  log("Preparing the current Capstone browser demo (no PHP setup)...");
+  log("Preparing the current MIRA browser demo (no PHP setup)...");
   const release = await build({ root, workspace, transport: "browser" });
   let server = null;
   if (!ours) {
@@ -42,7 +42,7 @@ async function startDemo({ root = path.resolve(__dirname, ".."), workspace = pat
     port = server.address().port;
   }
   const url = `http://127.0.0.1:${port}${basePath}`;
-  log(ours ? "Capstone is already running; its public demo files were refreshed." : "Capstone - AI demo is running. Keep this terminal open; Ctrl+C stops it.");
+  log(ours ? "MIRA is already running; its public demo files were refreshed." : "MIRA demo is running. Keep this terminal open; Ctrl+C stops it.");
   log("Student assistant: " + url);
   log("Staff queue: " + url + "pages/staff.html");
   log("Demo staff email: afeli016@fiu.edu (no password). Fictional data only.");

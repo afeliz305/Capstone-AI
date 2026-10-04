@@ -1,5 +1,7 @@
 # Supabase shared queue: one-time setup and testing
 
+Current product name: **MIRA (Messaging, Information & Resolution Assistant)**. The active generated deployment folder is now `MIRA`, while Supabase infrastructure and historical records intentionally retain their existing technical identifiers. Follow the [current read-only audit and ordered URL migration](MIRA_RENAME_AND_SUPABASE_MIGRATION.md); do not recreate or rename the Supabase project, schema, users, staff bindings, tickets, or storage.
+
 September 25 indexed website search: Supabase builds now embed the [public website index](WEBSITE_INDEX.md) when present. Run the owner-only `index:site`/`index:refresh` maintenance command before rebuilding the isolated preview or a requested release. Searches use the snapshot without querying the site, Auth, or ticket database; no migration or new Supabase permission/key is needed. Private FIU messages and grades are still not connected. The stable upload and Ocelot remain unchanged by this local implementation.
 
 September 25 local feature update: the isolated preview includes [Messages/dashboard portal shortcuts](PORTAL_NAVIGATION.md). They search reviewed navigation only and do not call Supabase Auth or ticket APIs to read FIU records. No migration, staff binding, credential or hosted setting needs changing. Supabase login is not portal login. The stable upload folder and hosted website remain unchanged by this feature.
@@ -55,15 +57,38 @@ Latest September 24 release-preparation check: all five active staff now have co
 
 For each missing Auth account, use **Authentication > Users > Add user > Create new user**. The owner must enter and submit a separate project password directly in Supabase, with **Auto confirm user** checked for the intended known teammate. Do not send passwords in chat or commit them. Account creation does not itself grant queue access: after explicit approval, bind the confirmed accounts using migration 002, then verify the results. No invitation emails were sent. Do not create or reactivate an account for the departed member.
 
+## Forgot your MIRA staff password
+
+The signed-out **MIRA Staff Queue** shows **Forgot password?** only in a Supabase build. Enter the FIU email associated with the approved MIRA staff account and select **Send reset email**. The public result is deliberately neutral: it does not reveal whether an Auth user, active roster binding, or provisioned staff account exists. Duplicate clicks are blocked; a safe rate-limit message asks the user to wait. Node, PHP, and browser-demo modes do not show this control.
+
+The implementation calls Supabase `auth.resetPasswordForEmail` with this one approved callback:
+
+```text
+https://ocelot.aul.fiu.edu/~afeli016/MIRA/pages/recover.html
+```
+
+The callback uses the new MIRA deployment path. In the Supabase dashboard, the owner must open **Authentication → URL Configuration → Redirect URLs** and add that exact HTTPS URL before changing the Site URL. Do not add wildcards or an arbitrary external redirect. This local update does **not** prove the URL is currently allowed and did not change the dashboard. Until the owner follows the ordered migration plan and verifies a separately approved synthetic flow, hosted Forgot Password at `/MIRA/` must be described as implemented but pending enablement.
+
+The recovery page recognizes Supabase's `PASSWORD_RECOVERY` session, requires a matching 8–128 character password (plus any stronger hosted policy), and calls `auth.updateUser` for only the authenticated recovery user. It does not ask for the forgotten current password. On confirmed success it signs out and clears the tab-only recovery session; the user returns to the Staff Queue and signs in normally. Recovery never selects **Remember me**, creates a roster binding, activates staff, or changes database/RLS/storage permissions. Normal active-staff authorization is still enforced after login.
+
+Recommended owner-approved Auth email branding:
+
+- Subject: **Reset your MIRA staff password**
+- Opening: **We received a request to reset the password for your MIRA staff account.**
+- Safety note: **This changes your MIRA staff password only. It does not change your FIU password.**
+- Link: use Supabase's normal secure `{{ .ConfirmationURL }}` recovery link; do not print a recovery token separately.
+
+Review this under **Authentication → Email Templates → Reset Password**. If the dashboard exposes a display-only Auth/site/application name, set it to **MIRA** only if the change leaves the project reference, project URL, API keys and endpoints unchanged. The template and display name were not changed by this local work. No real recovery email was sent and no real password was changed.
+
 ## Change your staff password
 
 Password visibility: each sign-in/change-password field has its own **Show / Hide** button. It reveals only the value currently typed into that field; it cannot retrieve any saved account password. Fields start masked and return to masked on submission, cancellation, sign-out or page departure. Visibility is not saved as a preference, and showing a password does not submit the form. Be mindful of anyone viewing your screen.
 
 Visibility verification, September 24: **189 automated tests passed, zero failures/skips**, including independent toggles, unchanged entered values, no requests/storage changes, cancellation/submission resets and hidden email-demo controls. The Supabase candidate was rebuilt and its port-3004 server restarted. Chrome confirmed the sign-in control changes `password → text → password` using both mouse and keyboard, with the empty field; no account credential was entered, read or changed. The signed-in dialog remains covered by automated handlers, not a live credential-change test. Stable upload/GitHub/Ocelot were not updated.
 
-September 24: signed-in staff in **Supabase mode** now have a **Change password** button in the top navigation. Open it, enter your current password, enter and confirm a new project-only password (8–128 characters), then choose **Update password**. Wait for **Password updated**, then choose **Done**. Supabase can enforce stronger password requirements. Never reuse your FIU password or share a team-wide password.
+Signed-in staff in **Supabase mode** open **Profile -> Settings -> Change password**. Enter the current password, enter and confirm a new project-only password (8–128 characters), then choose **Update password**. Wait for **MIRA staff password updated successfully**, then choose **Done**. Supabase can enforce stronger password requirements. Never reuse your FIU password or share a team-wide password.
 
-The app verifies your current password with a fresh Supabase sign-in, checks that the same account is still active/provisioned, and updates only that account through [`auth.updateUser`](https://supabase.com/docs/reference/javascript/auth-updateuser). It also supplies `current_password`, as supported by the pinned SDK. No admin/service-role key, target-account selector, database migration, or dashboard security-setting change is needed. This is not a forgot-password recovery flow; if you cannot sign in, contact the project owner.
+The app verifies your current password with a fresh Supabase sign-in, checks that the same account is still active/provisioned, and updates only that account through [`auth.updateUser`](https://supabase.com/docs/reference/javascript/auth-updateuser). It also supplies `current_password`, as supported by the pinned SDK. No admin/service-role key, target-account selector, database migration, or dashboard security-setting change is needed. This remains separate from the signed-out Forgot Password recovery flow.
 
 Password fields are cleared after an attempted submission, on cancellation and on loss of access. Passwords are not written to app storage, ticket history, logs or Git; existing session-token handling is unchanged. Duplicate submissions and sign-out are blocked while a change is pending. If the connection fails after submission, do not assume the password stayed unchanged: try signing in with the new password before retrying. Provider errors are mapped to safe messages, never echoed verbatim. No actual account password was changed during implementation/testing.
 

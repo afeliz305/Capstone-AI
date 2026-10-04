@@ -20,7 +20,7 @@ class ExtensionBridge{
   pair(origin,data){
     if(!EXTENSION_ORIGIN.test(origin||'')||this.pairingUsed||this.now()>this.pairingExpiresAt||!data||!equal(data.code,this.pairingCode)||typeof data.clientNonce!=='string'||!/^[A-Za-z0-9_-]{20,120}$/.test(data.clientNonce)||typeof data.version!=='string'||data.version.length>40)throw new PortalError('extension-pairing-required','Extension pairing was not accepted. Use the current single-use code from the local terminal.');
     const secret=token();this.client={origin,secretHash:digest(secret),expires:this.now()+this.trustTtl,lastSeq:0,lastSeen:this.now(),version:data.version};this.pairingUsed=true;this.stage('extension-paired');
-    return{token:secret,trustExpiresAt:new Date(this.client.expires).toISOString(),helper:'Capstone - AI local helper'};
+    return{token:secret,trustExpiresAt:new Date(this.client.expires).toISOString(),helper:'MIRA local helper'};
   }
   authenticate(origin,data){
     const client=this.validClient();
@@ -41,7 +41,7 @@ class ExtensionBridge{
     return{accepted:true};
   }
   request(name,payload={}){
-    const client=this.validClient();if(!client||this.now()-client.lastSeen>45000)throw new PortalError('extension-pairing-required','Open the Capstone - AI extension and confirm that it is paired with this local helper.');
+    const client=this.validClient();if(!client||this.now()-client.lastSeen>45000)throw new PortalError('extension-pairing-required','Open the MIRA extension and confirm that it is paired with this local helper.');
     if(!['discover','identity','capabilities','section','active','open'].includes(name))throw new PortalError('extension-protocol-error','Unsupported extension operation.');
     const id=token();return new Promise((resolve,reject)=>{
       const timer=setTimeout(()=>{this.pending.delete(id);this.queue=this.queue.filter(item=>item.id!==id);this.stage('extension-operation-timeout','timeout');reject(new PortalError('extension-unavailable','The paired portal extension did not respond. Open the signed-in portal tab and retry.'));},this.requestTimeout);

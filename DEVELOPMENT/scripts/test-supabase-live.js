@@ -10,7 +10,7 @@ async function main() {
   if(!readiness.readyForLiveTest) throw new Error("Hosted setup is incomplete. Run the SQL setup and enable Anonymous Sign-Ins first. No account or ticket was created by this test.");
   const make=()=>createClient(config.url,config.publishableKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
   const guest=make(),staff=make();
-  const api=createSupabaseApi({baseUrl:"http://127.0.0.1:3004/Capstone%20-%20AI/",guestClient:guest,staffClient:staff,knowledge:{}});
+  const api=createSupabaseApi({baseUrl:"http://127.0.0.1:3004/MIRA/",guestClient:guest,staffClient:staff,knowledge:{}});
   const timestamp=new Date().toISOString();
   const text="Fictional Capstone Supabase persistence test. No student data.\n";
   const response=await api.fetch("/api/tickets",{method:"POST",body:JSON.stringify({name:"Fictional Cloud Tester",email:"fictional@example.test",

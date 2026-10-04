@@ -70,7 +70,7 @@ function planSampleTickets(existing, { now = Date.now(), random = Math.random } 
       ...(resolved ? { resolution, resolvedBy: owner.email, resolvedAt, updatedAt: resolvedAt, updatedBy: "sample-data-generator" } : {}),
       isSample: true,
       sampleSeedKey,
-      source: "Capstone - AI fictional sample data",
+      source: "MIRA fictional sample data",
       createdAt
     });
   });

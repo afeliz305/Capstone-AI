@@ -1,4 +1,6 @@
-# Capstone - AI — Project Plan
+# MIRA — Project Plan
+
+The user-facing project is now **MIRA (Messaging, Information & Resolution Assistant)**. The Git repository, package identifiers and existing Ocelot technical path retain their legacy names for compatibility.
 
 ## 1. Project goal
 

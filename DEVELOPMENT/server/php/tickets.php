@@ -84,7 +84,7 @@ function create_ticket($input, &$state, $staff, $dir, &$newFiles) {
         'question'=>text_field($input, 'question', 500, true), 'details'=>text_field($input, 'details', 3000, true),
         'transcript'=>!$staff && !empty($input['includeTranscript']) ? text_field($input, 'transcript', 5000) : '',
         'privateToInstructor'=>!$staff && !empty($input['privateToInstructor']), 'status'=>'open', 'assignedTo'=>$assignee,
-        'source'=>$staff ? 'Capstone staff queue' : 'Capstone - AI prototype', 'createdAt'=>stamp()];
+        'source'=>$staff ? 'MIRA Staff Queue' : 'MIRA prototype', 'createdAt'=>stamp()];
     if ($staff) {
         $ticket['createdBy'] = $staff['email'];
         if ($assignee) { $ticket['assignedBy'] = $staff['email']; $ticket['assignedAt'] = $ticket['createdAt']; }

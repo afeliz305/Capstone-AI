@@ -10,6 +10,12 @@
   const viewButtons = [...document.querySelectorAll("[data-view]")];
   const unassigned = $("#unassigned-filter");
   const refresh = $("#refresh-tickets");
+  const profile = $("#staff-profile");
+  const profileTrigger = $("#staff-profile-trigger");
+  const profileMenu = $("#staff-profile-menu");
+  const settingsButton = $("#staff-settings");
+  const settingsDialog = $("#staff-settings-dialog");
+  const settingsClose = $("#close-staff-settings");
   const logout = $("#staff-logout");
   const passwordButton = $("#change-staff-password");
   const passwordDialog = $("#staff-password-dialog");
@@ -19,6 +25,9 @@
   const passwordSave = $("#save-change-password");
   const passwordCancel = $("#cancel-change-password");
   let changingPassword = false;
+  let returnToSettingsAfterPassword = false;
+  let settingsShouldRestoreFocus = true;
+  let settingsReturnTarget = null;
   const access = $("#staff-access");
   const checking = $("#staff-checking");
   const login = $("#staff-login");
@@ -28,6 +37,15 @@
   const loginStatus = $("#staff-login-status");
   const staffEmail = $("#staff-email");
   const rememberSession = $("#staff-remember-session");
+  const forgotPasswordButton = $("#forgot-staff-password");
+  const forgotPasswordDialog = $("#forgot-password-dialog");
+  const forgotPasswordForm = $("#forgot-password-form");
+  const forgotPasswordFields = $("#forgot-password-fields");
+  const forgotPasswordEmail = $("#forgot-password-email");
+  const forgotPasswordStatus = $("#forgot-password-status");
+  const forgotPasswordSend = $("#send-reset-email");
+  const forgotPasswordCancel = $("#cancel-forgot-password");
+  let requestingPasswordReset = false;
   const passwordControls = [
     ["staff-password", "password"],
     ["change-password-current", "current password"],
@@ -56,6 +74,7 @@
     loginMode = mode === "email-demo" ? "email-demo" : "password";
     const demo = loginMode === "email-demo";
     const canRemember = !demo && api.storageMode === "supabase";
+    forgotPasswordButton.hidden = !canRemember;
     $("#staff-remember-session-control").hidden = !canRemember;
     rememberSession.disabled = !canRemember;
     if (!canRemember) rememberSession.checked = false;
@@ -68,7 +87,11 @@
     if (demo) $("#staff-password").value = "";
     $("#staff-login-demo-warning").hidden = $("#staff-queue-demo-warning").hidden = !demo;
   }
-  const rememberedEmailKey = "capstone-ai-chat:last-staff-email" + (new URL(api.baseUrl).pathname === "/" ? "" : ":" + new URL(api.baseUrl).pathname);
+  const appPath = new URL(api.baseUrl).pathname;
+  const rememberedEmailKey = "capstone-ai-chat:last-staff-email" + (appPath === "/" ? "" : ":" + appPath);
+  const legacyRememberedEmailKeys = /\/MIRA\/$/.test(appPath)
+    ? ["capstone-ai-chat:last-staff-email:" + appPath.replace(/\/MIRA\/$/, "/Capstone%20-%20AI/")]
+    : [];
   const rememberNote = $("#staff-remember-email-note");
   function storageUnavailable() {
     rememberNote.textContent = "This browser is blocking saved preferences. You can still sign in, but your email may not be remembered after reloading. Your password is never saved by this app.";
@@ -88,7 +111,7 @@
   const contactPolicy = window.CapstoneContactPolicy;
   const contactFields = contactPolicy.bindContactFields({ method: $("#staff-contact-method"), phone: $("#staff-contact-phone"), phoneField: $("#staff-phone-field") });
   let creatingTicket = false;
-  const { QUEUE_VIEWS, categoryTag, ticketsForView, groupTicketsByAssignee, createIdleRedirect } = window.CapstoneStaffView;
+  const { QUEUE_VIEWS, categoryTag, ticketsForView, groupTicketsByAssignee } = window.CapstoneStaffView;
   let currentView = "all";
   let tickets = [];
   let staff = null;
@@ -106,11 +129,6 @@
     },
     onClose: (id) => { const opener = $("#open-ticket-" + id); (opener || search).focus(); }
   });
-  const redirect = createIdleRedirect({
-    onTick: (seconds) => { $("#staff-return-seconds").textContent = seconds; },
-    onTimeout: () => window.location.replace("../index.html")
-  });
-
   function element(tag, className, text) {
     const node = document.createElement(tag);
     if (className) node.className = className;
@@ -121,7 +139,16 @@
   function readRememberedEmail() {
     try {
       const email = window.localStorage.getItem(rememberedEmailKey);
-      return contactPolicy.validEmail(email) ? email.trim() : "";
+      if (contactPolicy.validEmail(email)) return email.trim();
+      // One-way convenience migration only. Never copy Supabase sessions,
+      // Remember-me metadata, passwords or other authentication material.
+      for (const legacyKey of legacyRememberedEmailKeys) {
+        const legacyEmail = window.localStorage.getItem(legacyKey);
+        if (!contactPolicy.validEmail(legacyEmail)) continue;
+        window.localStorage.setItem(rememberedEmailKey, legacyEmail.trim());
+        return legacyEmail.trim();
+      }
+      return "";
     } catch { storageUnavailable(); return ""; }
   }
 
@@ -133,13 +160,78 @@
     catch { storageUnavailable(); }
   }
 
+  function initialsFor(name) {
+    const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+    return (parts.length ? parts.slice(0, 2).map(part => part[0]).join("") : "ST").toUpperCase();
+  }
+
+  function closeProfileMenu(restoreFocus = false) {
+    profileMenu.hidden = true;
+    profileTrigger.setAttribute("aria-expanded", "false");
+    if (restoreFocus && staff && !profile.hidden) profileTrigger.focus();
+  }
+
+  function openProfileMenu() {
+    if (!staff || profile.hidden) return;
+    profileMenu.hidden = false;
+    profileTrigger.setAttribute("aria-expanded", "true");
+    settingsButton.focus();
+  }
+
+  function openSettings() {
+    if (!staff || settingsDialog.open) return;
+    settingsReturnTarget = profileTrigger;
+    closeProfileMenu(false);
+    $("#staff-settings-name").value = staff.name;
+    $("#staff-settings-email").value = staff.email;
+    settingsDialog.showModal();
+    settingsClose.focus();
+  }
+
+  function restoreSettingsFocus() {
+    const target = settingsReturnTarget;
+    settingsReturnTarget = null;
+    if (!settingsShouldRestoreFocus) {
+      return;
+    }
+    if (!target || settingsDialog.open || !staff || profile.hidden ||
+        target.isConnected === false || target.disabled || typeof target.focus !== "function") return;
+    target.focus();
+  }
+
+  function closeSettings(restoreFocus = true) {
+    settingsShouldRestoreFocus = restoreFocus;
+    if (!restoreFocus) settingsReturnTarget = null;
+    if (settingsDialog.open) settingsDialog.close();
+    // Native dialog close events may run after the initiating click completes.
+    // Restore from the confirmed closed state now; the consumed target keeps the
+    // close-event fallback from focusing it a second time.
+    if (restoreFocus) restoreSettingsFocus();
+  }
+
+  function populateProfile() {
+    const initials = initialsFor(staff.name);
+    $("#staff-profile-trigger-avatar").textContent = initials;
+    $("#staff-profile-menu-avatar").textContent = initials;
+    $("#staff-profile-trigger-name").textContent = staff.name;
+    $("#staff-profile-name").textContent = staff.name;
+    $("#staff-profile-email").textContent = staff.email;
+    $("#staff-profile-verification").textContent = loginMode === "email-demo" ? "Demo identity - not verified" : "Verified staff identity";
+    profileTrigger.setAttribute("aria-label", "Open staff account menu for " + staff.name);
+  }
+
   function clearQueue() {
     authEpoch++;
     loadSequence++;
+    returnToSettingsAfterPassword = false;
+    closeProfileMenu(false);
+    closeSettings(false);
     staff = null;
     maskPasswords();
     passwordButton.hidden = true;
     if (passwordDialog.open) passwordDialog.close();
+    if (forgotPasswordDialog.open) forgotPasswordDialog.close();
+    resetForgotPasswordForm();
     clearPasswordInputs();
     ticketWorkspace.clear();
     if (ticketDialog.open) ticketDialog.close();
@@ -158,7 +250,11 @@
       button.setAttribute("aria-pressed", String(button.dataset.view === "all"));
     });
     grid.replaceChildren();
-    workspace.hidden = refresh.hidden = logout.hidden = true;
+    workspace.hidden = refresh.hidden = logout.hidden = profile.hidden = true;
+    profileTrigger.setAttribute("aria-label", "Open staff account menu");
+    $("#staff-profile-trigger-avatar").textContent = $("#staff-profile-menu-avatar").textContent = "--";
+    $("#staff-profile-trigger-name").textContent = $("#staff-profile-name").textContent = $("#staff-profile-email").textContent = $("#staff-profile-verification").textContent = "";
+    $("#staff-settings-name").value = $("#staff-settings-email").value = "";
     $("#staff-welcome").textContent = "Support requests";
     $("#staff-identity").textContent = "";
     ["#my-ticket-count", "#unassigned-count", "#open-count", "#review-count", "#resolved-count"].forEach((selector) => { $(selector).textContent = "0"; });
@@ -166,7 +262,6 @@
 
   function showLogin(message = "") {
     clearQueue();
-    redirect.stop();
     access.hidden = login.hidden = false;
     checking.hidden = denied.hidden = true;
     loginStatus.textContent = message;
@@ -181,7 +276,6 @@
     $("#staff-password").value = "";
     $("#staff-denied-message").textContent = message || "Your staff session has ended. Sign in again to continue.";
     $("#staff-denied-title").focus();
-    redirect.start();
   }
 
   function clearPasswordInputs() {
@@ -189,8 +283,95 @@
     for (const name of ["current", "new", "confirm"]) $("#change-password-" + name).value = "";
   }
 
+  function resetForgotPasswordForm() {
+    requestingPasswordReset = false;
+    forgotPasswordEmail.value = "";
+    forgotPasswordStatus.textContent = "";
+    forgotPasswordStatus.dataset.success = "false";
+    forgotPasswordFields.disabled = forgotPasswordSend.disabled = forgotPasswordCancel.disabled = false;
+    forgotPasswordCancel.textContent = "Cancel";
+    forgotPasswordForm.setAttribute("aria-busy", "false");
+  }
+
+  forgotPasswordButton.addEventListener("click", () => {
+    if (api.storageMode !== "supabase" || loginMode !== "password" || requestingPasswordReset || forgotPasswordDialog.open) return;
+    resetForgotPasswordForm();
+    forgotPasswordEmail.value = contactPolicy.validEmail(staffEmail.value) ? staffEmail.value.trim() : "";
+    forgotPasswordDialog.showModal();
+    forgotPasswordEmail.focus();
+  });
+  forgotPasswordCancel.addEventListener("click", () => { if (!requestingPasswordReset) forgotPasswordDialog.close(); });
+  forgotPasswordDialog.addEventListener("cancel", event => { if (requestingPasswordReset) event.preventDefault(); });
+  forgotPasswordDialog.addEventListener("close", () => {
+    resetForgotPasswordForm();
+    if (!forgotPasswordButton.hidden) forgotPasswordButton.focus();
+  });
+  forgotPasswordForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (api.storageMode !== "supabase" || loginMode !== "password" || requestingPasswordReset || !forgotPasswordForm.reportValidity()) return;
+    if (!contactPolicy.validEmail(forgotPasswordEmail.value)) {
+      forgotPasswordStatus.textContent = "Enter a valid email address.";
+      forgotPasswordEmail.setCustomValidity("Enter a valid email address.");
+      forgotPasswordEmail.reportValidity();
+      forgotPasswordEmail.setCustomValidity("");
+      return;
+    }
+    requestingPasswordReset = true;
+    forgotPasswordFields.disabled = forgotPasswordSend.disabled = forgotPasswordCancel.disabled = true;
+    forgotPasswordForm.setAttribute("aria-busy", "true");
+    forgotPasswordStatus.textContent = "Submitting your reset request…";
+    try {
+      const response = await api.fetch("/api/staff/password/reset-request", {
+        method:"POST", headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({ email:forgotPasswordEmail.value })
+      });
+      const data = await api.readJson(response);
+      if (!response.ok) throw new Error(data.error || "The reset request could not be submitted.");
+      forgotPasswordEmail.value = "";
+      forgotPasswordStatus.dataset.success = "true";
+      forgotPasswordStatus.textContent = data.message;
+      forgotPasswordCancel.textContent = "Done";
+    } catch (error) {
+      forgotPasswordStatus.textContent = error.message;
+    } finally {
+      requestingPasswordReset = false;
+      forgotPasswordForm.setAttribute("aria-busy", "false");
+      forgotPasswordCancel.disabled = false;
+      const success = forgotPasswordStatus.dataset.success === "true";
+      forgotPasswordFields.disabled = forgotPasswordSend.disabled = success;
+      (success ? forgotPasswordCancel : forgotPasswordEmail).focus();
+    }
+  });
+
+  profileTrigger.addEventListener("click", () => {
+    if (profileMenu.hidden) openProfileMenu();
+    else closeProfileMenu(true);
+  });
+  settingsButton.addEventListener("click", openSettings);
+  settingsClose.addEventListener("click", () => closeSettings(true));
+  settingsDialog.addEventListener("cancel", event => {
+    event.preventDefault();
+    closeSettings(true);
+  });
+  settingsDialog.addEventListener("close", () => {
+    $("#staff-settings-name").value = $("#staff-settings-email").value = "";
+    restoreSettingsFocus();
+    settingsShouldRestoreFocus = true;
+  });
+  window.addEventListener("click", event => {
+    if (!profileMenu.hidden && !profile.contains(event.target)) closeProfileMenu(true);
+  });
+  window.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !profileMenu.hidden) {
+      event.preventDefault();
+      closeProfileMenu(true);
+    }
+  });
+
   passwordButton.addEventListener("click", () => {
     if (!staff || api.storageMode !== "supabase" || changingPassword || passwordDialog.open) return;
+    returnToSettingsAfterPassword = settingsDialog.open;
+    if (settingsDialog.open) closeSettings(false);
     clearPasswordInputs();
     $("#change-password-email").value = staff.email;
     passwordStatus.textContent = "";
@@ -206,7 +387,11 @@
   passwordDialog.addEventListener("close", () => {
     clearPasswordInputs();
     $("#change-password-email").value = "";
-    if (staff) passwordButton.focus();
+    if (staff && returnToSettingsAfterPassword) {
+      returnToSettingsAfterPassword = false;
+      openSettings();
+      passwordButton.focus();
+    } else if (staff && !profile.hidden) profileTrigger.focus();
   });
   passwordForm.addEventListener("submit", async event => {
     event.preventDefault();
@@ -242,7 +427,7 @@
       if (data.ok !== true) throw new Error("No password change was confirmed. Try signing in with your new password before retrying.");
       success = true;
       passwordStatus.dataset.success = "true";
-      passwordStatus.textContent = "Password updated. Use your new password the next time you sign in.";
+      passwordStatus.textContent = "MIRA staff password updated successfully. Use your new password the next time you sign in.";
       passwordCancel.textContent = "Done";
     } catch (error) {
       if (epoch === authEpoch) passwordStatus.textContent = error.message;
@@ -618,14 +803,14 @@
   async function enterQueue(session) {
     configureLogin(session.loginMode);
     authEpoch++;
-    redirect.stop();
     staff = session.staff;
     members = session.members;
     rememberStaffEmail(staff.email);
     access.hidden = true;
-    workspace.hidden = refresh.hidden = logout.hidden = false;
+    workspace.hidden = refresh.hidden = logout.hidden = profile.hidden = false;
     passwordButton.hidden = api.storageMode !== "supabase";
     logout.disabled = false;
+    populateProfile();
     $("#staff-welcome").textContent = "Welcome, " + staff.name;
     $("#staff-identity").textContent = (loginMode === "email-demo" ? "Demo identity (not verified): " : "Signed in as ") + staff.email;
     selectView("all");
@@ -639,7 +824,8 @@
       const data = await api.readJson(response);
       if (epoch !== authEpoch) return;
       if (response.ok || response.status === 401) configureLogin(data.loginMode);
-      if (response.status === 401) { if (staff) showDenied(data.error); else showLogin(); return; }
+      if (response.status === 401) { showLogin(staff ? "Your staff session has ended. Please sign in again." : ""); return; }
+      if (response.status === 403) { showDenied(data.error); return; }
       if (!response.ok) throw new Error(data.error || "Staff sign-in is unavailable.");
       if (!staff) await enterQueue(data);
       else if (staff.email !== data.staff.email) { clearQueue(); await enterQueue(data); }
@@ -661,7 +847,10 @@
         body: JSON.stringify({ email: $("#staff-email").value, ...(loginMode === "password" ? { password: $("#staff-password").value } : {}), ...(api.storageMode === "supabase" ? { rememberMe: rememberSession.checked === true } : {}) })
       });
       const data = await api.readJson(response);
-      if (epoch !== authEpoch || requestFailed(response, data)) return;
+      if (epoch !== authEpoch) return;
+      if (response.status === 401) { loginStatus.textContent = data.error || "Email or password was not accepted. Check your details or use Forgot password."; return; }
+      if (response.status === 403) { showDenied(data.error); return; }
+      if (!response.ok) throw new Error(data.error || "Staff sign-in is temporarily unavailable. Please try again.");
       await enterQueue(data);
       rememberSession.checked = false;
     } catch (error) { if (epoch === authEpoch) loginStatus.textContent = error.message; }
@@ -681,7 +870,6 @@
     finally { logout.disabled = false; }
   });
   $("#staff-retry").addEventListener("click", () => showLogin());
-  for (const type of ["pointerdown", "keydown"]) denied.addEventListener(type, redirect.respond);
   search.addEventListener("input", render);
   function clearTicketSearch() {
     search.value = "";

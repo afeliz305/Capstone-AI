@@ -144,5 +144,5 @@ try {
     $known = $error instanceof CapstoneError;
     http_response_code($known ? $error->getCode() : 503);
     if (!$known) error_log('Capstone API internal failure: '.$error->getMessage());
-    echo json_encode(['error'=>$known ? $error->getMessage() : 'The Capstone backend is unavailable. Ask the project owner to check the PHP server log. No success was confirmed.', 'loginMode'=>'email-demo']);
+    echo json_encode(['error'=>$known ? $error->getMessage() : 'The MIRA backend is unavailable. Ask the project owner to check the PHP server log. No success was confirmed.', 'loginMode'=>'email-demo']);
 }

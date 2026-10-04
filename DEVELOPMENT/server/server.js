@@ -148,7 +148,7 @@ function normalizeNewTicket(input, tickets, session = null) {
     privateToInstructor: Boolean(input.privateToInstructor),
     status: "open",
     assignedTo: null,
-    source: "Capstone - AI prototype",
+    source: "MIRA prototype",
     createdAt: new Date().toISOString()
   };
 }
@@ -426,7 +426,7 @@ function createRuntimeServer() {
 if (require.main === module) {
   const app = createRuntimeServer();
   app.listen(port, "127.0.0.1", () => {
-    console.log(`Capstone - AI is running at http://localhost:${port}${normalizeBasePath(process.env.CAPSTONE_BASE_PATH || "")}/`);
+    console.log(`MIRA is running at http://localhost:${port}${normalizeBasePath(process.env.CAPSTONE_BASE_PATH || "")}/`);
     if ((process.env.CAPSTONE_STAFF_LOGIN_MODE ?? require("./config.json").staffLoginMode) === "email-demo") {
       console.warn("TEST ONLY: Staff password checks are disabled. Anyone with an approved email can access the queue. Use fictional data only.");
     }
