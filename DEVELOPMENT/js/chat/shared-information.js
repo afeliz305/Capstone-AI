@@ -15,7 +15,8 @@
     deadline:["due","date","ends","ending","submit","submission"], due:["deadline","date","submit"],
     require:["requires","required","requirement","requirements","must","criteria"], criteria:["acceptance","requirement","requires","testing","test","verify"],
     testing:["test","tests","verification","verify","validated","validation"], component:["components","item","items","part","parts"],
-    score:["points","grade","graded","result"], task:["card","work","assignment"], sprint:["iteration"], team:["member","members","teammate","teammates"]
+    score:["points","grade","graded","result"], task:["card","work","assignment"], sprint:["iteration"], team:["member","members","teammate","teammates"],
+    owner:["owns","owned","assignee","assigned"], owns:["owner","owned","assignee","assigned"]
   });
   const credentialPattern = /\b(?:password|passcode|verification code|one[- ]time (?:code|password)|otp|session cookie|access token|refresh token|bearer token|authorization token)\b/i;
   const navigationPattern = /^(?:where does it say that|take me there|open it|open that|show me the source)[.!?]*$/i;
@@ -31,9 +32,38 @@
     return [...expanded];
   }
 
-  function passages(text) {
-    return String(text).split(/(?:\r?\n){2,}|(?<=[.!?])\s+|\r?\n/).map(value => value.trim()).filter(Boolean).slice(0, 240);
+  function valueState(value) {
+    const clean=String(value||"").trim();
+    if(!clean||/^(?:not provided|not recorded|not available|not specified|none|n\/?a|unknown)[.!]?$/i.test(clean))return "MISSING";
+    if(/\b(?:unclear|ambiguous|unknown|to be determined|tbd)\b/i.test(clean))return "AMBIGUOUS";
+    return "KNOWN";
   }
+
+  function parseStructuredDocument(text) {
+    const lines=String(text||"").split(/\r?\n/),fields=[],loose=[];
+    for(let index=0;index<lines.length;index++){
+      const line=lines[index].trim();
+      if(!line)continue;
+      const match=/^([A-Za-z][A-Za-z0-9 /&_-]{1,60}):\s*(.*)$/.exec(line);
+      if(!match){loose.push(line);continue;}
+      const label=match[1].trim(),parts=[];
+      if(match[2].trim())parts.push(match[2].trim());
+      let cursor=index+1;
+      while(cursor<lines.length){
+        const next=lines[cursor].trim();
+        if(!next){if(parts.length)break;cursor++;continue;}
+        if(/^[A-Za-z][A-Za-z0-9 /&_-]{1,60}:\s*/.test(next))break;
+        parts.push(next);cursor++;
+      }
+      index=Math.max(index,cursor-1);
+      const value=parts.join("\n");
+      fields.push({label,key:normalize(label),value,state:valueState(value),excerpt:label+":\n"+(value||"Not provided")});
+    }
+    const prose=loose.join("\n").split(/(?:\r?\n){2,}|(?<=[.!?])\s+|\r?\n/).map(value=>value.trim()).filter(Boolean);
+    return {fields,passages:[...fields.map(field=>field.excerpt),...prose].slice(0,240)};
+  }
+
+  function passages(text) { return parseStructuredDocument(text).passages; }
 
   function randomSourceId(cryptoLike) {
     if (cryptoLike && typeof cryptoLike.randomUUID === "function") return "shared-" + cryptoLike.randomUUID();
@@ -45,10 +75,10 @@
   }
 
   function looksAmbiguousTable(text, question) {
-    if (!/\b(?:score|grade|component|points?|total|which number|posted)\b/i.test(question)) return false;
+    if (!/\b(?:score|grade|component|points?|total|which number|what does (?:the )?\d+ mean|posted)\b/i.test(question)) return false;
     const lines = String(text).split(/\r?\n/).map(line => line.trim()).filter(Boolean);
     const numeric = lines.filter(line => (line.match(/\b\d+(?:\.\d+)?(?:%|\/\d+)?\b/g) || []).length >= 2);
-    return numeric.some(line => {
+    return /columns?.*(?:lost|missing)|(?:lost|missing).*headings?/i.test(text)||numeric.some(line => {
       const words=line.match(/[A-Za-z]+/g)||[];
       return !/[|,:;=\t]/.test(line)&&words.length<=2;
     });
@@ -57,7 +87,7 @@
   function categoryDestination(category, resolver) {
     const id = ({ Task:"team", Sprint:"team", Grade:"grade", Team:"team", "Course instructions":"resources", Other:"overview" })[category] || "overview";
     const destination = typeof resolver === "function" ? resolver(id) : null;
-    if (!destination || !/^https:\/\/capstone\.cs\.fiu\.edu\/portal(?:[?#]|$)/.test(destination.url || "")) return null;
+    if (!destination || !/^https:\/\/capstone\.cs\.fiu\.edu\/(?:portal(?:[?#]|$)|today$|inbox$|board$|meetings$|this-term$|people$|me\/(?:rhythm|privacy)$|recognition$)/.test(destination.url || "")) return null;
     return {
       id:destination.id,
       label:destination.label,
@@ -182,6 +212,59 @@
       };
     }
 
+    function evidenceFor(source,excerpt) {
+      return {sourceId:source.id,title:source.title,category:source.category,label:source.label,excerpt:String(excerpt||"").slice(0,700),addedAt:source.addedAt,expiresAt:source.expiresAt,term:source.term,sprint:source.sprint,destination:categoryDestination(source.category,resolvePortalDestination)};
+    }
+
+    function sourceAffinity(source,queryTokens) {
+      const metadata=new Set(tokens([source.title,source.category,source.term,source.sprint].join(" ")));
+      return queryTokens.reduce((sum,token)=>sum+(metadata.has(token)?3:0),0);
+    }
+
+    function matchingFields(document, question) {
+      const q=normalize(question);
+      const wantsCriteria=/\b(?:acceptance criteria|criteria|requirements?|must be completed|what.*completed)\b/.test(q);
+      const wantsDeadline=/\b(?:deadline|due|when)\b/.test(q);
+      const wantsApproval=/\b(?:approv|approved|approval|who approved|authority)\b/.test(q);
+      const wantsEvidence=/\b(?:evidence|proof|prove|finished|complete|completed|done)\b/.test(q);
+      const requested=[
+        ["criteria",wantsCriteria,/\b(?:acceptance criteria|criteria|requirements?)\b/],
+        ["deadline",wantsDeadline,/\b(?:deadline|due date|due)\b/],
+        ["approval",wantsApproval,/\b(?:approval|approved by|approver)\b/],
+        ["evidence",wantsEvidence,/\b(?:evidence|proof)\b/]
+      ];
+      return requested.filter(([,wanted])=>wanted).map(([kind,,pattern])=>({kind,field:document.fields.find(item=>pattern.test(item.key))})).filter(intent=>intent.field);
+    }
+
+    function structuredAnswer(question,sources) {
+      const queryTokens=tokens(question),matches=[];
+      for(const source of sources){
+        const document=parseStructuredDocument(source.text),intents=matchingFields(document,question);
+        if(intents.length)matches.push({source,document,intents,affinity:sourceAffinity(source,queryTokens)});
+      }
+      if(!matches.length)return null;
+      matches.sort((a,b)=>b.affinity-a.affinity);
+      if(matches.length>1&&matches[0].affinity===matches[1].affinity&&!/\b(?:compare|both|each|all sources?)\b/i.test(question)){
+        return {status:"ambiguous",mode:activeMode,privateLocal:true,answer:"More than one shared source contains that field. Name the source or task you mean so I do not combine unrelated records.",sources:[],generation};
+      }
+      const selected=matches[0],{source,document,intents}=selected,evidence=[],answers=[],states=[];
+      for(const intent of intents){
+        const field=intent.field;
+        evidence.push(evidenceFor(source,field.excerpt));
+        states.push(field.state);
+        if(intent.kind==="deadline")answers.push(field.state==="MISSING"?"No deadline was provided.":field.state==="AMBIGUOUS"?"The shared source does not provide a clear deadline; please supply the original deadline text.":"The deadline is: "+field.value);
+        else if(intent.kind==="approval")answers.push(field.state==="MISSING"?"Approval was not recorded.":field.state==="AMBIGUOUS"?"The shared source does not identify a clear approver.":"Approval is recorded as: "+field.value);
+        else if(intent.kind==="evidence"){
+          const approval=document.fields.find(item=>/\b(?:approval|approved by|approver)\b/.test(item.key));
+          if(approval&&!evidence.some(item=>item.excerpt===approval.excerpt))evidence.push(evidenceFor(source,approval.excerpt));
+          answers.push(field.state==="MISSING"?"The shared source does not record evidence of completion.":"The shared source records this evidence: "+field.value+" This evidence alone does not prove that the task is finished or approved"+(approval?.state==="MISSING"?"; approval was not recorded.":"."));
+        } else answers.push(field.state==="MISSING"?"The requested criteria were not provided.":"The required criteria are:\n"+field.value);
+      }
+      lastEvidence=evidence.map(item=>({...item}));
+      const valueState=states.includes("AMBIGUOUS")?"AMBIGUOUS":states.every(state=>state==="MISSING")?"MISSING":states.length===1?states[0]:"KNOWN";
+      return {status:valueState==="AMBIGUOUS"?"ambiguous":"matched",mode:activeMode,privateLocal:true,answer:"Based on the selected shared source: "+answers.join("\n\n"),sources:evidence,destination:evidence[0].destination,generation,valueState};
+    }
+
     function ask(question) {
       const expiredCount=enforceExpiry();
       const sources=activeSources();
@@ -193,12 +276,36 @@
         if (!evidence.length) return missingAnswer(q,sources);
         return { status:"matched",mode:activeMode,privateLocal:true,navigationRequested:/take me there|open/i.test(q),answer:"Based on the information you shared, the supporting text is shown below.",sources:evidence.map(item=>({...item})),destination:evidence[0].destination,generation };
       }
+      if(/^what about (?:this|that) (?:task|source|item)[.!?]*$/i.test(q)&&lastEvidence.length){
+        const evidence=lastEvidence.filter(item=>sources.some(source=>source.id===item.sourceId));
+        if(evidence.length)return{status:"matched",mode:activeMode,privateLocal:true,answer:"For the same shared item, the most recently supported information is shown below. Ask about a specific field such as criteria, evidence, approval, or deadline for a more precise answer.",sources:evidence.map(item=>({...item})),destination:evidence[0].destination,generation};
+      }
+      if(/\b(?:make|grant|give|approve)\b.*\bexception\b/i.test(q)){
+        const matches=sources.map(source=>({source,field:parseStructuredDocument(source.text).fields.find(item=>/\b(?:approval|approved by|approver)\b/.test(item.key)),affinity:sourceAffinity(source,tokens(q))})).filter(item=>item.field).sort((a,b)=>b.affinity-a.affinity);
+        const selected=matches[0],evidence=selected?[evidenceFor(selected.source,selected.field.excerpt)]:[];
+        lastEvidence=evidence.map(item=>({...item}));
+        const recorded=selected?.field.state==="MISSING"?" The selected shared source says approval was not recorded.":"";
+        return {status:"not_authorized",mode:activeMode,privateLocal:true,answer:"MIRA cannot grant, approve, or promise an exception."+recorded+" Contact the authorized course or project owner for a decision.",sources:evidence,destination:evidence[0]?.destination||null,generation};
+      }
+      if(/\b(?:which|what)\b.*\b(?:assignments?|tasks?|work)\b.*\b(?:first|priority|prioritize)\b|\b(?:priority|prioritize)\b.*\b(?:assignments?|tasks?|work)\b/i.test(q)){
+        const candidates=sources.filter(source=>source.category==="Task").map(source=>({source,document:parseStructuredDocument(source.text)}));
+        if(candidates.length===1){
+          const {source,document}=candidates[0],priority=document.fields.find(item=>/\b(?:priority|order|rank)\b/.test(item.key)),status=document.fields.find(item=>/\bstatus\b/.test(item.key)),task=document.fields.find(item=>/\b(?:task|assignment|work item)\b/.test(item.key));
+          const fields=[priority||task,status].filter(Boolean),evidence=fields.map(field=>evidenceFor(source,field.excerpt));
+          lastEvidence=evidence.map(item=>({...item}));
+          const answer=priority&&priority.state==="KNOWN"?"Based on the selected shared source, the recorded priority is: "+priority.value:"The selected shared information contains one task but does not provide a priority or comparison order, so MIRA cannot determine which assignment should be submitted first.";
+          return {status:priority?.state==="AMBIGUOUS"?"ambiguous":"partial",mode:activeMode,privateLocal:true,answer,sources:evidence,destination:evidence[0]?.destination||null,generation,valueState:priority?.state||"MISSING"};
+        }
+        if(candidates.length>1)return{status:"ambiguous",mode:activeMode,privateLocal:true,answer:"More than one shared task is available, but no single verified priority order was provided. Name the task or share an explicit priority field; MIRA will not infer an order.",sources:[],destination:null,generation,valueState:"AMBIGUOUS"};
+      }
+      const structured=structuredAnswer(q,sources);
+      if(structured)return structured;
       const queryTokens=tokens(q);
       const ranked=[];
       for (const source of sources) {
         if (looksAmbiguousTable(source.text,q)) {
           const destination=categoryDestination(source.category,resolvePortalDestination);
-          const evidence={sourceId:source.id,title:source.title,category:source.category,label:source.label,excerpt:source.text.slice(0,500),addedAt:source.addedAt,expiresAt:source.expiresAt,term:source.term,sprint:source.sprint,destination};
+           const evidence=evidenceFor(source,source.text.slice(0,500));
           lastEvidence=[evidence];
           return {status:"ambiguous",mode:activeMode,privateLocal:true,answer:"Based on the information you shared, the copied text appears to contain table-like values whose columns are unclear. Please clarify which number belongs to which label; I will not guess.",sources:[evidence],destination,generation};
         }
@@ -208,18 +315,23 @@
           if (/\b(?:deadline|due|when|date)\b/i.test(q)&&/\b(?:deadline|due|ends?|submit|\d{1,2}[:/]\d{1,2}|(?:january|february|march|april|may|june|july|august|september|october|november|december))\b/i.test(passage))score+=6;
           if (/\b(?:acceptance criteria|require|must|testing|test|verify)\b/i.test(q)&&/\b(?:acceptance|criteria|requires?|must|testing|test|verify|validation)\b/i.test(passage))score+=5;
           if (/\b(?:grade|score|points?|component)\b/i.test(q)&&/\b(?:grade|score|points?|\d+\s*\/\s*\d+|%)\b/i.test(passage))score+=5;
-          if (normalize(source.title+" "+source.category+" "+source.term+" "+source.sprint).split(" ").some(token=>queryTokens.includes(token)))score+=2;
+          score+=sourceAffinity(source,queryTokens);
           ranked.push({source,passage,score});
         }
       }
       ranked.sort((a,b)=>b.score-a.score);
-      if (!ranked.length || ranked[0].score < 2) { lastEvidence=[]; return missingAnswer(q,sources); }
+      if (!ranked.length || ranked[0].score < 2) return missingAnswer(q,sources);
+      const compare=/\b(?:compare|both|each|all sources?)\b/i.test(q),top=ranked[0];
+      const competing=ranked.find(candidate=>candidate.source.id!==top.source.id&&candidate.score>=top.score-1);
+      if(competing&&!compare&&sourceAffinity(top.source,queryTokens)===sourceAffinity(competing.source,queryTokens))return{status:"ambiguous",mode:activeMode,privateLocal:true,answer:"More than one shared source could answer that question. Name the source or task you mean so I do not combine their facts.",sources:[],generation};
       const chosen=[];
       for (const candidate of ranked) {
-        if (candidate.score < Math.max(2,ranked[0].score-3) || chosen.some(item=>item.source.id===candidate.source.id)) continue;
-        chosen.push(candidate); if (chosen.length===3) break;
+        if(candidate.score<Math.max(2,top.score-3))continue;
+        if(!compare&&candidate.source.id!==top.source.id)continue;
+        if(chosen.some(item=>item.source.id===candidate.source.id&&item.passage===candidate.passage))continue;
+        chosen.push(candidate);if(chosen.length===3)break;
       }
-      const evidence=chosen.map(({source,passage})=>({sourceId:source.id,title:source.title,category:source.category,label:source.label,excerpt:passage.slice(0,700),addedAt:source.addedAt,expiresAt:source.expiresAt,term:source.term,sprint:source.sprint,destination:categoryDestination(source.category,resolvePortalDestination)}));
+      const evidence=chosen.map(({source,passage})=>evidenceFor(source,passage));
       lastEvidence=evidence.map(item=>({...item}));
       const joined=evidence.map(item=>`“${item.excerpt}”`).join(" ");
       return {status:"matched",mode:activeMode,privateLocal:true,answer:"Based on the information you shared: "+joined,sources:evidence,destination:evidence[0]?.destination||null,generation};
@@ -228,5 +340,5 @@
     return { add,loadSample,activate,remove,clearShared,newSession,status,ask,TTL_MS,categories };
   }
 
-  return { TTL_MS, categories, createSharedInformationStore, looksAmbiguousTable };
+  return { TTL_MS, categories, createSharedInformationStore, looksAmbiguousTable, parseStructuredDocument, valueState };
 });

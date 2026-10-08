@@ -1,16 +1,18 @@
-const {SECTION_ROUTES,readPortalGuard,readPortalCapabilities,navigatePortalSection,readPortalSection}=require('../server/portal-local/dom-reader');
+const {SECTION_ROUTES,canonicalSection,readPortalGuard,readPortalCapabilities,navigatePortalSection,readPortalSection}=require('../server/portal-local/dom-reader');
 
 const PORTAL='https://capstone.cs.fiu.edu/portal';
+const PORTAL_PATHS=new Set(['/portal','/today','/inbox','/board','/meetings','/this-term','/people','/me/rhythm','/recognition','/me/privacy']);
 const documentId=crypto.randomUUID();
-const exactPortal=()=>location.origin==='https://capstone.cs.fiu.edu'&&location.pathname==='/portal'&&!location.search;
+const exactPortal=()=>location.origin==='https://capstone.cs.fiu.edu'&&PORTAL_PATHS.has(location.pathname)&&!location.search;
 const editing=()=>!!document.activeElement?.matches('input,textarea,select,[contenteditable="true"]');
 
 async function freshIdentity(){
   if(!exactPortal())return{state:'connection-lost'};
   if(editing())return{state:'editing-active'};
   let response,text;
-  try{response=await fetch(PORTAL,{method:'GET',credentials:'same-origin',cache:'no-store',redirect:'follow',headers:{Accept:'text/html'}});text=await response.text();}catch{return{state:'sign-in-required'};}
-  if(!response.ok||response.url!==PORTAL||!text)return{state:'sign-in-required'};
+  const page=location.origin+location.pathname;
+  try{response=await fetch(page,{method:'GET',credentials:'same-origin',cache:'no-store',redirect:'follow',headers:{Accept:'text/html'}});text=await response.text();}catch{return{state:'sign-in-required'};}
+  if(!response.ok||response.url!==page||!text)return{state:'sign-in-required'};
   const parsed=new DOMParser().parseFromString(text,'text/html'),name=parsed.querySelector('#pubavdrop .avdname')?.textContent?.trim(),email=parsed.querySelector('#pubavdrop .avdemail')?.textContent?.trim(),logout=parsed.querySelector('#pubavdrop form[action="/logout"][method="post"]');
   if(!name||!logout||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email||''))return{state:'sign-in-required'};
   return{state:'verified',identity:{name:name.slice(0,120),email:email.toLowerCase().slice(0,254)},active:readPortalGuard().active,documentId,proof:{network:true,status:response.status,checkedAt:new Date().toISOString(),bytes:text.length}};
@@ -18,13 +20,13 @@ async function freshIdentity(){
 
 async function combinedSection(payload,activeOnly=false){
   const identity=await freshIdentity();if(identity.state!=='verified')return identity;
-  const section=activeOnly?readPortalGuard().active:payload.section;
+  const section=canonicalSection(activeOnly?readPortalGuard().active:payload.section);
   if(!Object.hasOwn(SECTION_ROUTES,section))return{state:'section-denied'};
   if(readPortalGuard().active!==section){
-    if(!payload.navigate||section==='Messages')return{state:'section-required',section,message:section==='Messages'?'Open Messages and deliberately select a conversation yourself. MIRA will not open one automatically.':'The requested section is not currently loaded.'};
+    if(!payload.navigate)return{state:'section-required',section,message:'The requested section is not currently loaded.'};
     const moved=await navigatePortalSection(section);if(moved.state!=='present')return moved;
   }
-  const extracted=readPortalSection({section,messageContent:payload.messageContent});
+  const extracted=readPortalSection({section});
   return{...identity,...extracted,identity:identity.identity,proof:identity.proof,documentId};
 }
 
@@ -39,10 +41,9 @@ chrome.runtime.onMessage.addListener((message,_sender,sendResponse)=>{
       else if(message.operation==='section')result=await combinedSection(message.payload||{});
       else if(message.operation==='active')result=await combinedSection({...message.payload,navigate:false},true);
       else if(message.operation==='open'){
-        const section=message.payload?.section;
+        const section=canonicalSection(message.payload?.section);
         if(!Object.hasOwn(SECTION_ROUTES,section))result={state:'section-denied'};
-        else if(section==='Messages')result={state:'present',section,url:PORTAL,guidance:'Open Messages and choose the conversation yourself; MIRA will not select or mark one read.'};
-        else{const moved=await navigatePortalSection(section);result={...moved,guidance:'The verified parent section is open. Open a nested detail manually when no stable deep link exists.'};}
+        else{const moved=await navigatePortalSection(section);result={...moved,guidance:section==='Inbox'?'Open Inbox yourself; MIRA reads metadata only and will not open a conversation or change read state.':'The verified parent section is open. Open a nested detail manually when no stable deep link exists.'};}
       } else result={state:'operation-denied'};
       sendResponse({ok:true,value:result});
     }catch{sendResponse({ok:false,error:{state:'extension-operation-failed',message:'The approved portal read could not be completed.'}});}

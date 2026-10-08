@@ -54,6 +54,19 @@ async function main() {
       await page.locator("#chat-input").press("Escape");
       await launcher.waitFor({ state: "visible" });
       assert.equal(await launcher.getAttribute("aria-expanded"), "false");
+      await page.evaluate(() => document.querySelector("#support-dialog").showModal());
+      await page.locator("#support-dialog").waitFor({ state: "visible" });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      const support = await page.locator("#support-dialog").boundingBox();
+      assert.ok(support.x >= 0 && support.x + support.width <= viewport.width);
+      const email = page.locator("#request-email");
+      await email.fill("invalid@email");
+      await email.blur();
+      assert.equal(await email.getAttribute("aria-invalid"), "true");
+      assert.match(await page.locator("#request-email-error").textContent(), /valid requester email/);
+      await email.fill("fictional.student@example.edu");
+      assert.equal(await email.getAttribute("aria-invalid"), "false");
+      await page.locator("#support-dialog").evaluate(dialog => dialog.close());
     }
     await page.goto(origin + basePath + "pages/staff.html");
     await page.locator("#staff-login").waitFor({ state: "visible" });
@@ -117,7 +130,7 @@ async function main() {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.equal((await page.request.get(origin + basePath + "css/images/ask-roary-transparent.png")).status(), 404);
     assert.deepEqual(errors, []);
-    console.log("PASS: MIRA branding, generic SVG, keyboard chat controls, desktop/390px/320px layouts, Staff Queue profile/menu/Settings/sign-out focus, reset dialog/recovery layout, retired asset excluded. No cloud, email, password, or ticket writes.");
+    console.log("PASS: MIRA branding, portal-aligned tokens, generic SVG, keyboard chat controls, desktop/390px/320px layouts, support-form open and inline email validation, Staff Queue profile/menu/Settings/sign-out focus, reset dialog/recovery layout, retired asset excluded. No cloud, email, password, or ticket writes.");
   } finally {
     if (browser) await browser.close();
     server.closeAllConnections();

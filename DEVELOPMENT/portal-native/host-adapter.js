@@ -23,6 +23,8 @@ class PortalNativeError extends Error {
  * - listAccessibleSources({binding}) -> [{id, section, label, readable}].
  * - readAuthorizedSection({sourceId, section, messageContent, purpose}) ->
  *   {sessionBinding, section, records:[{kind,heading,text,subview,sourceTimestamp}],coverage}.
+ *   `messageContent` is always false in MIRA. Inbox reads are restricted to
+ *   channel metadata and unread indicators; bodies and composers are excluded.
  * - resolveSourceDestination({sourceId, section}) ->
  *   {capability:"exact-section"|"parent-only"|"unavailable",url,label}.
  * - openAuthorizedSection({sourceId, section}) -> the same destination shape

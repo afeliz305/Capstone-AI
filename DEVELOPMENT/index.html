@@ -104,18 +104,25 @@
         </section>
 
         <section class="topic-grid portal-shortcuts" aria-labelledby="portal-shortcuts-title">
-          <div class="section-heading"><div><p class="eyebrow">PORTAL SHORTCUTS</p><h2 id="portal-shortcuts-title">Messages &amp; dashboard</h2></div></div>
+          <div class="section-heading"><div><p class="eyebrow">PORTAL SHORTCUTS</p><h2 id="portal-shortcuts-title">Inbox &amp; Today</h2></div></div>
           <p>Use verified links to open the requested portal section. Personal messages, grades, and account records remain inside the authenticated portal and are not read by Ocelot MIRA.</p>
           <div class="starter-prompts" aria-label="Portal shortcuts">
             <button type="button" data-question="Do I have any new messages?">Check messages</button>
             <button type="button" data-question="Open my dashboard">Open dashboard</button>
-            <button type="button" data-question="Open portal Team">My team</button>
+            <button type="button" data-question="Open my sprint board">Sprint board</button>
             <button type="button" data-question="Open portal Grade">My grade</button>
           </div>
           <details class="portal-section-list">
             <summary>More portal sections</summary>
             <div class="starter-prompts" aria-label="More portal shortcuts">
               <button type="button" data-question="Open portal Start here">Start here</button>
+              <button type="button" data-question="Open my meetings">Meetings</button>
+              <button type="button" data-question="Open projects this term">Projects this term</button>
+              <button type="button" data-question="Open portal People">People</button>
+              <button type="button" data-question="Open my rhythm">My rhythm</button>
+              <button type="button" data-question="Open Recognition">Recognition</button>
+              <button type="button" data-question="Open profile and privacy">Profile and privacy</button>
+              <button type="button" data-question="Open portal Team">Team</button>
               <button type="button" data-question="Open portal Standing">Standing</button>
               <button type="button" data-question="Open portal Classmates">Classmates</button>
               <button type="button" data-question="Open portal Alumni directory">Alumni directory</button>
@@ -309,7 +316,8 @@
           </label>
           <label>
             FIU email
-            <input name="email" type="email" autocomplete="email" maxlength="254" placeholder="student@fiu.edu" aria-describedby="account-status" required>
+            <input name="email" id="request-email" type="email" autocomplete="email" maxlength="254" placeholder="student@fiu.edu" aria-describedby="account-status request-email-error" required>
+            <span class="field-error" id="request-email-error" role="alert" hidden></span>
           </label>
         </div>
 

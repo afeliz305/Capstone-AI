@@ -1,11 +1,18 @@
-// Verified against the live portal navigation controls and router on 2026-09-26.
+// Verified against the live portal navigation controls and router on 2026-10-08.
 // Keep destinations here so Ocelot answers never invent portal routes.
 const PORTAL_ORIGIN = "https://capstone.cs.fiu.edu";
 const PORTAL_URL = PORTAL_ORIGIN + "/portal";
 
 const definitions = [
-  ["overview", "Overview", "home"],
-  ["messages", "Messages", "messages", true],
+  ["overview", "Today", null, true, false, "/today"],
+  ["messages", "Inbox", null, true, false, "/inbox"],
+  ["board", "Board", null, true, false, "/board"],
+  ["meetings", "Meetings", null, true, false, "/meetings"],
+  ["this-term", "Projects this term", null, true, false, "/this-term"],
+  ["people", "People", null, true, false, "/people"],
+  ["rhythm", "My rhythm", null, true, false, "/me/rhythm"],
+  ["recognition", "Recognition", null, true, false, "/recognition"],
+  ["privacy", "Profile and privacy", null, true, false, "/me/privacy"],
   ["start", "Start here", "orientation"],
   ["team", "Team", "team", true],
   ["standing", "Standing", "compare", true],
@@ -24,11 +31,11 @@ const definitions = [
   ["brand", "Brand & templates", "brandhub"]
 ];
 
-const destinations = Object.fromEntries(definitions.map(([id, label, viewId, signedInVerified=false, refreshVerified=false]) => [id, Object.freeze({
+const destinations = Object.fromEntries(definitions.map(([id, label, viewId, signedInVerified=false, refreshVerified=false, pathname=null]) => [id, Object.freeze({
   id,
   label,
   viewId,
-  url: PORTAL_URL + "#" + viewId,
+  url: pathname ? PORTAL_ORIGIN + pathname : PORTAL_URL + "#" + viewId,
   navigationCapability: "exact-section",
   dataCapability: "navigation-only",
   authCapability: "existing-portal-session",
@@ -36,7 +43,7 @@ const destinations = Object.fromEntries(definitions.map(([id, label, viewId, sig
   signedInVerified,
   refreshVerified,
   loginReturnVerified: false,
-  verifiedMechanism: "portal hash router"
+  verifiedMechanism: pathname ? "portal route" : "portal hash router"
 })]));
 
 destinations.canvas = Object.freeze({

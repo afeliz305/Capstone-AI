@@ -3,8 +3,15 @@
 const { PORTAL_URL:url, resolvePortalDestination } = require("./portal-navigation");
 
 const sections = [
-  ["overview", "Overview", "Dashboard", ["Open my dashboard", "Check my dashboard", "What is on my dashboard?"], ["\\bdashboard\\b", "\\bportal overview\\b"]],
-  ["messages", "Messages", "Dashboard", ["Do I have any new messages?", "Check my messages", "Open my inbox", "Have I received any messages?"], ["\\b(?:messages?|inbox|unread|notifications?)\\b"]],
+  ["overview", "Today", "Dashboard", ["Open my dashboard", "Open Today", "Check my dashboard", "What is on my dashboard?", "What do I need to do today?"], ["\\bdashboard\\b", "\\bportal overview\\b", "\\bopen (?:my )?today\\b"]],
+  ["messages", "Inbox", "Dashboard", ["Do I have any new messages?", "Check my messages", "Open my inbox", "Have I received any messages?"], ["\\b(?:messages?|inbox|unread|notifications?)\\b"]],
+  ["board", "Board", "Dashboard", ["Open my sprint board", "Where are my current sprint cards?", "Show my standups", "What tasks are still open?"], ["\\b(?:sprint )?board\\b", "\\bcurrent sprint cards?\\b", "\\b(?:my )?standups?\\b"]],
+  ["meetings", "Meetings", "Dashboard", ["Open my meetings", "Show upcoming ceremonies"], ["\\b(?:my )?meetings?\\b", "\\bupcoming ceremonies\\b"]],
+  ["this-term", "Projects this term", "Dashboard", ["Open projects this term"], ["\\bprojects? this term\\b"]],
+  ["people", "People", "Dashboard", ["Open portal People"], ["\\bopen (?:portal )?people\\b"]],
+  ["rhythm", "My rhythm", "Dashboard", ["Open my rhythm"], ["\\bmy rhythm\\b"]],
+  ["recognition", "Recognition", "Dashboard", ["Open Recognition"], ["\\bopen recognition\\b"]],
+  ["privacy", "Profile and privacy", "Dashboard", ["Open profile and privacy"], ["\\bprofile and privacy\\b"]],
   ["start", "Start here", "This term", ["Open Start here"], ["\\bstart here\\b"]],
   ["team", "Team", "This term", ["Who is on my team?", "Who is my product owner?", "What is my project?"], ["\\bwho (?:is|are) (?:on )?(?:my|our) (?:team|teammates|product owner)\\b", "\\b(?:show|check|open|view|see|find) (?:me )?(?:my|our) (?:team|teammates|product owner|project)\\b", "\\b(?:my|our) (?:team|project) (?:members|status|progress|details|information|info|name)\\b", "^(?:my|our) (?:team|project)$"]],
   ["standing", "Standing", "This term", ["What is my standing?"], ["\\bstanding\\b"]],
@@ -30,9 +37,10 @@ const entries = sections.map(([id, label, group, intents, patterns]) => {
     ? `Open ${label} in the secure Capstone portal using the link below.`
     : `Open ${label} using the verified portal link below.`;
   let answer = `${instruction} Ocelot MIRA cannot read personal account data. If the portal asks you to sign in, finish the email-code login; the current login returns to Overview, so then choose ${label}.`;
-  if (id === "messages") answer = `${instruction} Ocelot MIRA cannot check unread counts or message contents. No message has been opened, marked read, sent, or changed. If sign-in is required, finish the email-code login and then choose Messages.`;
-  if (id === "overview") answer = `${instruction} Ocelot MIRA cannot see your current tasks, deadlines, project updates, attendance, or grades. Ask about the reviewed syllabus here, or use the portal for personal information.`;
-  if (id === "grade") answer = `Open your Grade section in the portal. Personal grades are not yet available inside this Ocelot chat, and MIRA has not read your posted result. If you are asked to sign in and land on Overview, choose Grade in the sidebar or open this Grade shortcut again.`;
+  if (id === "messages") answer = `${instruction} Ocelot MIRA cannot check unread counts or message contents. No message has been opened, marked read, sent, or changed. If sign-in is required, finish the email-code login and then open Inbox.`;
+  if (id === "overview") answer = `${instruction} Ocelot MIRA cannot see your current tasks, deadlines, project updates, attendance, or grades. Ask about the reviewed syllabus here, or use Today in the portal for personal information.`;
+  if (["board","meetings","this-term","people","rhythm","recognition","privacy"].includes(id)) answer = `${instruction} Ocelot MIRA has not read the current contents of this signed-in section. Review personal information and use any state-changing controls yourself.`;
+  if (id === "grade") answer = `Open your Grade section in the portal. Personal grades are not yet available inside this Ocelot chat, and MIRA has not read your posted result. If you are asked to sign in and land on Today, choose Grade in the sidebar or open this Grade shortcut again.`;
   if (id === "canvas") answer = `${instruction} Canvas has separate authentication and is separate from portal Messages. Ocelot MIRA cannot check either inbox or read recorded Canvas grades.`;
   if (id === "request-letter") answer += " Opening the section does not submit a request; review and submit it yourself.";
   return {
@@ -64,4 +72,4 @@ const entries = sections.map(([id, label, group, intents, patterns]) => {
   };
 });
 
-module.exports = { url, reviewed:"2026-09-26", entries };
+module.exports = { url, reviewed:"2026-10-08", entries };

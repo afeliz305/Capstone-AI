@@ -1,5 +1,19 @@
 # Messages and dashboard navigation
 
+Updated October 8, 2026. The reviewed map now contains 26 navigation destinations and recognizes the current standalone Today, Inbox, Board, Meetings, Projects this term, People, My rhythm, Recognition, and Privacy routes in addition to working legacy sections. Hosted Ocelot remains navigation-only. Only the separate local/owner-reviewed connector can read authorized display data, and Inbox extraction is metadata-only.
+
+| Current section | Route | Hosted behavior |
+| --- | --- | --- |
+| Today | `/today` | Open verified destination; no hosted private read |
+| Inbox | `/inbox` | Open verified destination; no hosted inbox read |
+| Board | `/board` | Open verified destination; no hosted card read |
+| Meetings | `/meetings` | Open verified destination; no hosted meeting read |
+| Projects this term | `/this-term` | Open verified destination |
+| People | `/people` | Navigation only |
+| My rhythm | `/me/rhythm` | Open verified destination; no hosted private read |
+| Recognition | `/recognition` | Open verified destination |
+| Privacy | `/me/privacy` | Navigation only; no secret values read |
+
 Updated September 26, 2026. This document separates verified portal navigation from personal-data access.
 
 ## What works now

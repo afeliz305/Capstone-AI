@@ -103,8 +103,11 @@ function mount(fetchResult = async () => ({ ok: true, json: async () => ({ statu
   } });
   const windowEvents={};
   let sourceId=0;
+  const history=options.history||{state:null,replaceState(state){this.state=state;}};
   const browserWindow = {
     open,
+    history,
+    location:{href:baseUrl},
     CapstonePortal: portal,
     addEventListener: (name,handler)=>{windowEvents[name]=handler;},
     CapstoneApi: api,
@@ -134,7 +137,8 @@ function mount(fetchResult = async () => ({ ok: true, json: async () => ({ statu
     loadSample: document.querySelector("#load-sample-information"),
     attachmentInput: document.querySelector("#ticket-attachments"),
     attachmentList: document.querySelector("#attachment-list"),
-    attachmentStatus: document.querySelector("#attachment-status")
+    attachmentStatus: document.querySelector("#attachment-status"),
+    history
   };
 }
 
@@ -180,6 +184,32 @@ test("chat starts hidden in HTML and opens only when requested", () => {
   assert.equal(ui.launcher.attributes["aria-expanded"], "true");
   assert.equal(ui.sidebar.attributes["aria-expanded"], "true");
   assert.equal(ui.document.activeElement, ui.input);
+});
+
+test("browser history retains bounded public source context without storing questions or shared text",async()=>{
+  const publicHistory={state:null,replaceState(state){this.state=state;}};
+  const ui=mount(async()=>({ok:true,json:async()=>({status:"matched",matches:[{id:"syllabus-sprint-1",title:"Sprint 1",answer:"Reviewed public answer",url:"pages/syllabus.html#syllabus-sprint-1",sourceKind:"syllabus",sourcePages:"1",section:"Schedule",followUps:[]}],links:[]})}),"http://localhost/",()=>{},undefined,{history:publicHistory});
+  await ui.topic.emit("click");
+  const serialized=JSON.stringify(publicHistory.state);
+  assert.match(serialized,/syllabus-sprint-1/);
+  assert.doesNotMatch(serialized,/Where are the Capstone tutorials|Reviewed public answer/);
+  assert.ok(publicHistory.state.miraPublicState.topics.length<=2);
+
+  const privateHistory={state:null,replaceState(state){this.state=state;}};
+  const shared=mount(async()=>{throw new Error("shared text must stay local");},"http://localhost/",()=>{},undefined,{shared:true,history:privateHistory});
+  Object.assign(shared.sharedForm.elements,{title:Object.assign(shared.sharedForm.elements.title,{value:"Private fixture"}),text:Object.assign(shared.sharedForm.elements.text,{value:"PRIVATE SHARED FIXTURE deadline is tomorrow"})});
+  shared.sharedForm.emit("submit");
+  shared.input.value="When is it due?";await shared.chatForm.emit("submit");
+  assert.doesNotMatch(JSON.stringify(privateHistory.state),/PRIVATE SHARED FIXTURE|tomorrow/);
+});
+
+test("pageshow-style reconstruction restores only public context for a follow-up",async()=>{
+  const requests=[];
+  const history={state:{miraPublicState:{version:1,open:true,lastTopic:"syllabus-sprint-1",topics:["syllabus-sprint-1"]}},replaceState(state){this.state=state;}};
+  const ui=mount(async url=>{requests.push(url);return{ok:true,json:async()=>({status:"unmatched",matches:[],links:[]})};},"http://localhost/",()=>{},undefined,{history});
+  assert.equal(ui.panel.hidden,false);
+  ui.input.value="What about the next one?";await ui.chatForm.emit("submit");
+  assert.match(requests.at(-1),/context=syllabus-sprint-1/);
 });
 
 function descendants(element) {
@@ -317,11 +347,11 @@ test("portal messages show a safe opt-in link and an honest live-data boundary",
   ui.topic.dataset.question="Do I have any new messages?";
   await ui.topic.emit("click");
   const source=descendants(ui.log).find(n=>n.className==="source-card");
-  assert.equal(source.href,"https://capstone.cs.fiu.edu/portal#messages");
+  assert.equal(source.href,"https://capstone.cs.fiu.edu/inbox");
   assert.equal(source.target,undefined);
   assert.equal(source.rel,undefined);
   assert.match(source.children[0].textContent,/PERSONAL DATA STAYS IN PORTAL/);
-  assert.equal(source.children[2].textContent,"Open Messages in portal →");
+  assert.equal(source.children[2].textContent,"Open Inbox in portal →");
   assert.match(ui.log.children.at(-1).children[1].textContent,/cannot check unread counts or message contents/);
 });
 
@@ -499,4 +529,25 @@ test("student form shows the phone field only when preferred and blocks invalid 
   assert.equal(posts[0].contactPhone, "3055550123");
   assert.equal(method.value, "email"); assert.equal(phone.value, "");
   assert.equal(phone.disabled, true); assert.equal(phone.required, false);
+});
+
+test("support email shows accessible blur feedback and clears it once corrected", async () => {
+  const ui = mount(async (url) => {
+    if (url === "/api/session") return { ok: true, json: async () => ({ status: "guest", identityContext: "fictional-email-validation" }) };
+    return { ok: true, json: async () => ({ id: "CAP-9001" }) };
+  });
+  await ui.document.querySelector("#account-retry").emit("click");
+  await new Promise(resolve => setImmediate(resolve));
+  const email = ui.document.querySelector("#support-form").elements.email;
+  const error = ui.document.querySelector("#request-email-error");
+  email.value = "invalid@email";
+  email.emit("blur");
+  assert.equal(email.attributes["aria-invalid"], "true");
+  assert.equal(error.hidden, false);
+  assert.match(error.textContent, /valid requester email/);
+  email.value = "fictional.student@example.edu";
+  email.emit("input");
+  assert.equal(email.attributes["aria-invalid"], "false");
+  assert.equal(error.hidden, true);
+  assert.equal(error.textContent, "");
 });

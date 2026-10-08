@@ -9,8 +9,9 @@ const STOP_WORDS = new Set([
 
 const SYNONYMS = new Map([
   ["retro", "retrospective"],
-  ["standup", "scrum"],
-  ["stand-up", "scrum"],
+  ["standup", "standup"],
+  ["stand-up", "standup"],
+  ["scrum", "standup"],
   ["deck", "slides"],
   ["colour", "color"],
   ["colours", "colors"],
@@ -19,6 +20,36 @@ const SYNONYMS = new Map([
   ["teacher", "instructor"],
   ["prof", "professor"]
 ]);
+
+// Fuzzy correction is deliberately limited to reviewed Capstone terms. It is
+// never applied to arbitrary words, identifiers, names, dates, or numbers.
+const DOMAIN_VOCABULARY = Object.freeze([
+  "acceptance", "assignment", "criteria", "retrospective", "standup",
+  "submit", "verification", "verify"
+]);
+
+function damerauLevenshtein(left, right) {
+  const a=String(left),b=String(right),rows=a.length+1,cols=b.length+1;
+  const matrix=Array.from({length:rows},()=>Array(cols).fill(0));
+  for(let i=0;i<rows;i++)matrix[i][0]=i;
+  for(let j=0;j<cols;j++)matrix[0][j]=j;
+  for(let i=1;i<rows;i++)for(let j=1;j<cols;j++){
+    const cost=a[i-1]===b[j-1]?0:1;
+    matrix[i][j]=Math.min(matrix[i-1][j]+1,matrix[i][j-1]+1,matrix[i-1][j-1]+cost);
+    if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])matrix[i][j]=Math.min(matrix[i][j],matrix[i-2][j-2]+1);
+  }
+  return matrix[a.length][b.length];
+}
+
+function correctDomainToken(token) {
+  if (!/^[a-z]{5,18}$/.test(token)) return token;
+  let best=token,distance=2;
+  for(const candidate of DOMAIN_VOCABULARY){
+    const next=damerauLevenshtein(token,candidate);
+    if(next<distance){best=candidate;distance=next;}
+  }
+  return distance<=1?best:token;
+}
 
 function normalize(value) {
   return String(value || "")
@@ -29,8 +60,23 @@ function normalize(value) {
     .trim();
 }
 
+function canonicalizeQuestion(value) {
+  let text=normalize(value);
+  text=text
+    .replace(/\b(?:turn|hand) in\b/g,"submit")
+    .replace(/\bupload(?:ing|ed|s)?\b/g,"submit")
+    .replace(/\bsubmissions?\b/g,"submit")
+    .replace(/\bassignments?\b/g,"assignment")
+    .replace(/\bcourse\s+work\b|\bcoursework\b/g,"assignment")
+    .replace(/\bdaily (?:status )?updates?\b|\bdaily scrums?\b|\bstand[ -]?ups?\b/g,"standup")
+    .replace(/\bverification\b/g,"verify")
+    .replace(/\bretros?\b/g,"retrospective")
+    .replace(/\bsprint demo\b/g,"sprint review");
+  return text.split(/\s+/).map(correctDomainToken).join(" ");
+}
+
 function tokenize(value, { keepStopWords = false } = {}) {
-  return normalize(value)
+  return canonicalizeQuestion(value)
     .split(/\s+/)
     .filter(Boolean)
     .map((token) => SYNONYMS.get(token) || token)
@@ -50,7 +96,7 @@ function intersectionCount(queryTokens, field) {
 }
 
 function scoreEntry(entry, rawQuestion) {
-  const question = normalize(rawQuestion);
+  const question = canonicalizeQuestion(rawQuestion);
   const queryTokens = [...new Set(tokenize(rawQuestion))];
   if (!queryTokens.length) return 0;
 
@@ -115,7 +161,7 @@ function publicEntry(entry, score) {
 
 function portalMatches(entries, question, contextId) {
   // Match only reviewed navigation rules. Error messages are not inbox messages.
-  const text = normalize(question).replace(/\berror messages?\b/g, "");
+  const text = canonicalizeQuestion(question).replace(/\berror messages?\b/g, "");
   const navigation = entries.filter(entry => entry.sourceKind === "portal-navigation");
   if (/\b(?:grade|grades|grading|graded)\b/.test(text) && /\b(?:calculated|calculation|weight|weights|policy|rules|scale)\b/.test(text)) return [];
   if (/\bcanvas\b/.test(text) && /\b(?:messages?|inbox|unread|notifications?|open|view)\b/.test(text)) return navigation.filter(entry=>entry.id === "portal-canvas");
@@ -128,7 +174,7 @@ function portalMatches(entries, question, contextId) {
 }
 
 function courseMatches(entries, question, contextId) {
-  const text = normalize(question);
+  const text = canonicalizeQuestion(question);
   const byId = id => entries.find(entry => entry.id === id);
   const topics = { attendance:"syllabus-attendance", syllabus:"syllabus-overview", deadlines:"syllabus-deadlines", grades:"syllabus-grading", grading:"syllabus-grading", "grade scale":"syllabus-grade-scale", "late work":"syllabus-late-work", "my dashboard":"dashboard-personal", "my project":"dashboard-personal" };
   if (topics[text] && byId(topics[text])) return [byId(topics[text])];
@@ -141,6 +187,11 @@ function courseMatches(entries, question, contextId) {
   const numbers = [...text.matchAll(/\bsprint\s+([1-5])\b/g)].map(match => match[1]);
   const numbered = [...new Set(numbers)].map(n => byId("syllabus-sprint-"+n)).filter(Boolean);
   if (numbered.length) return numbered;
+  if (/^(?:and |also )?(?:what about )?(?:the )?next (?:one|sprint)?$/.test(text)) {
+    const current=/^syllabus-sprint-([1-5])$/.exec(String(contextId||""));
+    const next=current&&Number(current[1])<5?byId("syllabus-sprint-"+(Number(current[1])+1)):null;
+    if(next)return[next];
+  }
   if (/^(?:and |also )?(?:when is (?:it|that|this) due|when is the deadline|what is the deadline|how many points(?: is (?:it|that|this))?|what is (?:it|that) worth|tell me more|what does that mean|what should i do|what do i need to do)$/.test(text)) {
     const context = byId(contextId);
     if (context && context.sourceKind !== "portal-navigation") return [context];
@@ -153,20 +204,28 @@ function courseMatches(entries, question, contextId) {
 }
 
 function searchKnowledge(entries, question, contextId, siteIndex = null) {
-  const policy = routeMira(entries, question, contextId, publicEntry);
+  const canonicalQuestion=canonicalizeQuestion(question);
+  const policy = routeMira(entries, canonicalQuestion, contextId, publicEntry);
   if (policy) return policy;
-  const portal = portalMatches(entries, question, contextId);
+  const portal = portalMatches(entries, canonicalQuestion, contextId);
   if (portal.length) return { status:portal.length > 1 ? "choices" : "matched", matches:portal.slice(0,3).map(entry=>publicEntry(entry,1)), links:[] };
+  // Personal-work language must never fall through to the broad website index.
+  // Hosted MIRA can navigate, but it cannot claim to have inspected the account.
+  if (/\b(?:what|show|check|where).*(?:current(?:ly)?|in progress|open|active|assigned).*(?:work|task|card)|\b(?:what|show|check|where).*(?:work|task|card).*(?:current(?:ly)?|in progress|open|active|assigned)|\bwhat am i working on\b|\bwhat is currently in progress\b/.test(canonicalQuestion)) {
+    const target=entries.find(entry=>entry.id==="portal-board")||entries.find(entry=>entry.id==="dashboard-personal")||entries.find(entry=>entry.id==="portal-team");
+    if(target)return {status:"matched",matches:[publicEntry(target,1)],links:[]};
+    return {status:"unmatched",matches:[],links:[],scopeNote:"Personal work requires the signed-in Capstone portal. MIRA has not checked your account."};
+  }
   if (siteIndex && /^(?:take me there|show me that section|where does it say that|open it|open that)[.!?]*$/i.test(question.trim())) return searchIndex(siteIndex,question,contextId);
-  const links = findKeywordLinks(entries, question);
+  const links = findKeywordLinks(entries, canonicalQuestion);
   // A course PDF is not authority for another term/section. Never infer personal
   // completion/grades from the calendar or from an unrelated staff login.
   if ((!siteIndex || /\b(?:syllabus|sprint|assignment|course deadline)\b/i.test(question)) && /\b(?:spring|summer)\s+20\d\d\b|\b(?:fall\s+)?(?:202[0-5]|202[7-9]|20[3-9]\d)\b/i.test(question)) {
     return { status:"unmatched", matches:[], links:[], scopeNote:"The imported syllabus covers CIS 4951 RVC, Fall 2026 only. Ask the instructor for the other term's requirements." };
   }
-  const direct = courseMatches(entries, question, contextId);
+  const direct = courseMatches(entries, canonicalQuestion, contextId);
   if (direct.length) return { status:direct.length > 1 ? "choices" : "matched", matches:direct.slice(0,3).map(entry => publicEntry(entry,1)), links:direct.some(entry => entry.id === "dashboard-personal") ? [] : links };
-  if (siteIndex) return searchIndex(siteIndex,question,contextId);
+  if (siteIndex) return searchIndex(siteIndex,canonicalQuestion,contextId);
   if (/^(?:when is (?:it|that|this) due|when is the deadline|what is the deadline|how many points(?: is (?:it|that|this))?|what is (?:it|that) worth|tell me more|what does that mean)$/.test(normalize(question))) return { status:"unmatched", matches:[], links:[], scopeNote:"Which assignment or sprint do you mean? Try 'Sprint 2' or 'Final deliverables', then ask your follow-up." };
   // Navigation-only entries must not compete with course facts in fuzzy search.
   const ranked = entries.filter(entry=>entry.sourceKind !== "portal-navigation")
@@ -192,4 +251,4 @@ function searchKnowledge(entries, question, contextId, siteIndex = null) {
   return { status: "matched", matches: [publicEntry(top.entry, top.score)], links };
 }
 
-module.exports = { normalize, scoreEntry, searchKnowledge, tokenize };
+module.exports = { canonicalizeQuestion, correctDomainToken, damerauLevenshtein, normalize, scoreEntry, searchKnowledge, tokenize };

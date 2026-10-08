@@ -6,7 +6,7 @@
 const normalize = value => String(value || "").toLowerCase().normalize("NFKD")
   .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 
-const navigationText = /^(?:take me there|open it|open that|open this section|show me (?:the )?instructions|show me that section|where does it say that|where does that say that|open the (first|second|third) source)$/;
+const navigationText = /^(?:take me there|open it|open that|open this section|show me (?:the )?instructions|show me that section|where does it say that|where does that say that|where do i get it|where can i get it|open the (first|second|third) source)$/;
 
 function find(entries, id) { return entries.find(entry => entry.id === id); }
 
@@ -97,10 +97,15 @@ function routeMira(entries, question, contextId, toPublic) {
     missingEvidence:"Not found after inspecting the available Team board, Resources, and linked template sources.",
     answer:()=>"I did not find a published course-wide checklist for entering Verify in the available Team board, Resources, or linked templates. MIRA can report criteria and evidence visibly recorded on your own connected card, but Verify and Done remain different states and MIRA will not move the card. Ask course staff for the transition rule."
   });
-  if(/what information.*stand ?up|what.*(?:put|include).*(?:stand ?up|daily scrum)|stand ?up (?:fields|template|content)/.test(text)) return result(entries,toPublic,{
+  if(/^(?:verify|how (?:do|can|should) i verify|what does verify mean)$/.test(text)) return result(entries,toPublic,{
+    status:"link_only",ids:["portal-resources","contact-help"],accessScope:"authenticated-navigation-only",
+    missingEvidence:"A project-specific Verify rule was not found in the reviewed public material.",
+    answer:()=>"Verify is a project workflow state, but MIRA did not find a published course-wide transition rule. Review the criteria and evidence on your own portal card, then ask course staff if the required verification step is unclear."
+  });
+  if(/what information.*standup|what.*(?:put|include|write|goes?).*standup|standup (?:fields|template|content)/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["daily-scrum","minutes-usage-guide"],accessScope:"authenticated-linked-documents"
   });
-  if(/how often.*(?:stand ?up|status update)|(?:stand ?up|status update).*frequency|finish.*stand ?up/.test(text)) return result(entries,toPublic,{
+  if(/how often.*(?:standup|status update)|(?:standup|status update).*frequency|finish.*standup/.test(text)) return result(entries,toPublic,{
     status:"partial",ids:["daily-scrum","minutes-usage-guide","syllabus-attendance"],
     missingEvidence:"The linked Daily Scrum template and its usage guide conflict on cadence and submission wording.",
     answer:entry=>entry.answer+" Because the two current linked documents disagree, MIRA will not choose a cadence silently. Confirm the active requirement with the instructor."
@@ -125,7 +130,10 @@ function routeMira(entries, question, contextId, toPublic) {
   if(/sprint review|review meeting|sprint demo/.test(text) && !/showcase/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["sprint-review-template","syllabus-sprint-review"],accessScope:"authenticated-linked-document"
   });
-  if(/where.*(?:sprint work|work).*(?:submit|document|upload)|where.*(?:submit|document|upload).*(?:sprint work|work)|upload our sprint work/.test(text)) return result(entries,toPublic,{
+  if(/\bweekly assignment\b/.test(text)&&/\b(?:where|how|submit|upload|turn in|hand in)\b/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:["canvas-assignments"],accessScope:"course-syllabus"
+  });
+  if(/(?:where|how).*(?:sprint work|course work|work|assignment).*(?:submit|document|upload)|(?:where|how).*(?:submit|document|upload).*(?:sprint work|course work|work|assignment)|(?:submit|upload).*(?:sprint work|course work|assignment)/.test(text)) return result(entries,toPublic,{
     status:"partial",ids:["minutes-usage-guide","canvas-assignments"],missingEvidence:"The linked minutes guide distinguishes Capstone-site ceremony/board filing from Canvas weekly assignments. The exact destination depends on the specific work item."
   });
   if(/(?:mira|you).*(?:cannot|can t|don t|doesn t|do not).*(?:answer|know)|who should i ask.*(?:don t|do not|cannot|can t) know|question.*(?:cannot|can t).*(?:answer|find)/.test(text)) return result(entries,toPublic,{

@@ -1,5 +1,7 @@
 # Private portal connector
 
+Updated October 8, 2026. The connector now recognizes the portal's standalone `/today`, `/inbox`, `/board`, `/meetings`, `/this-term`, `/people`, `/me/rhythm`, `/recognition`, and `/me/privacy` routes while preserving verified legacy sections. Current read-only selectors include `.sb-card[data-card-id][data-column-key]`, `.ibc`/`.ibc.un`, `.sb-standup-form`, `.cpanel`, and `.sp-tog`. Inbox remains metadata-only; unsaved form values and workflow controls are excluded. A selector or route failure is reported as unavailable, not as "no tasks" or "no messages." This connector remains local development tooling and is never included in the Ocelot upload package.
+
 Updated September 26, 2026. This Chrome extension is local development tooling only. It does not connect the hosted Ocelot page and it is excluded from the Ocelot upload package. The preferred zero-install design moves personal MIRA into the authenticated portal; see [the portal-owner handoff](PORTAL_OWNER_HANDOFF.md).
 
 The extension does not modify the FIU portal or send private portal content, private questions, or private answers to Supabase, tickets, analytics, an AI provider, or files.
@@ -12,7 +14,7 @@ Prerequisites:
 
 - Node.js 22 or newer.
 - Google Chrome.
-- A normal signed-in tab at exactly `https://capstone.cs.fiu.edu/portal`.
+- A normal signed-in tab under `https://capstone.cs.fiu.edu/portal`, including one of the reviewed standalone routes above.
 - The project's dependencies installed with `npm.cmd install --include=dev`.
 
 Start and install:
@@ -20,7 +22,7 @@ Start and install:
 1. In VS Code, open `DEVELOPMENT` and run `npm.cmd run demo:portal`.
 2. The command builds `portal-extension/content.bundle.js`, starts the loopback helper at `http://127.0.0.1:3005/MIRA/`, and prints a separate single-use **extension pairing code**. Keep that terminal open.
 3. In Chrome, open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the repository's `DEVELOPMENT\portal-extension` folder. This installation is a manual browser action.
-4. Open the extension popup. Choose **Grant portal access**. Chrome grants origin-level access to `https://capstone.cs.fiu.edu/*`; the extension additionally enforces the exact `/portal` path with no query string.
+4. Open the extension popup. Choose **Grant portal access**. Chrome grants origin-level access to `https://capstone.cs.fiu.edu/*`; the extension additionally enforces the reviewed `/portal` routes and rejects unrelated paths.
 5. Enter the extension pairing code from the terminal. The code is single use and expires after 15 minutes.
 6. Sign in through the portal's normal email one-time-code flow and keep the exact `/portal` tab open.
 7. Open the local MIRA address, choose **Connect my portal**, select the listed tab, and choose **Verify selected portal**.
@@ -67,7 +69,7 @@ MIRA never selects an unread conversation, opens a thread, scrolls hidden histor
 | Start here | Yes | Yes | Supported | On demand; parent route | Visible onboarding instructions/status; forms excluded. |
 | Team | Yes | Yes | Supported | On demand; parent route | Own team, members, leadership, sprint cards, descriptions, owner/size/status, visible criteria and evidence/history. All mutations excluded. |
 | Standing | Yes | Yes | Supported | On demand; parent route | Visible standing/trend and disclosed explanation only. |
-| Grade | Yes | Yes | Supported | On demand; parent route | Own posted components and temporarily disclosed past-term details; no prediction or other student data. |
+| Grade | Yes | Yes | Navigation only | On demand; parent route | Grade values are intentionally excluded from extraction. The verified Grade destination remains available for the student to open directly. |
 | Connections | Yes | Yes | Supported | On demand; parent route | Signed-in student's visible connection summary. |
 | Opportunities | Yes | Yes | Supported | On demand; parent route | Visible listings/instructions; no application action. |
 | Team contacts | Yes | Yes | Supported | On demand; parent route | Contacts shared with the student's team only. |

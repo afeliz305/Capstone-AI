@@ -10,10 +10,10 @@ const {BrowserAdapter,PortalError,PORTAL,portalUrl,APPROVAL_TIMEOUT_MS,TOOL_TIME
 const {SECTION_ROUTES,INTENTIONALLY_EXCLUDED,readPortalDom,readPortalSection,navigatePortalSection}=require('../server/portal-local/dom-reader');
 const {createPortalServer}=require('../server/portal-local/http');
 function fixture(){
-  let time=Date.parse('2026-09-25T15:00:00Z'),user='alpha',failure=null,wait=null,calls=0,active='Overview';
+  let time=Date.parse('2026-09-25T15:00:00Z'),user='alpha',failure=null,wait=null,calls=0,active='Today';
   const identity=async()=>{calls++;if(wait)await wait;if(failure)throw new PortalError(failure,'Verification unavailable.');return{state:'verified',identity:{email:user+'@example.test',name:user==='alpha'?'Synthetic Alpha':'Synthetic Beta'},contextBinding:'fixture-context-7',proof:{documentId:2,status:200,transferred:100,worker:0,serviceWorker:false}};};
-  const read=async(section='Overview')=>{const verified=await identity();active=section;const records={Overview:[{kind:'project',heading:'My project',text:user==='alpha'?'My project is the fictional Aurora Weather Station. It reports daily weather and includes a tested display.':'My project is the fictional Borealis Garden. It reports soil moisture and includes a tested display.',url:PORTAL,section:'Overview',subview:'Overview card'},{kind:'dates',heading:'My deadlines',text:'My next assignment deadline is October 4. This is fictional fixture data only.',url:PORTAL,section:'Overview',subview:'Schedule'}],Team:[{kind:'team',heading:'My team',text:'My fictional team includes Taylor and Morgan.',url:PORTAL,section:'Team',subview:'Team members'},{kind:'task',heading:'Synthetic assigned card',text:'Assigned to me. Acceptance criteria: show a passing fixture. Evidence: synthetic test report.',url:PORTAL,section:'Team',subview:'Sprint board'}],Standing:[{kind:'standing-trend',heading:'My standing explanation',text:'My fictional standing trend is steady because the current checkpoint is complete.',url:PORTAL,section:'Standing',subview:'Standing'}],Grade:[{kind:'grade',heading:'My grade components',text:'My fictional posted grade has 20 points with a 25 percent weight.',url:PORTAL,section:'Grade',subview:'Current grade'}],Messages:[]};return{...verified,section,records:records[section],coverage:'Synthetic '+section+' fixture only.'};};
-  const adapter={listEligible:async()=>[{id:7,label:'Capstone portal tab 7'}],close:async()=>{},verify:()=>read('Overview'),identity,inspect:()=>read('Overview'),inspectActive:()=>read(active),inspectSection:(_id,section)=>read(section),open:async(_id,section)=>({url:PORTAL,section,guidance:'Synthetic navigation.'})};
+  const read=async(section='Today')=>{const verified=await identity();active=section;const records={Today:[{kind:'project',heading:'My project',text:user==='alpha'?'My project is the fictional Aurora Weather Station. It reports daily weather and includes a tested display.':'My project is the fictional Borealis Garden. It reports soil moisture and includes a tested display.',url:'https://capstone.cs.fiu.edu/today',section:'Today',subview:'Today card'},{kind:'dates',heading:'My deadlines',text:'My next assignment deadline is October 4. This is fictional fixture data only.',url:'https://capstone.cs.fiu.edu/today',section:'Today',subview:'Schedule'}],Board:[{kind:'task',heading:'Synthetic assigned card',text:'Assigned to me. Acceptance criteria: show a passing fixture. Evidence: synthetic test report.',url:'https://capstone.cs.fiu.edu/board',section:'Board',subview:'Sprint board'},{kind:'standup',heading:'Synthetic stand-up',text:'Pending stand-up with three prompt labels.',url:'https://capstone.cs.fiu.edu/board',section:'Board',subview:'Stand-up'}],Team:[{kind:'team',heading:'My team',text:'My fictional team includes Taylor and Morgan.',url:PORTAL,section:'Team',subview:'Team members'}],Standing:[{kind:'standing-trend',heading:'My standing explanation',text:'My fictional standing trend is steady because the current checkpoint is complete.',url:PORTAL,section:'Standing',subview:'Standing'}],Grade:[{kind:'grade',heading:'My grade components',text:'My fictional posted grade has 20 points with a 25 percent weight.',url:PORTAL,section:'Grade',subview:'Current grade'}],Inbox:[],Meetings:[{kind:'ceremony',heading:'Synthetic review',text:'Fictional review is upcoming.',url:'https://capstone.cs.fiu.edu/meetings',section:'Meetings',subview:'Meetings'}]};return{...verified,section,records:records[section]||[],coverage:'Synthetic '+section+' fixture only.'};};
+  const adapter={listEligible:async()=>[{id:7,label:'Capstone portal tab 7'}],close:async()=>{},verify:()=>read('Today'),identity,inspect:()=>read('Today'),inspectActive:()=>read(active),inspectSection:(_id,section)=>read(({Overview:'Today',Messages:'Inbox'}[section]||section)),open:async(_id,section)=>({url:section==='Board'?'https://capstone.cs.fiu.edu/board':PORTAL,section,guidance:'Synthetic navigation.'})};
   const service=new PortalService({adapter,now:()=>time,publicSearch:async question=>({indexed:true,status:'matched',answer:'PUBLIC fixture: '+question,sources:[],navigation:[],matches:[],links:[]})});
   return{service,adapter,switch:()=>{user='beta';},fail:s=>{failure=s;},advance:n=>{time+=n;},wait:p=>{wait=p;},calls:()=>calls,connect:async(owner='local-a')=>{await service.discover(owner);return service.connect(owner,7);}};
 }
@@ -22,7 +22,7 @@ test('local portal starts disconnected, connects only a chosen verified tab, and
   assert.equal((await f.service.search('local-a',{question:'What is my project?'})).sources.length,0);
   assert.equal((await f.connect()).state,'connected');
   const result=await f.service.search('local-a',{question:'What is my project?'});
-  assert.equal(result.personal,true);assert.match(result.sources[0].excerpt,/Aurora/);assert.equal(result.sources[0].url,PORTAL);assert.ok(result.sources[0].retrievedAt);assert.match(result.coverage,/Temporary local Overview/);
+  assert.equal(result.personal,true);assert.match(result.sources[0].excerpt,/Aurora/);assert.equal(result.sources[0].url,'https://capstone.cs.fiu.edu/today');assert.ok(result.sources[0].retrievedAt);assert.match(result.coverage,/Temporary local Today/);
   assert.ok(f.calls()>=2);assert.equal((await f.service.search('another-local-session',{question:'What is my project?'})).sources.length,0);
 });
 test('connection discovery is idempotent and keeps a human-sized approval window',async()=>{
@@ -67,11 +67,11 @@ test('authority and privacy policy questions stay public even while a portal is 
     const result=await f.service.search('local-a',{question});assert.equal(result.personal,undefined);assert.match(result.answer,/PUBLIC fixture/);
   }
   assert.equal(f.calls(),before);
-  assert.equal((await f.service.search('local-a',{question:'What is my grade?'})).personal,true);
+  const grade=await f.service.search('local-a',{question:'What is my grade?'});assert.equal(grade.personal,true);assert.equal(grade.sources.length,0);assert.doesNotMatch(JSON.stringify(grade),/20 points|25 percent/);
 });
 test('private navigation resolves owned source IDs, checks identity again, and rejects invented destinations',async()=>{
   const f=fixture();await f.connect();const result=await f.service.search('local-a',{question:'What is my project?'});const source=result.sources[0];
-  assert.equal((await f.service.destination('local-a',source.id)).url,PORTAL);
+  assert.equal((await f.service.destination('local-a',source.id)).url,'https://capstone.cs.fiu.edu/today');
   const followup=await f.service.search('local-a',{question:'Take me there',context:source.id});assert.equal(followup.navigationRequested,true);
   await assert.rejects(f.service.destination('other-session',source.id));await assert.rejects(f.service.destination('local-a','private-invented'));
   f.switch();await assert.rejects(f.service.destination('local-a',source.id));assert.equal(f.service.records.length,0);
@@ -82,20 +82,20 @@ test('multiple private sources ask which one; missing message data never claims 
   const missing=await f.service.search('local-a',{question:'Do I have any new messages?'});assert.equal(missing.answerStatus,'not_found');assert.match(missing.answer,/does not mean/);assert.equal(missing.sources.length,0);
 });
 test('approved sections load only on deliberate questions and never extend the five-minute lease',async()=>{
-  const f=fixture();await f.connect();const initial=f.service.status('local-a');assert.deepEqual(initial.loadedSections,['Overview']);
+  const f=fixture();await f.connect();const initial=f.service.status('local-a');assert.deepEqual(initial.loadedSections,['Today']);
   const deadline=await f.service.search('local-a',{question:'When do we have to finish this sprint?'});assert.match(deadline.sources[0].excerpt,/deadline/);
-  const grade=await f.service.search('local-a',{question:'What is my grade?'});assert.match(grade.sources[0].excerpt,/20 points/);assert.ok(grade.connection.loadedSections.includes('Grade'));assert.equal(grade.connection.expiresAt,initial.expiresAt);
+  const grade=await f.service.search('local-a',{question:'What is my grade?'});assert.equal(grade.answerStatus,'not_found');assert.equal(grade.sources.length,0);assert.doesNotMatch(JSON.stringify(grade),/20 points|25 percent/);assert.ok(grade.connection.loadedSections.includes('Grade'));assert.equal(grade.connection.expiresAt,initial.expiresAt);
   const team=await f.service.search('local-a',{question:'Who is on my team?'});assert.match(team.sources[0].excerpt,/Taylor/);assert.ok(team.connection.loadedSections.includes('Team'));assert.equal(team.connection.expiresAt,initial.expiresAt);
-  const messages=await f.service.search('local-a',{question:'Do I have unread messages?'});assert.equal(messages.sources.length,0);assert.match(messages.answer,/does not mean/i);assert.ok(messages.connection.loadedSections.includes('Messages'));
+  const messages=await f.service.search('local-a',{question:'Do I have unread messages?'});assert.equal(messages.sources.length,0);assert.match(messages.answer,/does not mean/i);assert.ok(messages.connection.loadedSections.includes('Inbox'));
 });
 test('expanded natural questions retrieve only the relevant synthetic authorized source',async()=>{
   const f=fixture();await f.connect();
-  const deadlines=await f.service.search('local-a',{question:'What deadlines are coming up?'});assert.match(deadlines.sources[0].excerpt,/October 4/);assert.equal(deadlines.sources[0].section,'Overview');
-  const work=await f.service.search('local-a',{question:'What work is assigned to me?'});assert.ok(work.sources.length,JSON.stringify(work));assert.match(work.sources[0].excerpt,/Assigned to me/);assert.equal(work.sources[0].section,'Team');
+  const deadlines=await f.service.search('local-a',{question:'What deadlines are coming up?'});assert.match(deadlines.sources[0].excerpt,/October 4/);assert.equal(deadlines.sources[0].section,'Today');
+  const work=await f.service.search('local-a',{question:'What work is assigned to me?'});assert.ok(work.sources.length,JSON.stringify(work));assert.match(work.sources[0].excerpt,/Assigned to me/);assert.equal(work.sources[0].section,'Board');
   const criteria=await f.service.search('local-a',{question:'What acceptance criteria are listed on this card?'});assert.match(criteria.sources[0].excerpt,/Acceptance criteria/);
   const evidence=await f.service.search('local-a',{question:'What evidence is recorded for this task?'});assert.match(evidence.sources[0].excerpt,/Evidence/);
   const standing=await f.service.search('local-a',{question:'What does my standing explanation say?'});assert.match(standing.sources[0].excerpt,/checkpoint is complete/);assert.equal(standing.sources[0].section,'Standing');
-  const grade=await f.service.search('local-a',{question:'Which posted grade components are available?'});assert.match(grade.sources[0].excerpt,/25 percent weight/);assert.equal(grade.sources[0].section,'Grade');
+  const grade=await f.service.search('local-a',{question:'Which posted grade components are available?'});assert.equal(grade.answerStatus,'not_found');assert.equal(grade.sources.length,0);assert.doesNotMatch(JSON.stringify(grade),/25 percent weight/);
 });
 test('continuous transport refreshes an expired private snapshot without revoking transport trust',async()=>{
   const f=fixture();f.adapter.continuous=true;f.adapter.mode='extension';await f.connect();
@@ -104,19 +104,20 @@ test('continuous transport refreshes an expired private snapshot without revokin
   const refreshed=await f.service.search('local-a',{question:'What is my project?'});
   assert.equal(refreshed.connection.state,'connected');assert.match(refreshed.sources[0].excerpt,/Aurora/);assert.ok(refreshed.connection.generation>generation);assert.equal(refreshed.connection.transport,'extension');
 });
-test('message bodies require explicit scope and the connector never opens a conversation',async()=>{
+test('Inbox remains metadata-only even when legacy message-content scope is requested',async()=>{
   const f=fixture();await f.connect();let options=null;
-  f.adapter.inspectSection=async(_id,section,next)=>{options=next;const verified=await f.adapter.identity();return{...verified,section,records:next.messageContent?[{kind:'message-content',heading:'Synthetic team conversation',text:'A deliberately opened synthetic team conversation contains a fixture update.',url:PORTAL,section:'Messages',subview:'User-selected visible conversation'}]:[],coverage:'Synthetic message fixture.'};};
+  f.adapter.inspectSection=async(_id,section,next)=>{options=next;const verified=await f.adapter.identity();return{...verified,section,records:[],coverage:'Synthetic Inbox metadata fixture.'};};
   f.service.configure('local-a',{messageContent:true});
   const result=await f.service.search('local-a',{question:'What information is available in this team conversation?'});
-  assert.equal(options.navigate,false);assert.equal(options.messageContent,true);assert.match(result.sources[0].excerpt,/deliberately opened/);
+  assert.equal(options.navigate,true);assert.equal(options.messageContent,false);assert.equal(result.sources.length,0);assert.equal(result.answerStatus,'not_found');
   assert.doesNotMatch(readPortalSection.toString(),/\.cs-chan[^\n;]*\.click\(/);
+  assert.doesNotMatch(readPortalSection.toString(),/#csMsgs \.cs-msg|selected-conversation/);
   f.service.configure('local-a',{messageContent:false});assert.equal(f.service.records.some(record=>record.kind==='message-content'),false);
 });
 test('dashboard capability map accounts for every discovered route and excludes unrelated directories',()=>{
-  assert.equal(Object.keys(SECTION_ROUTES).length,18);
-  for(const section of ['Overview','Messages','Start here','Team','Standing','Grade','Connections','Opportunities','Team contacts','AI Anchors','Record','Showcase','Letters','Request a letter','Resources','Brand & templates'])assert.ok(Object.hasOwn(SECTION_ROUTES,section),section);
-  assert.deepEqual([...INTENTIONALLY_EXCLUDED].sort(),['Alumni directory','Classmates']);
+  assert.equal(Object.keys(SECTION_ROUTES).length,25);
+  for(const section of ['Today','Inbox','Board','Meetings','Projects this term','People','My rhythm','Recognition','Profile and privacy','Start here','Team','Standing','Grade','Connections','Opportunities','Team contacts','AI Anchors','Record','Showcase','Letters','Request a letter','Resources','Brand & templates'])assert.ok(Object.hasOwn(SECTION_ROUTES,section),section);
+  assert.deepEqual([...INTENTIONALLY_EXCLUDED].sort(),['Alumni directory','Classmates','Grade','People','Profile and privacy']);
 });
 test('question routing distinguishes approved private sections from public course questions',()=>{
   assert.equal(routeQuestion('What is the public grading scale?'),false);
@@ -125,9 +126,12 @@ test('question routing distinguishes approved private sections from public cours
   assert.equal(sectionFor('What about the previous term?',[{section:'Grade'}]),'Grade');
   assert.equal(sectionFor('What about my team?',[{section:'Grade'}]),'Team');
   assert.doesNotMatch(readPortalSection.toString(),/fetch\(|XMLHttpRequest|localStorage|sessionStorage|document\.cookie/);
-  assert.match(readPortalSection.toString(),/content\.querySelector\('#csSide'\)/);
-  assert.doesNotMatch(readPortalSection.toString(),/\|\|channel\.textContent/);
-  assert.match(readPortalSection.toString(),/details\.forEach\(el=>\{el\.open=true;\}\)/);
+  assert.match(readPortalSection.toString(),/\.ibc,#csSide \.cs-chan/);
+  assert.match(readPortalSection.toString(),/\.sb-card\[data-card-id\]\[data-column-key\]/);
+  assert.match(readPortalSection.toString(),/\.sb-standup-form/);
+  assert.match(readPortalSection.toString(),/\.cpanel/);
+  assert.doesNotMatch(readPortalSection.toString(),/messageContent|#csMsgs \.cs-msg/);
+  assert.doesNotMatch(readPortalSection.toString(),/details\.gpast|past-grade|mygradebox/);
   assert.match(navigatePortalSection.toString(),/button\.nav-item\[data-v=/);
 });
 test('client identity requests and injected portal instructions cannot select users or run browser commands',async()=>{
@@ -138,7 +142,7 @@ test('client identity requests and injected portal instructions cannot select us
 });
 test('browser adapter permits only fixed operations and demands fresh network-backed identity',async()=>{
   const adapter=new BrowserAdapter();const calls=[];let proof={documentId:2,status:200,transferred:100,worker:0,serviceWorker:false};
-  adapter.call=async(name,args)=>{calls.push({name,args});if(name==='list_pages')return{structuredContent:{pages:[{id:7,url:PORTAL},{id:8,url:'https://unrelated.test'}]}};if(name==='navigate_page')return{content:[{type:'text',text:'Successfully reloaded the page.'}]};let value;if(args.function.includes('const account=document.querySelector'))value={state:'verified',identity:{name:'Fixture',email:'fixture@example.test'},proof,active:'Overview'};else if(args.function.includes("if(section==='Overview')"))value={state:'verified',section:'Overview',records:[],coverage:'Synthetic Overview.'};else value={state:'present',documentId:1,active:'Overview',route:'home',editable:false};return{content:[{type:'text',text:'```json\n'+JSON.stringify({ok:true,value})+'\n```'}]};};
+  adapter.call=async(name,args)=>{calls.push({name,args});if(name==='list_pages')return{structuredContent:{pages:[{id:7,url:'https://capstone.cs.fiu.edu/today'},{id:8,url:'https://unrelated.test'}]}};if(name==='navigate_page')return{content:[{type:'text',text:'Successfully reloaded the page.'}]};let value;if(args.function.includes('const account=document.querySelector'))value={state:'verified',identity:{name:'Fixture',email:'fixture@example.test'},proof,active:'Today'};else if(args.function.includes("if(section==='Today')"))value={state:'verified',section:'Today',records:[],coverage:'Synthetic Today.'};else value={state:'present',documentId:1,active:'Today',route:'/today',editable:false};return{content:[{type:'text',text:'```json\n'+JSON.stringify({ok:true,value})+'\n```'}]};};
   assert.deepEqual(await adapter.listEligible(),[{id:7,label:'Capstone portal tab 7'}]);assert.equal((await adapter.verify(7)).state,'verified');assert.ok(calls.some(c=>c.name==='navigate_page'&&c.args.ignoreCache));
   const reloads=calls.filter(call=>call.name==='navigate_page').length;assert.equal((await adapter.inspect(7)).state,'verified');assert.equal(calls.filter(call=>call.name==='navigate_page').length,reloads);
   for(const invalid of [{documentId:1},{status:401},{transferred:0},{worker:1},{serviceWorker:true}]){const saved=proof;proof={...proof,...invalid};await assert.rejects(adapter.verify(7));proof=saved;}
@@ -148,33 +152,27 @@ test('browser adapter permits only fixed operations and demands fresh network-ba
   assert.equal((await transient.evaluate(7,()=>({state:'present'}))).state,'present');assert.equal(attempts,2);
 });
 
-test('real DOM reader extracts only approved visible cards and keeps message bodies behind explicit scope',()=>{
+test('real DOM reader extracts approved visible Today cards without controls or message bodies',()=>{
   function element(tag,text='',children=[]){const el={nodeType:1,tagName:tag.toUpperCase(),textContent:text,innerText:text,children,childNodes:children.length?children:[{nodeType:3,textContent:text}],offsetWidth:10,offsetHeight:10,getClientRects:()=>[{}],getAttribute:()=>null,matches:selector=>selector.split(',').some(s=>s.trim()===tag),querySelector:()=>null,querySelectorAll:()=>[],classList:{contains:()=>false}};return el;}
   const name=element('div','Synthetic Alpha'),email=element('div','alpha@example.test');let open=false;
   const account=element('button');account.getAttribute=()=>open?'true':'false';account.click=()=>{open=!open;};
   const menu=element('div');menu.querySelector=s=>s==='.avdname'?name:s==='.avdemail'?email:s.startsWith('form[')?element('form'):null;
-  function card(heading,text,project=false,collapsed=false){const h=element('h3',heading),el=element('div','',[h,element('p',text),element('form','SENSITIVE-FORM'),element('script','SCRIPT-INSTRUCTION')]);el.classList.contains=c=>c==='card'||c==='collapsed'&&collapsed;el.querySelector=s=>s==='h2,h3'?h:s.startsWith('a[')&&project?element('a'):null;return el;}
-  const content={children:[card('Aurora · Read the brief','Fictional project body',true),card('Other teams on this project','UNRELATED-TEAM'),card('Standing & grade','PRIVATE-GRADE'),card('Your team','COLLAPSED-TEAM',false,true)]};
-  const badge=element('button','Messages 3');
-  content.querySelector=()=>null;content.querySelectorAll=selector=>selector===':scope > .card'?content.children:[];
-  const context={URL,location:{origin:'https://capstone.cs.fiu.edu',href:'https://capstone.cs.fiu.edu/portal',pathname:'/portal',search:''},performance:{timeOrigin:2,getEntriesByType:()=>[{responseStatus:200,transferSize:200,workerStart:0}]},navigator:{},getComputedStyle:()=>({visibility:'visible'}),document:{activeElement:{matches:()=>false},querySelector:s=>s.startsWith('button[')?account:s==='main .sidebar .nav-item.on'?element('button','Overview'):s==='#pubavdrop.open'&&open?menu:s==='main #cmain'?content:null,querySelectorAll:()=>[badge]}};
-  const result=vm.runInNewContext('('+readPortalDom.toString()+')("Overview")',context);
-  assert.equal(result.state,'verified');assert.equal(result.records.length,1);assert.match(result.records[0].text,/Fictional project/);assert.equal(result.records[0].section,'Overview');
-  assert.doesNotMatch(JSON.stringify(result),/SENSITIVE-FORM|SCRIPT-INSTRUCTION|UNRELATED-TEAM|PRIVATE-GRADE|COLLAPSED-TEAM/);
-  assert.match(readPortalDom.toString(),/messageContent.*selected-conversation/);
-  assert.match(readPortalDom.toString(),/if\(messageContent\)/);
-  assert.match(readPortalDom.toString(),/#csMsgs \.cs-msg/);
-  context.location.pathname='/admin';assert.equal(vm.runInNewContext('('+readPortalDom.toString()+')("Overview")',context).state,'connection-lost');
+  function card(heading,text){const h=element('h3',heading),el=element('div','',[h,element('p',text),element('form','SENSITIVE-FORM'),element('script','SCRIPT-INSTRUCTION')]);el.classList.contains=c=>c==='card';el.querySelector=s=>s==='h1,h2,h3,h4'?h:null;return el;}
+  const content={children:[card('Aurora project','Fictional project body')]};
+  content.querySelector=()=>null;content.querySelectorAll=selector=>selector==='.hero,.card,.list'?content.children:[];
+  const body=element('body');body.querySelector=content.querySelector;body.querySelectorAll=content.querySelectorAll;
+  const context={URL,location:{origin:'https://capstone.cs.fiu.edu',href:'https://capstone.cs.fiu.edu/today',pathname:'/today',search:''},performance:{timeOrigin:2,getEntriesByType:()=>[{responseStatus:200,transferSize:200,workerStart:0}]},navigator:{},getComputedStyle:()=>({visibility:'visible'}),document:{body,activeElement:{matches:()=>false},querySelector:s=>s.startsWith('button[')?account:s==='#pubavdrop.open'&&open?menu:s==='main'?content:null,querySelectorAll:()=>[]}};
+  const result=vm.runInNewContext('('+readPortalDom.toString()+')("Today")',context);
+  assert.equal(result.state,'verified');assert.equal(result.records.length,1);assert.match(result.records[0].text,/Fictional project/);assert.equal(result.records[0].section,'Today');
+  assert.doesNotMatch(JSON.stringify(result),/SENSITIVE-FORM|SCRIPT-INSTRUCTION/);
+  assert.doesNotMatch(readPortalDom.toString(),/messageContent|#csMsgs \.cs-msg/);
+  context.location.pathname='/admin';assert.equal(vm.runInNewContext('('+readPortalDom.toString()+')("Today")',context).state,'connection-lost');
 });
-test('Grade past-term disclosure is read temporarily and restored to its original state',()=>{
-  function element(tag,text='',children=[]){return{nodeType:1,tagName:tag.toUpperCase(),textContent:text,innerText:text,children,childNodes:children.length?children:[{nodeType:3,textContent:text}],offsetWidth:10,offsetHeight:10,getClientRects:()=>[{}],getAttribute:()=>null,matches:selector=>selector.split(',').some(part=>part.trim().toLowerCase()===tag.toLowerCase()),querySelector:()=>null,querySelectorAll:()=>[],classList:{contains:()=>false}};}
-  const heading=element('h3','Current grade'),card=element('div','',[heading,element('p','Fictional current total 80 points')]);card.querySelector=selector=>selector==='h2,h3,h4'?heading:null;
-  const summary=element('summary','Past term'),detail=element('details','',[summary,element('p','Fictional prior term total 70 points')]);detail.open=false;detail.querySelector=selector=>selector==='summary'?summary:null;
-  const gradeRoot={querySelectorAll:selector=>selector===':scope > .card,.card'?[card]:selector==='details.gpast'?[detail]:[]};
-  const content={querySelector:selector=>selector==='#mygradebox'?gradeRoot:null};
-  const active=element('button','Grade');const context={location:{origin:'https://capstone.cs.fiu.edu',pathname:'/portal',search:''},getComputedStyle:()=>({visibility:'visible'}),document:{activeElement:{matches:()=>false},querySelector:selector=>selector==='main .sidebar .nav-item.on'?active:selector==='main #cmain'?content:null}};
+test('Grade remains navigable but its values are never queried or extracted',()=>{
+  const active={textContent:'Grade'};let contentQueried=false;
+  const context={location:{origin:'https://capstone.cs.fiu.edu',pathname:'/portal',search:''},document:{activeElement:{matches:()=>false},querySelector:selector=>{if(selector==='main .sidebar .nav-item.on')return active;if(selector==='main #cmain')contentQueried=true;return null;}}};
   const result=vm.runInNewContext('('+readPortalSection.toString()+')("Grade")',context);
-  assert.equal(result.state,'verified');assert.equal(detail.open,false);assert.ok(result.records.some(record=>record.kind==='past-grade'&&/prior term/.test(record.text)));
+  assert.equal(result.state,'verified');assert.deepEqual([...result.records],[]);assert.match(result.coverage,/navigation-only/i);assert.equal(contentQueried,false);
 });
 test('local HTTP requires Host/Origin/pairing/CSRF, rejects owner IDs and exposes no runtime files',async t=>{
   const f=fixture(),root=await fs.mkdtemp(path.join(os.tmpdir(),'capstone-portal-test-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));await fs.writeFile(path.join(root,'index.html'),'<script src="js/chat/capstone-chat.js" defer></script>');

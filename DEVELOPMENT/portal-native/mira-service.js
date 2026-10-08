@@ -4,14 +4,14 @@ const { PORTAL_ORIGIN } = require("../js/shared/portal-navigation");
 const { PortalNativeError, validateHostAdapter } = require("./host-adapter");
 
 const PRIVATE_TTL = 5 * 60 * 1000;
-const allowedKinds = new Set(["profile","project","team","team-member","classmate","alumni","leadership","product-owner","dates","assignment","sprint","sprint-board","task","ceremony","standup","schedule","standing","standing-trend","grade","past-grade","messages","message-content","onboarding","connection","opportunity","team-contact","ai-anchor","record","showcase","letter","letter-guidance","resource","resource-link","brand"]);
-const scope={allowedOrigins:[PORTAL_ORIGIN],allowedPaths:["/portal","/static/templates/","/resources","/projects","/tutorials","/showcase/resources/"],excludedPaths:[]};
+const allowedKinds = new Set(["profile","project","team","team-member","classmate","alumni","leadership","product-owner","dates","assignment","sprint","sprint-board","task","ceremony","standup","schedule","standing","standing-trend","messages","message-content","onboarding","connection","opportunity","team-contact","ai-anchor","record","showcase","letter","letter-guidance","resource","resource-link","brand"]);
+const scope={allowedOrigins:[PORTAL_ORIGIN],allowedPaths:["/portal","/today","/inbox","/board","/meetings","/this-term","/people","/me/rhythm","/recognition","/me/privacy","/static/templates/","/resources","/projects","/tutorials","/showcase/resources/"],excludedPaths:[]};
 
 function safeDestination(value) {
   try {
     const url = new URL(value);
     if (url.origin !== PORTAL_ORIGIN || url.username || url.password) return null;
-    if (url.pathname === "/portal" || url.pathname === "/resources" || url.pathname === "/projects" || url.pathname === "/tutorials" || url.pathname.startsWith("/static/templates/") || url.pathname.startsWith("/showcase/resources/")) return url.href;
+    if (["/portal","/today","/inbox","/board","/meetings","/this-term","/people","/me/rhythm","/recognition","/me/privacy","/resources","/projects","/tutorials"].includes(url.pathname) || url.pathname.startsWith("/static/templates/") || url.pathname.startsWith("/showcase/resources/")) return url.href;
   } catch {}
   return null;
 }
@@ -86,9 +86,17 @@ class PortalNativeMira {
     if(existing)return existing;
     const source=await this.capability(section);
     if(!source)throw new PortalNativeError("source-unavailable","The current account does not expose an approved "+section+" source.");
-    if(section==="Messages"&&this.messageContent&&!source.messageContentReadable)throw new PortalNativeError("message-content-unavailable","Message content is outside the approved read scope. Open Messages yourself to review it.");
     const generation=this.generation,binding=this.binding;
-    const loaded=await this.adapter.readAuthorizedSection({sourceId:source.id,section,messageContent:section==="Messages"&&this.messageContent,purpose:"mira-answer"});
+    if(section==="Grade"){
+      const resolved=await this.adapter.resolveSourceDestination({sourceId:source.id,section});
+      const url=safeDestination(resolved?.url);
+      if(!url||!["exact-section","parent-only"].includes(resolved?.capability))throw new PortalNativeError("destination-unavailable","The portal did not provide a safe destination for this source.");
+      const retrievedAt=this.now(),expiresAt=retrievedAt+PRIVATE_TTL;
+      const snapshot={sourceId:source.id,section,binding,retrievedAt,expiresAt,records:[],destination:{...resolved,url}};
+      this.snapshots.set(source.id,snapshot);
+      return snapshot;
+    }
+    const loaded=await this.adapter.readAuthorizedSection({sourceId:source.id,section,messageContent:false,purpose:"mira-answer"});
     if(generation!==this.generation||binding!==this.binding)throw new PortalNativeError("session-changed","The portal session changed before the read completed.");
     if(!loaded||loaded.sessionBinding!==binding||loaded.section!==section||!Array.isArray(loaded.records))throw new PortalNativeError("source-verification-failed","The portal could not verify this source for the current session.");
     const resolved=await this.adapter.resolveSourceDestination({sourceId:source.id,section});

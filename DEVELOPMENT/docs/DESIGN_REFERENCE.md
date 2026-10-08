@@ -1,5 +1,7 @@
 # Capstone portal design reference
 
+October 8, 2026 candidate refresh: MIRA now defines shared audited tokens for FIU navy `#081E3F`, gold `#D1A644`, dark canvas `#0B1426`, dark cards `#111D33`, border `#24365A`, primary text `#E6EBF3`, muted text `#A3B0C4`, success `#2E7D4F`, and warning `#9A6212`. Mulish, approximately 15px/24px body text, 8px controls, 10px cards, 4px badges, pill controls, consistent focus treatment, and denser staff surfaces align the prototype with the current portal without copying its stylesheet or administrative controls. MIRA-specific chat, source/evidence, privacy, temporary-information, and staff-workflow patterns remain distinct. Responsive acceptance covers desktop, 390px, and 320px.
+
 The current assistant brand is **MIRA (Messaging, Information & Resolution Assistant)**. The unchanged technical Ocelot folder may still contain the previous project name.
 
 Inspected in Chrome on September 10, 2026. This prototype mirrors the **signed-in portal's light workspace**, not the public homepage's dark promotional layout. The live site was not modified. No student profiles, account photos, grades, messages, or other private portal content were copied into the project.

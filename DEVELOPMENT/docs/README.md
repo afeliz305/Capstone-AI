@@ -2,6 +2,8 @@
 
 Current rename/release authority: [MIRA rename and Supabase migration plan](MIRA_RENAME_AND_SUPABASE_MIGRATION.md). It records the `/MIRA/` package, read-only Supabase audit, Staff Queue profile design, exact post-approval migration sequence, tests, and actions intentionally not performed. Dated documents may retain old paths where historically accurate.
 
+October 8 retrieval, context, current-portal-selector, visual-density, and support-validation work is recorded in the [19-issue team retest](TEAM_RETEST_2026-10-08.md). It is the current acceptance record for Michael's and Rome's reported cases. Publication remains a separate step.
+
 ## Upload and test
 
 - [Supabase setup and MIRA password recovery](SUPABASE_SETUP.md#forgot-your-mira-staff-password) - exact recovery callback, pending dashboard/email-template owner actions, safe reset behavior, signed-in password change, and staff authorization boundary.

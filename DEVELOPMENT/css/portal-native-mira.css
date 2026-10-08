@@ -1,3 +1,29 @@
-.mira-native-launcher{position:fixed;right:1.25rem;bottom:1.25rem;z-index:1000;border:1px solid #d9a928;border-radius:999px;background:#081e3f;color:#fff;font:700 1rem Mulish,system-ui,sans-serif;padding:.8rem 1.15rem;box-shadow:0 .5rem 1.5rem #081e3f33;cursor:pointer}
-.mira-native-panel{position:fixed;right:1.25rem;bottom:1.25rem;z-index:1000;width:min(25rem,calc(100vw - 2rem));max-height:min(42rem,calc(100vh - 2rem));overflow:auto;border:1px solid #d9a928;border-radius:1rem;background:#fff;color:#081e3f;box-shadow:0 .8rem 2rem #081e3f38;font:400 .95rem/1.5 Mulish,system-ui,sans-serif}
-.mira-native-header{position:sticky;top:0;display:flex;justify-content:space-between;gap:1rem;align-items:center;background:#081e3f;color:#fff;padding:1rem}.mira-native-close,.mira-native-submit,.mira-native-source-link{border:1px solid #c9d4e4;border-radius:.6rem;background:#fff;color:#0b4b8c;font:inherit;font-weight:700;padding:.55rem .75rem;cursor:pointer}.mira-native-status,.mira-native-note{color:#51647d;padding:0 1rem}.mira-native-log{display:grid;gap:.75rem;padding:1rem}.mira-native-message{border-radius:.75rem;background:#f3f6fa;padding:.8rem}.mira-native-message.user{background:#e8f0fb}.mira-native-label{display:block;color:#51647d;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.mira-native-source{display:grid;gap:.5rem;margin-top:.75rem;border-left:.2rem solid #d9a928;padding-left:.75rem}.mira-native-source blockquote{margin:0;white-space:pre-wrap}.mira-native-form{position:sticky;bottom:0;display:grid;grid-template-columns:1fr auto;gap:.5rem;background:#fff;padding:1rem}.mira-native-input{min-height:3.5rem;resize:vertical;border:1px solid #aebcd0;border-radius:.6rem;padding:.65rem;font:inherit}@media(max-width:32rem){.mira-native-panel{right:0;bottom:0;width:100vw;max-height:100vh;border-radius:0}.mira-native-launcher{right:.75rem;bottom:.75rem}}
+:root {
+  --mira-navy: #081e3f;
+  --mira-gold: #d1a644;
+  --mira-dark-canvas: #0b1426;
+  --mira-dark-card: #111d33;
+  --mira-border: #24365a;
+  --mira-text-dark: #e6ebf3;
+  --mira-muted-dark: #a3b0c4;
+  --mira-success: #2e7d4f;
+  --mira-warning: #9a6212;
+  --mira-control-radius: 8px;
+  --mira-card-radius: 10px;
+  --mira-pill-radius: 999px;
+}
+.mira-native-launcher { position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 1000; border: 1px solid var(--mira-gold); border-radius: var(--mira-pill-radius); background: var(--mira-navy); color: #fff; font: 700 1rem/1.5 Mulish,system-ui,sans-serif; padding: .75rem 1rem; box-shadow: 0 .5rem 1.5rem #081e3f33; cursor: pointer; }
+.mira-native-panel { position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 1000; width: min(25rem,calc(100vw - 2rem)); max-height: min(42rem,calc(100vh - 2rem)); overflow: auto; border: 1px solid var(--mira-border); border-radius: var(--mira-card-radius); background: #fff; color: var(--mira-navy); box-shadow: 0 .8rem 2rem #081e3f38; font: 400 15px/24px Mulish,system-ui,sans-serif; }
+.mira-native-header { position: sticky; top: 0; display: flex; justify-content: space-between; gap: 1rem; align-items: center; background: var(--mira-navy); color: var(--mira-text-dark); padding: .875rem 1rem; }
+.mira-native-close,.mira-native-submit,.mira-native-source-link { border: 1px solid #c9d4e4; border-radius: var(--mira-control-radius); background: #fff; color: #0b4b8c; font: inherit; font-weight: 700; padding: .5rem .7rem; cursor: pointer; }
+.mira-native-status,.mira-native-note { color: #51647d; padding: 0 1rem; }
+.mira-native-log { display: grid; gap: .75rem; padding: 1rem; }
+.mira-native-message { border-radius: var(--mira-control-radius); background: #f3f6fa; padding: .8rem; }
+.mira-native-message.user { background: #e8f0fb; }
+.mira-native-label { display: block; color: #51647d; font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.mira-native-source { display: grid; gap: .5rem; margin-top: .75rem; border-left: .2rem solid var(--mira-gold); padding-left: .75rem; }
+.mira-native-source blockquote { margin: 0; white-space: pre-wrap; }
+.mira-native-form { position: sticky; bottom: 0; display: grid; grid-template-columns: 1fr auto; gap: .5rem; background: #fff; padding: 1rem; }
+.mira-native-input { min-height: 3.5rem; resize: vertical; border: 1px solid #aebcd0; border-radius: var(--mira-control-radius); padding: .65rem; font: inherit; }
+.mira-native-launcher:focus-visible,.mira-native-close:focus-visible,.mira-native-submit:focus-visible,.mira-native-source-link:focus-visible,.mira-native-input:focus-visible { outline: 3px solid #00b7d5; outline-offset: 2px; }
+@media(max-width:32rem) { .mira-native-panel { right: 0; bottom: 0; width: 100vw; max-height: 100vh; border-radius: 0; } .mira-native-launcher { right: .75rem; bottom: .75rem; } }

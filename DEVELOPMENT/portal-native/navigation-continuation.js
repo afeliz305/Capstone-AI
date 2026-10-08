@@ -2,6 +2,9 @@ const { PORTAL_ORIGIN, PORTAL_URL, destinations, resolvePortalDestination } = re
 const { PortalNativeError, validateHostAdapter } = require("./host-adapter");
 
 const byView = new Map(Object.values(destinations).filter(item => item.viewId).map(item => [item.viewId, item]));
+const byPath = new Map(Object.values(destinations).filter(item => {
+  try { const url=new URL(item.url); return url.origin===PORTAL_ORIGIN&&url.pathname!=="/portal"; } catch { return false; }
+}).map(item => [new URL(item.url).pathname, item]));
 
 function assistantFlag(value) {
   return value === "1" || value === 1 || value === true;
@@ -9,7 +12,10 @@ function assistantFlag(value) {
 
 function readDestination(locationLike) {
   const url = new URL(locationLike.href || String(locationLike), PORTAL_URL);
-  if (url.origin !== PORTAL_ORIGIN || url.pathname !== "/portal") return null;
+  if (url.origin !== PORTAL_ORIGIN || url.username || url.password) return null;
+  const standalone=byPath.get(url.pathname);
+  if(standalone){if([...url.searchParams.keys()].some(key=>key!=="assistant"))return null;return { sectionId:standalone.id, section:standalone.label, viewId:null, assistant:assistantFlag(url.searchParams.get("assistant")) };}
+  if(url.pathname!=="/portal")return null;
   const sectionId = url.searchParams.get("section");
   const fromQuery = sectionId ? resolvePortalDestination(sectionId) : null;
   const viewId = url.hash.slice(1).split("/")[0];
@@ -30,6 +36,8 @@ function buildVerifiedLink(sectionId) {
 function buildOwnerContinuation(sectionId, { assistant=false } = {}) {
   const destination = resolvePortalDestination(sectionId);
   if (!destination || destination.navigationCapability !== "exact-section") return null;
+  const exact=new URL(destination.url);
+  if(exact.pathname!=="/portal")return exact.pathname+(assistant?"?assistant=1":"");
   const query = new URLSearchParams({ section:destination.id });
   if (assistant) query.set("assistant", "1");
   return "/portal?" + query + "#" + destination.viewId;
@@ -39,7 +47,7 @@ function validateOwnerContinuation(value) {
   if (typeof value !== "string" || value.length > 180 || /[\u0000-\u001f]/.test(value)) return null;
   let url;
   try { url = new URL(value, PORTAL_ORIGIN); } catch { return null; }
-  if (url.origin !== PORTAL_ORIGIN || url.pathname !== "/portal" || url.username || url.password) return null;
+  if (url.origin !== PORTAL_ORIGIN || url.username || url.password || [...url.searchParams.keys()].some(key=>key!=="assistant"&&key!=="section")) return null;
   const destination = readDestination(url);
   return destination ? buildOwnerContinuation(destination.sectionId, { assistant:destination.assistant }) : null;
 }

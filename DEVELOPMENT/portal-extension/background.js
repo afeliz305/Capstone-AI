@@ -1,4 +1,6 @@
 const HELPER='http://127.0.0.1:3005',PORTAL_PATTERN='https://capstone.cs.fiu.edu/*',SCRIPT_ID='mira-portal-content',ALARM='mira-portal-wake';
+const PORTAL_PATHS=new Set(['/portal','/today','/inbox','/board','/meetings','/this-term','/people','/me/rhythm','/recognition','/me/privacy']);
+const STANDALONE={Today:'/today',Inbox:'/inbox',Board:'/board',Meetings:'/meetings','Projects this term':'/this-term',People:'/people','My rhythm':'/me/rhythm',Recognition:'/recognition','Profile and privacy':'/me/privacy'};
 let pollPromise=null,timer=null;
 const local={get:keys=>chrome.storage.local.get(keys),set:value=>chrome.storage.local.set(value),remove:keys=>chrome.storage.local.remove(keys)};
 
@@ -17,8 +19,17 @@ async function helper(path,data,authenticated=true){
   const response=await fetch(HELPER+'/__mira_extension/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store'});
   const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'helper-unavailable');return result;
 }
-async function exactPortalTab(tabId){const tab=await chrome.tabs.get(tabId);try{const url=new URL(tab.url);return url.origin==='https://capstone.cs.fiu.edu'&&url.pathname==='/portal'&&!url.search?tab:null;}catch{return null;}}
+async function exactPortalTab(tabId){const tab=await chrome.tabs.get(tabId);try{const url=new URL(tab.url);return url.origin==='https://capstone.cs.fiu.edu'&&PORTAL_PATHS.has(url.pathname)&&!url.search?tab:null;}catch{return null;}}
 async function send(tabId,operation,payload={}){const tab=await exactPortalTab(tabId);if(!tab)throw new Error('portal-tab-unavailable');return chrome.tabs.sendMessage(tabId,{channel:'mira-portal',operation,payload});}
+async function waitForTab(tabId,pathname){
+  for(let attempt=0;attempt<80;attempt++){const tab=await chrome.tabs.get(tabId);try{const url=new URL(tab.url);if(tab.status==='complete'&&url.origin==='https://capstone.cs.fiu.edu'&&url.pathname===pathname&&!url.search)return;}catch{}await new Promise(resolve=>setTimeout(resolve,100));}
+  throw new Error('portal-route-unavailable');
+}
+async function sendSection(tabId,operation,payload={}){
+  const section=payload.section,route=STANDALONE[section];
+  if(route){const tab=await exactPortalTab(tabId);if(!tab||new URL(tab.url).pathname!==route){await chrome.tabs.update(tabId,{url:'https://capstone.cs.fiu.edu'+route});await waitForTab(tabId,route);}}
+  return send(tabId,operation,{...payload,messageContent:'metadata-only'});
+}
 async function execute(command){
   if(command.name==='discover'){
     const tabs=await chrome.tabs.query({url:PORTAL_PATTERN}),eligible=[];
@@ -28,9 +39,9 @@ async function execute(command){
   const tabId=command.payload?.tabId;if(!Number.isSafeInteger(tabId))throw new Error('portal-tab-unavailable');
   if(command.name==='identity')return(await send(tabId,'identity')).value;
   if(command.name==='capabilities')return(await send(tabId,'capabilities')).value;
-  if(command.name==='section')return(await send(tabId,'section',command.payload)).value;
+  if(command.name==='section')return(await sendSection(tabId,'section',command.payload)).value;
   if(command.name==='active')return(await send(tabId,'active',command.payload)).value;
-  if(command.name==='open')return(await send(tabId,'open',command.payload)).value;
+  if(command.name==='open')return(await sendSection(tabId,'open',command.payload)).value;
   throw new Error('operation-denied');
 }
 async function runPoll(){
@@ -63,5 +74,5 @@ chrome.permissions.onRemoved.addListener(permissions=>{if(permissions.origins?.i
 chrome.runtime.onStartup.addListener(()=>{void register().then(()=>poll());});
 chrome.runtime.onInstalled.addListener(()=>{void restrictStorage().then(()=>register()).then(()=>poll());});
 chrome.alarms.onAlarm.addListener(alarm=>{if(alarm.name===ALARM)void poll();});
-chrome.tabs.onUpdated.addListener((_id,change)=>{if(change.url?.startsWith('https://capstone.cs.fiu.edu/portal'))void poll();});
+chrome.tabs.onUpdated.addListener((_id,change)=>{if(change.url?.startsWith('https://capstone.cs.fiu.edu/'))void poll();});
 void restrictStorage();chrome.alarms.create(ALARM,{periodInMinutes:0.5});void register().then(()=>poll());

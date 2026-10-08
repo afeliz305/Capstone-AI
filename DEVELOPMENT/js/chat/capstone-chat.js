@@ -35,11 +35,31 @@
   }) || null;
   const attachmentPolicy = window.CapstoneAttachmentPolicy;
   const contactPolicy = window.CapstoneContactPolicy;
+  const requesterEmail = supportForm?.elements?.email;
+  const requesterEmailError = document.querySelector("#request-email-error");
   const contactFields = contactPolicy.bindContactFields({
     method: document.querySelector("#request-contact-method"),
     phone: document.querySelector("#request-contact-phone"),
     phoneField: document.querySelector("#request-phone-field")
   });
+  function clearRequesterEmailError() {
+    requesterEmail?.setCustomValidity("");
+    requesterEmail?.setAttribute("aria-invalid", "false");
+    if (requesterEmailError) { requesterEmailError.textContent = ""; requesterEmailError.hidden = true; }
+  }
+  function validateRequesterEmail({ showEmpty = true } = {}) {
+    if (!requesterEmail || requesterEmail.disabled || requesterEmail.readOnly) { clearRequesterEmailError(); return true; }
+    const value = String(requesterEmail.value || "").trim();
+    if (value && contactPolicy.validEmail(value)) { clearRequesterEmailError(); return true; }
+    if (!value && !showEmpty) return false;
+    const message = value ? "Enter a valid requester email, such as name@example.edu." : "Enter your FIU email.";
+    requesterEmail.setCustomValidity(message);
+    requesterEmail.setAttribute("aria-invalid", "true");
+    if (requesterEmailError) { requesterEmailError.textContent = message; requesterEmailError.hidden = false; }
+    return false;
+  }
+  requesterEmail?.addEventListener("blur", () => validateRequesterEmail());
+  requesterEmail?.addEventListener("input", () => { if (contactPolicy.validEmail(String(requesterEmail.value || "").trim())) clearRequesterEmailError(); });
   let selectedAttachments = [];
   const conversation = [];
   let lastQuestion = "";
@@ -54,12 +74,47 @@
   let lastQuestionPrivate = false;
   let sharedRoutingLock = false;
   let sharedExpiryTimer = null;
+  const topicHistory = [];
+  const HISTORY_KEY = "miraPublicState";
+
+  function safePublicTopic(value) {
+    const ids=String(value||"").split(",").filter(id=>/^[a-z0-9][a-z0-9-]{0,99}$/.test(id)&&!id.startsWith("shared-")&&!id.startsWith("private-")).slice(0,5);
+    return ids.join(",");
+  }
+
+  function writePublicHistory() {
+    if(window.CapstonePortal||sharedStore?.status().activeMode)return;
+    const history=window.history;
+    if(!history?.replaceState)return;
+    const state=history.state&&typeof history.state==="object"?history.state:{};
+    history.replaceState({...state,[HISTORY_KEY]:{version:1,open:!chatPanel.hidden,lastTopic:safePublicTopic(lastTopic),topics:topicHistory.map(safePublicTopic).filter(Boolean).slice(-2)}},"",window.location?.href);
+  }
+
+  function rememberTopic(value,{sensitive=false}={}) {
+    lastTopic=String(value||"");
+    if(sensitive)return;
+    const safe=safePublicTopic(lastTopic);
+    if(!safe)return;
+    const existing=topicHistory.indexOf(safe);if(existing>=0)topicHistory.splice(existing,1);
+    topicHistory.push(safe);while(topicHistory.length>2)topicHistory.shift();
+    writePublicHistory();
+  }
+
+  function restorePublicHistory() {
+    if(window.CapstonePortal||sharedStore?.status().activeMode)return;
+    const saved=window.history?.state?.[HISTORY_KEY];
+    if(!saved||saved.version!==1)return;
+    topicHistory.splice(0,topicHistory.length,...(Array.isArray(saved.topics)?saved.topics.map(safePublicTopic).filter(Boolean).slice(-2):[]));
+    lastTopic=safePublicTopic(saved.lastTopic)||topicHistory.at(-1)||"";
+    if(saved.open){chatPanel.hidden=false;launcher.hidden=true;openButtons.forEach(button=>button.setAttribute("aria-expanded","true"));}
+  }
 
   function openChat() {
     chatPanel.hidden = false;
     launcher.hidden = true;
     openButtons.forEach((button) => button.setAttribute("aria-expanded", "true"));
     (input.disabled ? chatPanel : input).focus({ preventScroll: true });
+    writePublicHistory();
   }
 
   function minimizeChat() {
@@ -67,6 +122,7 @@
     launcher.hidden = false;
     openButtons.forEach((button) => button.setAttribute("aria-expanded", "false"));
     launcher.focus({ preventScroll: true });
+    writePublicHistory();
   }
 
   openButtons.forEach((button) => button.addEventListener("click", openChat));
@@ -145,7 +201,7 @@
     try {
       const url = new URL(match.url);
       return !url.username && !url.password && (
-        (url.origin === "https://capstone.cs.fiu.edu" && url.pathname === "/portal") ||
+        (url.origin === "https://capstone.cs.fiu.edu" && ["/portal","/today","/inbox","/board","/meetings","/this-term","/people","/me/rhythm","/me/privacy","/recognition"].includes(url.pathname) && !url.search) ||
         (url.origin === "https://fiu.instructure.com" && url.pathname === "/courses/262782" && !url.search && !url.hash)
       );
     } catch { return false; }
@@ -217,6 +273,7 @@
     lastQuestion = "";
     lastQuestionPrivate = false;
     lastTopic = "";
+    topicHistory.length = 0;
     input.disabled = false;
     form.querySelector("button[type='submit']").disabled = false;
     input.value = "";
@@ -309,7 +366,7 @@
     const sample=result.mode==="sample";
     const note=sample?"Sample data — not your account · fictional browser-memory source":"Based only on user-provided, unverified text · not a live account connection";
     const message=addAssistantText(result.answer,note,{sensitive:true});
-    lastTopic=(result.sources||[]).map(source=>source.sourceId).join(",");
+    rememberTopic((result.sources||[]).map(source=>source.sourceId).join(","),{sensitive:true});
     for(const source of result.sources||[]){
       const section=createElement("section","shared-evidence");
       section.append(
@@ -339,6 +396,7 @@
     for (const field of [supportForm.elements.name, supportForm.elements.email]) {
       field.readOnly = accountBusy || submittingTicket || currentSession?.status !== "guest";
     }
+    if (requesterEmail.readOnly) clearRequesterEmailError();
     for (const button of [sampleStart, sampleEnd, accountRetry]) {
       button.disabled = accountBusy || submittingTicket;
     }
@@ -496,7 +554,7 @@
 
   function renderAnswer(match, links = [], result = {}) {
     const answerMatches = (result.matches || [match]).filter(item => item && typeof item.id === "string").slice(0, 5);
-    lastTopic = answerMatches.map(item => item.id).join(",") || match.id;
+    rememberTopic(answerMatches.map(item => item.id).join(",") || match.id);
     const message = addAssistantText(match.answer);
     addKeywordLinks(message, links);
     if (!links.some(link => link.id === match.id && link.url === match.url && isCapstoneUrl(link.url) && link.keywords?.length)) {
@@ -547,7 +605,6 @@
   }
 
   function renderUnmatched(links = [], scopeNote) {
-    lastTopic = "";
     const message = addAssistantText(
       "I couldn’t find that answer in the approved Capstone content.",
       scopeNote || "Try a course topic, sprint number, or syllabus question. For course questions, contact the instructor through Canvas Inbox. You can also create a prototype support request."
@@ -577,7 +634,7 @@
   function renderIndexed(result, question) {
     const sources = (result.sources || []).slice(0,5).filter(source => indexedLink(source,result));
     const offeredSourceIds = sources.map(source => source.id).join(",");
-    lastTopic = offeredSourceIds;
+    rememberTopic(offeredSourceIds);
     const message = addAssistantText(result.answer,"Indexed website · source excerpts · no AI generation or live check");
     const choices = result.answerStatus === "clarification_needed";
     for (const source of sources) {
@@ -607,7 +664,7 @@
   function clearPortalConversation() {
     searchSequence++;
     log.replaceChildren();
-    conversation.length = 0; lastTopic = ""; lastQuestion = ""; input.value = "";
+    conversation.length = 0; lastTopic = ""; topicHistory.length=0; lastQuestion = ""; input.value = "";
     input.disabled = false; form.querySelector("button[type='submit']").disabled = false;
   }
   if (window.CapstonePortal) window.addEventListener("capstone-portal-clear",clearPortalConversation);
@@ -619,7 +676,7 @@
     else if(result.publicResult?.status==="matched") renderAnswer(result.publicResult.matches[0],result.publicResult.links||[],result.publicResult);
     const message=addAssistantText(result.answer,"Private portal · source excerpts · not a complete account record");
     const sources=connected?(result.sources||[]).filter(s=>/^private-[a-f0-9]{24}$/.test(s.id)&&s.url==="https://capstone.cs.fiu.edu/portal"):[];
-    lastTopic=sources.map(s=>s.id).join(",");
+    rememberTopic(sources.map(s=>s.id).join(","),{sensitive:true});
     const open=async source=>{
       try {const destination=await window.CapstonePortal.destination(source.id);window.open?.(destination.url,"_blank","noopener,noreferrer");}
       catch {clearPortalConversation();addAssistantText("Your portal source is no longer verified. Reconnect before opening it.");}
@@ -691,13 +748,19 @@
     }
   }
 
-  function submitQuestion(question, contextId = lastTopic) {
+  function contextForQuestion(question) {
+    const text=String(question||"").trim().toLowerCase();
+    if(/^(?:and |also )?(?:what about )?(?:the )?next (?:one|sprint)?[.!?]*$|^(?:where do i get it|where can i get it|where does it say that|take me there|open it|open that|show me that section|when is (?:it|that|this) due|when is the deadline|what is the deadline|how many points(?: is (?:it|that|this))?|what is (?:it|that) worth|tell me more|what does that mean|what should i do|what do i need to do|where (?:do i |should i )?(?:submit|post|upload)(?: (?:it|that|this))?|how (?:is it|is that|am i) graded)[.!?]*$/.test(text))return lastTopic;
+    return "";
+  }
+
+  function submitQuestion(question, contextId) {
     if (input.disabled) return Promise.resolve({ status:"busy", matches:[], links:[] });
     const value = String(question || "").trim().slice(0, 500);
     if (!value) return Promise.resolve({ status: "unmatched", matches: [] });
     openChat();
     input.value = "";
-    return search(value, contextId);
+    return search(value,contextId===undefined?contextForQuestion(value):contextId);
   }
 
   document.querySelectorAll("[data-question]").forEach((button) => {
@@ -760,8 +823,9 @@
     sharedStore.newSession();sharedRoutingLock=false;resetConversation("A new demo session started. No shared or sample information is loaded.",{sensitive:true});refreshSharedUi();
   });
   document.addEventListener?.("visibilitychange",()=>{if(document.visibilityState==="visible")refreshSharedUi();});
-  window.addEventListener?.("pageshow",()=>refreshSharedUi());
+  window.addEventListener?.("pageshow",()=>{restorePublicHistory();refreshSharedUi();});
   window.addEventListener?.("focus",()=>refreshSharedUi());
+  restorePublicHistory();
   refreshSharedUi();
 
   supportDialog?.addEventListener("click", (event) => {
@@ -777,6 +841,12 @@
   supportForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (accountBusy || submittingTicket || !currentSession || currentSession.status === "sign-in-required") return;
+    if (!validateRequesterEmail()) {
+      supportStatus.className = "form-status error";
+      supportStatus.textContent = requesterEmail.validationMessage;
+      requesterEmail.focus();
+      return;
+    }
     const formData = new FormData(supportForm);
     const transcript = conversation.map((item) => `${item.role}: ${item.text}`).join("\n");
     const payload = {
@@ -831,6 +901,7 @@
       window.setTimeout(() => {
         supportDialog.close();
         supportForm.reset();
+        clearRequesterEmailError();
         contactFields.reset();
         selectedAttachments = [];
         attachmentStatus.textContent = "";
