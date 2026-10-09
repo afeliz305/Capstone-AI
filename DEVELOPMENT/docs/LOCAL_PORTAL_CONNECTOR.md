@@ -1,6 +1,6 @@
 # Private portal connector
 
-Updated October 8, 2026. The connector now recognizes the portal's standalone `/today`, `/inbox`, `/board`, `/meetings`, `/this-term`, `/people`, `/me/rhythm`, `/recognition`, and `/me/privacy` routes while preserving verified legacy sections. Current read-only selectors include `.sb-card[data-card-id][data-column-key]`, `.ibc`/`.ibc.un`, `.sb-standup-form`, `.cpanel`, and `.sp-tog`. Inbox remains metadata-only; unsaved form values and workflow controls are excluded. A selector or route failure is reported as unavailable, not as "no tasks" or "no messages." This connector remains local development tooling and is never included in the Ocelot upload package.
+Updated October 9, 2026. The connector recognizes the portal's standalone `/today`, `/board`, `/meetings`, `/inbox`, `/my-work`, `/this-term`, `/people`, `/me/rhythm`, `/recognition`, and `/me/privacy` routes while preserving verified legacy sections. Current selectors and privacy decisions are recorded in [PORTAL_CONTEXT_AUDIT.md](PORTAL_CONTEXT_AUDIT.md). Today, the signed-in user's Board cards, My work, safe Meetings metadata, Inbox metadata, People role relationships, My rhythm, Team, and Standing can be read on demand. Projects this term, Recognition, Profile/privacy, Grade, Classmates, and Alumni remain navigation-only. A selector or route failure is reported as unavailable, not as "no tasks" or "no messages." This connector remains local development tooling and is never included in the Ocelot upload package.
 
 Updated September 26, 2026. This Chrome extension is local development tooling only. It does not connect the hosted Ocelot page and it is excluded from the Ocelot upload package. The preferred zero-install design moves personal MIRA into the authenticated portal; see [the portal-owner handoff](PORTAL_OWNER_HANDOFF.md).
 
@@ -54,18 +54,24 @@ After five minutes, MIRA purges names, records, sources, and bindings but keeps 
 
 The extension worker may suspend. Chrome alarms, startup/install events, and portal-tab updates resume polling. The service worker is never assumed to remain alive. If the helper is unavailable, personal answers fail closed while public course help remains usable.
 
-## Message-content scope
+## Inbox privacy boundary
 
-Message bodies are off by default. In MIRA's connection panel, enable **Read only the conversation I deliberately opened** to allow extraction of messages already visible in the currently selected conversation.
-
-MIRA never selects an unread conversation, opens a thread, scrolls hidden history, changes read state, types, sends, reacts, edits, deletes, or acknowledges. If the user has not deliberately opened the conversation, MIRA reports the limitation and opens only the Messages destination. The connector never claims that visible content is the complete conversation history.
+Inbox extraction is metadata-only: unread indicators and safe channel/category labels. MIRA does not read message bodies, select a conversation, change read state, type, send, react, edit, delete, or acknowledge. Message-body support would require a separate privacy review and explicit authorization; it is not part of this implementation.
 
 ## Dashboard coverage
 
 | Section/source | Discovered | Inspected | Extraction | Search/navigation | Limit |
 | --- | --- | --- | --- | --- | --- |
-| Overview | Yes | Yes | Supported | On demand; verified parent route | Visible profile/project/date/assignment/team/Product Owner/sprint content only. |
-| Messages | Yes | Yes | Metadata; visible selected conversation only when opted in | On demand; manual conversation selection | No auto-open, hidden history, threads, composer, reactions, or actions. |
+| Today | Yes | Yes | Supported | On demand; exact `/today` route | Current sprint/project, own card/next-step, and safe date metadata; broad board preview excluded. |
+| Board | Yes | Yes | Supported for the verified user's cards | On demand; exact `/board` route | Safe card metadata only; workflow controls and unrelated cards excluded. |
+| My work | Yes | Yes | Supported | On demand; exact `/my-work` route | Current sprint/open-work and safe due-state metadata; earlier grade values excluded. |
+| Meetings | Yes | Yes | Safe metadata only | On demand; exact `/meetings` route | Private notes/URLs, calendar secrets, and availability controls excluded. |
+| Inbox | Yes | Yes | Metadata only | On demand; exact `/inbox` route | No message bodies, threads, composer, reactions, read-state changes, or actions. |
+| My rhythm | Yes | Yes | Supported for the verified user | On demand; exact `/me/rhythm` route | Counts/history/next step only; no grade, class comparison, or performance inference. |
+| Projects this term | Yes | Structure only | Intentionally excluded | Exact-route navigation | Broad project/team directory is not indexed; own project context comes from Today/Team. |
+| People | Yes | Yes | Narrow relationship fields | On demand; exact `/people` route | Own team/support roles only; broad directories and unrelated students excluded. |
+| Recognition | Yes | Structure only | Intentionally excluded | Exact-route navigation | Teammate/evaluation information and mutation controls are not indexed. |
+| Profile and privacy | Yes | Structure only | Intentionally excluded | Exact-route navigation | Identifiers, contact details, credentials, and setting values are not indexed. |
 | Start here | Yes | Yes | Supported | On demand; parent route | Visible onboarding instructions/status; forms excluded. |
 | Team | Yes | Yes | Supported | On demand; parent route | Own team, members, leadership, sprint cards, descriptions, owner/size/status, visible criteria and evidence/history. All mutations excluded. |
 | Standing | Yes | Yes | Supported | On demand; parent route | Visible standing/trend and disclosed explanation only. |

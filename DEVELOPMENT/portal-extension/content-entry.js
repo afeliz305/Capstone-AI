@@ -1,7 +1,7 @@
 const {SECTION_ROUTES,canonicalSection,readPortalGuard,readPortalCapabilities,navigatePortalSection,readPortalSection}=require('../server/portal-local/dom-reader');
 
 const PORTAL='https://capstone.cs.fiu.edu/portal';
-const PORTAL_PATHS=new Set(['/portal','/today','/inbox','/board','/meetings','/this-term','/people','/me/rhythm','/recognition','/me/privacy']);
+const PORTAL_PATHS=new Set(['/portal','/today','/inbox','/board','/meetings','/my-work','/this-term','/people','/me/rhythm','/recognition','/me/privacy']);
 const documentId=crypto.randomUUID();
 const exactPortal=()=>location.origin==='https://capstone.cs.fiu.edu'&&PORTAL_PATHS.has(location.pathname)&&!location.search;
 const editing=()=>!!document.activeElement?.matches('input,textarea,select,[contenteditable="true"]');
@@ -26,7 +26,7 @@ async function combinedSection(payload,activeOnly=false){
     if(!payload.navigate)return{state:'section-required',section,message:'The requested section is not currently loaded.'};
     const moved=await navigatePortalSection(section);if(moved.state!=='present')return moved;
   }
-  const extracted=readPortalSection({section});
+  const extracted=readPortalSection({section,identityName:identity.identity.name});
   return{...identity,...extracted,identity:identity.identity,proof:identity.proof,documentId};
 }
 

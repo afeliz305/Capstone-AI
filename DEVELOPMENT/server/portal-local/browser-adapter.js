@@ -4,7 +4,7 @@ const { StdioClientTransport } = require('@modelcontextprotocol/sdk/client/stdio
 const { SECTION_ROUTES, canonicalSection, readPortalGuard, readPortalIdentity, navigatePortalSection, readPortalSection } = require('./dom-reader');
 const PORTAL='https://capstone.cs.fiu.edu/portal';
 const PORTAL_ORIGIN='https://capstone.cs.fiu.edu';
-const PORTAL_PATHS=new Set(['/portal','/today','/inbox','/board','/meetings','/this-term','/people','/me/rhythm','/recognition','/me/privacy']);
+const PORTAL_PATHS=new Set(['/portal','/today','/inbox','/board','/meetings','/my-work','/this-term','/people','/me/rhythm','/recognition','/me/privacy']);
 const APPROVAL_TIMEOUT_MS=Math.min(180000,Math.max(30000,Number(process.env.CAPSTONE_PORTAL_APPROVAL_TIMEOUT_MS)||120000));
 const TOOL_TIMEOUTS={list_pages:APPROVAL_TIMEOUT_MS,evaluate_script:30000,navigate_page:45000};
 function portalUrl(url) { try { const u=new URL(url); return u.origin===PORTAL_ORIGIN&&PORTAL_PATHS.has(u.pathname)&&!u.search&&(!u.hash||u.pathname==='/portal'); } catch { return false; } }
@@ -122,7 +122,7 @@ class BrowserAdapter {
       guard=await this.evaluate(id,readPortalGuard);
     }
     if(guard.active!==section||guard.editable) throw new PortalError('section-unavailable','The approved '+section+' section is not ready for read-only extraction.');
-    const extracted=await this.evaluate(id,readPortalSection,{section,messageContent:'metadata-only'});
+    const extracted=await this.evaluate(id,readPortalSection,{section,identityName:identity.identity.name,messageContent:'metadata-only'});
     if(extracted.state!=='verified') throw new PortalError(extracted.state==='editing-active'?'editing-active':'extraction-failed','The approved '+section+' information could not be read. No cached answer for that section will be used.');
     this.setStage('section-read',{errorType:null});
     return {...identity,...extracted,contextBinding:'chrome-stable:'+id};

@@ -6,7 +6,7 @@
 .chat-launcher-name { color: var(--fiu-gold); font-size: 11px; font-weight: 700; letter-spacing: .04em; }
 .chat-launcher:hover { background: var(--fiu-blue-2); }
 .chat-launcher:focus-visible { outline: 3px solid var(--fiu-cyan); outline-offset: 5px; }
-.chat-panel { width: min(440px,calc(100% - 48px)); min-width: 0; display: grid; grid-template-rows: auto auto minmax(0,1fr) auto; height: min(660px,calc(100dvh - 48px - env(safe-area-inset-top) - env(safe-area-inset-bottom))); margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 16px 56px rgba(8,30,63,.25); overflow: hidden; }
+.chat-panel { width: min(440px,calc(100% - 48px)); min-width: 0; display: grid; grid-template-rows: auto auto auto minmax(0,1fr) auto; height: min(660px,calc(100dvh - 48px - env(safe-area-inset-top) - env(safe-area-inset-bottom))); margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 16px 56px rgba(8,30,63,.25); overflow: hidden; }
 .chat-header { padding: 16px; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); }
 .chat-header-actions { display: flex; gap: 4px; }
 .assistant-avatar { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 11px; color: var(--info); background: var(--info-bg); }
@@ -37,6 +37,9 @@
 .typing-dots span:nth-child(2) { animation-delay: 160ms; }
 .typing-dots span:nth-child(3) { animation-delay: 320ms; }
 @keyframes pulse { to { opacity: .3; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
 .source-card { margin-top: 12px; padding: 10px 12px; display: grid; gap: 3px; border: 1px solid var(--line); border-left: 3px solid var(--fiu-gold); border-radius: 0 11px 11px 0; color: var(--ink); background: var(--surface); text-decoration: none; }
 .source-card:hover { background: var(--warning-bg); }
 .source-card strong { font-size: 14px; font-weight: 800; }
@@ -65,6 +68,11 @@
 .starter-prompts { display: flex; flex-wrap: wrap; gap: 8px; }
 .starter-prompts button { min-height: 40px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 20px; color: var(--info); background: var(--surface); font-size: 14px; font-weight: 700; }
 .starter-prompts button:hover { background: var(--info-bg); border-color: #cbd9eb; }
+.mira-context-actions { padding: 8px 12px; display: flex; align-items: center; gap: 6px; overflow-x: auto; border-bottom: 1px solid var(--line); background: var(--surface); }
+.mira-context-actions button { min-height: 34px; padding: 6px 10px; flex: none; font-size: 12px; white-space: nowrap; }
+.mira-context-actions label { margin-left: auto; color: var(--muted); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.mira-context-actions select { min-height: 34px; padding: 5px 8px; flex: none; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: var(--surface); font: inherit; font-size: 12px; }
+#check-file-field span { display: block; margin-top: 5px; color: var(--muted); font-size: 12px; font-weight: 400; }
 .chat-composer { padding: 16px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; border-top: 1px solid var(--line); background: var(--surface); }
 .chat-composer textarea { width: 100%; min-height: 48px; max-height: 128px; resize: vertical; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--control-radius); color: var(--ink); background: var(--surface); line-height: 1.4; font-size: 16px; }
 .chat-composer textarea::placeholder { color: var(--muted); }

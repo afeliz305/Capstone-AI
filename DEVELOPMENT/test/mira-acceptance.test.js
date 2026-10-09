@@ -12,15 +12,15 @@ const cases=[
   ["What is required for a Sprint Retrospective?","answered","sprint-retrospective-template"],
   ["How often does each team member need to post a stand-up update?","partial","syllabus-attendance"],
   ["What information should be included in a stand-up?","answered","daily-scrum"],
-  ["What does a card need before it can be moved to Verify?","link_only","portal-resources"],
-  ["What does ‘Done’ mean for a sprint card?","link_only","portal-resources"],
+  ["What does a card need before it can be moved to Verify?","partial","faro-board-verify"],
+  ["What does ‘Done’ mean for a sprint card?","partial","faro-board-review-decision"],
   ["Where should Sprint work be submitted or documented?","partial","minutes-usage-guide"],
   ["What should I do if I have a question that MIRA cannot answer from the available Capstone information?","escalation","contact-help"],
-  ["How should acceptance criteria be used when completing a card?","link_only","portal-resources"],
+  ["How should acceptance criteria be used when completing a card?","answered","faro-board-acceptance-criteria"],
   ["Can Professor Sadjadi give me an extension on my assignment?","partial","syllabus-late-work"],
   ["What grade will I receive for this sprint?","partial","syllabus-grading"],
   ["Can you move me to another Capstone team?","escalation","contact-help"],
-  ["Can you approve my card as Done?","escalation","portal-resources"],
+  ["Can you approve my card as Done?","escalation","faro-board-review-decision"],
   ["Can you tell me why another student received a different grade?","privacy_restricted","syllabus-grading"]
 ];
 
@@ -41,8 +41,8 @@ test("natural variants route by intent without turning aliases into policies",()
   const expected=new Map([
     ["When do we have to finish this sprint?","clarification_needed"],
     ["What do I put in my standup?","answered"],
-    ["What is missing before this card can go into verification?","link_only"],
-    ["Can I move this into verification now?","link_only"],
+    ["What is missing before this card can go into verification?","partial"],
+    ["Can I move this into verification now?","partial"],
     ["Where do we upload our sprint work?","partial"],
     ["Who should I ask when you don’t know?","escalation"],
     ["Just guess my grade.","partial"],
@@ -65,7 +65,7 @@ test("review, retrospective, Verify and Done remain distinct and disclose covera
   assert.match(review.matches[0].answer,/Sprint Review/);assert.doesNotMatch(review.matches[0].answer,/detailed.*Retrospective/i);
   assert.match(retro.matches[0].answer,/Sprint Retrospective/);assert.doesNotMatch(retro.matches[0].answer,/Sprint Review/);
   const verify=search("Can I move this into verification now?"),done=search("What does Done mean for a card?");
-  assert.match(verify.missingEvidence,/Not found after inspecting/);assert.match(done.missingEvidence,/Not found after inspecting/);
+  assert.match(verify.missingEvidence,/not a complete course-wide checklist/i);assert.match(done.missingEvidence,/does not define a complete official course Definition of Done/i);
   assert.doesNotMatch(verify.matches[0].answer,/moved|changed successfully|approved/i);
 });
 

@@ -2,14 +2,35 @@ const {randomBytes,createHmac,createHash}=require('node:crypto');
 const {searchIndex}=require('../lib/index-search');
 const {PORTAL,PortalError}=require('./browser-adapter');
 const {SECTION_ROUTES}=require('./dom-reader');
-const {aliases,injected,navigationQuery,publicAuthorityQuery,routeQuestion,usablePublicResult,sectionFor}=require('../lib/portal-intent');
+const {aliases,injected,navigationQuery,publicAuthorityQuery,routeQuestion,usablePublicResult,sectionFor,sectionsFor,publicCompanionQuestion,assistanceIntent}=require('../lib/portal-intent');
+const {normalizeDepth,applyDepth}=require('../../js/shared/mira-guidance');
 const token=()=>randomBytes(24).toString('base64url');
 const PRIVATE_TTL=5*60*1000;
-const privateScope={allowedOrigins:['https://capstone.cs.fiu.edu'],allowedPaths:['/portal','/today','/inbox','/board','/meetings','/this-term','/people','/me/rhythm','/recognition','/me/privacy','/static/templates/','/resources','/projects','/tutorials','/showcase/resources/'],excludedPaths:[]};
+const privateScope={allowedOrigins:['https://capstone.cs.fiu.edu'],allowedPaths:['/portal','/today','/inbox','/board','/meetings','/my-work','/this-term','/people','/me/rhythm','/recognition','/me/privacy','/static/templates/','/resources','/projects','/tutorials','/showcase/resources/'],excludedPaths:[]};
 const allowedSections=new Set(Object.keys(SECTION_ROUTES));
-const allowedKinds=new Set(['profile','project','team','team-member','leadership','product-owner','dates','assignment','sprint','sprint-board','task','ceremony','standup','schedule','standing','standing-trend','messages','message-content','onboarding','connection','opportunity','team-contact','ai-anchor','record','showcase','letter','letter-guidance','resource','resource-link','brand']);
-const privateSourceUrl=value=>{try{const url=new URL(value);if(url.origin!=='https://capstone.cs.fiu.edu'||url.username||url.password||url.search||url.hash)return null;const exact=new Set(['/portal','/today','/inbox','/board','/meetings','/this-term','/people','/me/rhythm','/recognition','/me/privacy','/resources','/projects','/tutorials']);if(exact.has(url.pathname)||url.pathname.startsWith('/static/templates/')||url.pathname.startsWith('/showcase/resources/'))return url.href;return null;}catch{return null;}};
-const suggestions={Today:['What is my project?','What deadlines are coming up?'],Board:['What work is assigned to me?','What acceptance criteria are listed on this card?','What evidence is recorded for this task?','What stand-ups do I need to do?'],Team:['Who is on my team?'],Standing:['What does my standing explanation say?'],Inbox:['Do I have unread messages?'],Meetings:['What ceremonies are coming up?'],Resources:['What does the linked stand-up template require?'],Showcase:['What does my showcase readiness information say?'],Record:['What information is in my Capstone record?']};
+const allowedKinds=new Set(['profile','project','team','team-member','leadership','product-owner','dates','assignment','sprint','sprint-board','task','ceremony','standup','schedule','standing','standing-trend','messages','onboarding','connection','opportunity','team-contact','ai-anchor','record','showcase','letter','letter-guidance','resource','resource-link','brand']);
+const privateSourceUrl=value=>{try{const url=new URL(value);if(url.origin!=='https://capstone.cs.fiu.edu'||url.username||url.password||url.search||url.hash)return null;const exact=new Set(['/portal','/today','/inbox','/board','/meetings','/my-work','/this-term','/people','/me/rhythm','/recognition','/me/privacy','/resources','/projects','/tutorials']);if(exact.has(url.pathname)||url.pathname.startsWith('/static/templates/')||url.pathname.startsWith('/showcase/resources/'))return url.href;return null;}catch{return null;}};
+const suggestions={Today:['Show my Capstone snapshot','What should I do next?'],Board:['What am I working on?','What work do I have open?','What are my acceptance criteria?','Does my evidence mean this card is Done?','Can you check my work?'],'My work':['What work do I have open?','What should I finish?'],'My rhythm':['How many standups have I done this week?','Am I caught up on standups?'],Team:['Who is my Product Owner?','Who should I ask for help?'],Standing:['What does my standing explanation say?'],Inbox:['Do I have unread messages?'],Meetings:['When is my next meeting?'],Resources:['What does the linked stand-up template require?'],Showcase:['What does my showcase readiness information say?'],Record:['What information is in my Capstone record?']};
+
+function recordSource(record,version){return{id:record.id,sourceId:record.id,pageId:record.id,siteId:'private-session',pageTitle:'Your portal Â· '+record.section,sectionTitle:record.heading,url:record.url,anchor:null,excerpt:record.text,truncated:false,indexed_at:record.retrievedAt,last_fetched_at:record.retrievedAt,source_modified_at:record.sourceTimestamp||null,indexVersion:String(version),section:record.section,subview:record.subview,retrievedAt:record.retrievedAt,coverage:record.coverage};}
+function manualResult(records,version,answer,answerStatus='answered'){
+  const sources=records.slice(0,5).map(record=>recordSource(record,version));
+  return{indexed:false,mode:'allowlisted-portal-context',semanticSearch:false,answerStatus,answer,status:answerStatus==='not_found'?'unmatched':'matched',sources,navigation:sources.map(source=>({label:'Open in portal',targetSourceId:source.id,url:source.url})),matches:[],links:[]};
+}
+function firstRecord(records,section,kind){return records.find(record=>record.section===section&&(!kind||record.kind===kind));}
+function snapshotAnswer(records){
+  const row=(label,record)=>label+'\n'+(record?record.text.slice(0,360):'Not available in the currently authorized snapshot.');
+  return['MY CAPSTONE',row('CURRENT SPRINT',firstRecord(records,'Today','project')||firstRecord(records,'My work')),row('NEXT STEP',firstRecord(records,'My rhythm')||firstRecord(records,'Today','task')),row('OPEN / BLOCKED WORK',firstRecord(records,'Board','task')||firstRecord(records,'My work')),row('STANDUPS THIS WEEK',firstRecord(records,'My rhythm')||firstRecord(records,'Today','standup')),row('UPCOMING MEETING',firstRecord(records,'Meetings')),row('UNREAD INBOX',firstRecord(records,'Inbox','messages')),'This is a temporary read-only summary of the verified account. Missing information is not treated as zero or complete.'].join('\n\n');
+}
+function humanHelpAnswer(question){
+  const role=/\bgrade|standing|policy|extension|instructor\b/i.test(question)?'Instructor':/\baccept|review|product owner|requirement\b/i.test(question)?'Product Owner':/\bblocked|blocker|coordination|team|meeting|standup\b/i.test(question)?'Team Leader':'AI Anchor or Team Leader';
+  return['WHY THIS PERSON\n'+role+' is the safest starting role for this question based on its subject.','WHAT CONTEXT WOULD BE SHARED\nOnly the question and the specific source or card details you deliberately include.','WHAT WILL NOT BE SHARED\nNo password, login code, token, unrelated portal record, message body, grade, or another student’s information.','NEXT STEP\nOpen the cited Team/People source, confirm the person and role, then draft or send the message yourself. MIRA has not sent anything.'].join('\n\n');
+}
+function checkWorkAnswer(records,publicResult){
+  const card=records.find(record=>record.section==='Board'&&record.kind==='task');
+  const missing=!card?'MIRA could not identify an authorized current card.':/\u2611\s*0\//.test(card.text)?'The visible card shows zero checked criteria; review each criterion and add evidence before requesting review.':'MIRA cannot confirm that every criterion and required evidence is complete from the visible metadata alone.';
+  return['WHAT THE RULE SAYS\nUse the reviewed acceptance-criteria, evidence, verification, and Product Owner guidance shown with this answer.', 'WHAT MIRA CAN SEE\n'+(card?card.text.slice(0,900):'No current-card metadata was available.'),'WHAT IS STILL MISSING\n'+missing,'NEXT STEP\nOpen the card, compare each criterion with verifiable evidence, then ask the authorized reviewer. MIRA cannot move, approve, verify, or submit the card.'].join('\n\n');
+}
 
 class PortalService{
   constructor({adapter,now=Date.now,publicSearch=async()=>({status:'unmatched',matches:[],links:[]})}){
@@ -91,8 +112,9 @@ class PortalService{
     return{schemaVersion:1,siteId,version:String(this.generation),scope:privateScope,retrieval:{minScore:0.30,minCoverage:0.45,maxResults:3,aliases},pages:items.map(record=>({id:record.id,siteId,url:record.url,status:'active',title:'Your portal · '+record.section+' · '+record.kind,tags:[record.kind,record.section,record.subview],breadcrumbs:[record.section,record.subview],indexedAt:record.retrievedAt,lastFetchedAt:at,sourceModifiedAt:record.sourceTimestamp,chunks:[{id:record.id,url:record.url,status:'active',heading:record.heading,hierarchy:[record.section,record.subview,record.kind,record.heading],text:record.text,blocks:[record.text],anchor:null}]}))};
   }
   empty(owner,note){return{personal:true,indexed:false,status:'unmatched',answerStatus:'not_found',answer:note||'Connect and verify your own portal session first. No personal data was searched.',sources:[],navigation:[],matches:[],links:[],connection:this.status(owner)};}
-  async search(owner,{question,context=''}){
+  async search(owner,{question,context='',depth='quick'}){
     if(typeof question!=='string'||!question.trim()||question.length>500||typeof context!=='string'||context.length>300)throw new PortalError('not-connected','Invalid search request.');
+    depth=normalizeDepth(depth);
     const q=question.trim();if(publicAuthorityQuery(q)||!routeQuestion(q,context))return this.publicSearch(q,context);
     if(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(q)||/\b(?:user|account|student|owner)(?:Id|_id| id)\s*[:=]/i.test(q)||/\b(?:someone else|another student|other student|their account)\b/i.test(q))return this.empty(owner,'Only the verified account in your selected portal tab can be searched. Account identifiers in chat cannot select another user.');
     let state=await this.ensureFresh(owner);if(state.state!=='connected'){
@@ -102,14 +124,24 @@ class PortalService{
     }
     const contextRecords=context.split(',').filter(Boolean).map(id=>this.owned(owner).find(record=>record.id===id)).filter(Boolean);
     if(context.split(',').filter(id=>id.startsWith('private-')).some(id=>!contextRecords.some(record=>record.id===id)))return this.empty(owner,'That private source expired or belongs to a different session. Ask your question again.');
-    const section=sectionFor(q,contextRecords);
-    if(!navigationQuery(q)&&!this.loadedSections().includes(section)){state=await this.loadSection(owner,section);if(state.state!=='connected')return this.empty(owner,state.note);}
+    const sections=sectionsFor(q,contextRecords,this.activeSection).filter(section=>allowedSections.has(section)).slice(0,7),section=sections[0]||sectionFor(q,contextRecords,this.activeSection);
+    if(!navigationQuery(q))for(const requested of sections){if(this.loadedSections().includes(requested))continue;state=await this.loadSection(owner,requested);if(state.state!=='connected')return this.empty(owner,state.note);}
     const generation=this.generation,binding=this.binding,clauses=q.split(/;|\band\s+(?=(?:how|what|when|where|can|does|is|do)\b)/i).slice(0,3),publicClauses=clauses.filter(clause=>!routeQuestion(clause,context));
     const privateText=clauses.filter(clause=>routeQuestion(clause,context)).join('; ')||q;
-    let result=searchIndex(this.index(owner,navigationQuery(q)?null:section),privateText,context);
-    const original=this.owned(owner);const coverage='Temporary local '+section+' snapshot only. Supported sources load on demand; excluded controls, unrelated records, and unavailable linked content remain unavailable.';
-    result={...result,personal:true,indexed:false,answer:result.answerStatus==='not_found'?'No supporting information was found in the approved '+section+' snapshot. This does not mean the information is absent from the account.':result.answer,sources:result.sources.map(source=>{const record=original.find(item=>item.id===source.id);return{...source,retrievedAt:record?.retrievedAt,sourceTimestamp:record?.sourceTimestamp,section:record?.section,subview:record?.subview,coverage:record?.coverage};}),navigation:result.navigation.map(action=>({...action,label:'Open in portal'})),connection:this.status(owner),coverage};
-    if(publicClauses.length)result.publicResult=await this.publicSearch(publicClauses.join('; '),'');
+    const original=this.owned(owner),selected=original.filter(record=>sections.includes(record.section)),intent=assistanceIntent(q);
+    let publicQuestion=publicCompanionQuestion(q),publicResult=publicClauses.length?await this.publicSearch(publicClauses.join('; '),''):publicQuestion?await this.publicSearch(publicQuestion,''):null;
+    let result;
+    if(intent==='snapshot')result=manualResult(sections.map(name=>firstRecord(selected,name)).filter(Boolean),this.generation,snapshotAnswer(selected));
+    else if(intent==='human-help')result=manualResult(selected.filter(record=>['Team','People'].includes(record.section)).slice(0,3),this.generation,humanHelpAnswer(q));
+    else if(intent==='check-work')result=manualResult(selected.filter(record=>record.section==='Board').slice(0,3),this.generation,checkWorkAnswer(selected,publicResult),selected.some(record=>record.section==='Board')?'partial':'not_found');
+    else {
+      result=searchIndex(this.index(owner),privateText,context);
+      if(intent==='next-step'&&result.answerStatus==='not_found')result=manualResult(selected.slice(0,3),this.generation,snapshotAnswer(selected),'partial');
+      else result={...result,answer:result.answerStatus==='not_found'?'No supporting information was found in the approved '+sections.join(', ')+' snapshot. This does not mean the information is absent from the account.':result.answer,sources:result.sources.map(source=>{const record=original.find(item=>item.id===source.id);return{...source,retrievedAt:record?.retrievedAt,sourceTimestamp:record?.sourceTimestamp,section:record?.section,subview:record?.subview,coverage:record?.coverage};}),navigation:result.navigation.map(action=>({...action,label:'Open in portal'}))};
+    }
+    const sourceLabels=[...new Set((result.sources||[]).map(source=>(source.section||section)+' — current portal'))];
+    result={...result,personal:true,indexed:false,responseDepth:depth,sourceContext:sourceLabels,answer:applyDepth(result.answer,{depth,sourceLabels,nextStep:intent==='next-step'?'Open the cited personal source and complete the first verified outstanding item.':'Review the cited portal source and use any state-changing control yourself.'}),connection:this.status(owner),coverage:'Temporary local '+sections.join(', ')+' snapshot only. Supported sources load on demand; excluded controls, unrelated records, and unavailable linked content remain unavailable.'};
+    if(publicResult)result.publicResult=publicResult;
     if(generation!==this.generation||binding!==this.binding||!this.owned(owner).length)return this.empty(owner,'The session changed before the answer was ready. Please reconnect.');
     return result;
   }

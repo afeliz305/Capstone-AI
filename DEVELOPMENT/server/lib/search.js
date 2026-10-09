@@ -12,6 +12,9 @@ const SYNONYMS = new Map([
   ["standup", "standup"],
   ["stand-up", "standup"],
   ["scrum", "standup"],
+  ["proof", "evidence"],
+  ["assignee", "owner"],
+  ["blocker", "blocked"],
   ["deck", "slides"],
   ["colour", "color"],
   ["colours", "colors"],
@@ -24,7 +27,8 @@ const SYNONYMS = new Map([
 // Fuzzy correction is deliberately limited to reviewed Capstone terms. It is
 // never applied to arbitrary words, identifiers, names, dates, or numbers.
 const DOMAIN_VOCABULARY = Object.freeze([
-  "acceptance", "assignment", "criteria", "retrospective", "standup",
+  "acceptance", "assignment", "blocked", "calendar", "criteria", "evidence",
+  "meeting", "owner", "product", "retrospective", "review", "standup",
   "submit", "verification", "verify"
 ]);
 
@@ -69,6 +73,11 @@ function canonicalizeQuestion(value) {
     .replace(/\bassignments?\b/g,"assignment")
     .replace(/\bcourse\s+work\b|\bcoursework\b/g,"assignment")
     .replace(/\bdaily (?:status )?updates?\b|\bdaily scrums?\b|\bstand[ -]?ups?\b/g,"standup")
+    .replace(/\bstatus updates?\b/g,"standup")
+    .replace(/\b(?:peer|teammate) checks?\b/g,"verify")
+    .replace(/\bpo\b/g,"product owner")
+    .replace(/\bacceptance conditions?\b|\bcard requirements?\b/g,"acceptance criteria")
+    .replace(/\bproof of completion\b|\bsupporting evidence\b/g,"evidence")
     .replace(/\bverification\b/g,"verify")
     .replace(/\bretros?\b/g,"retrospective")
     .replace(/\bsprint demo\b/g,"sprint review");
@@ -144,6 +153,20 @@ function publicEntry(entry, score) {
     access: entry.access,
     answer: entry.answer,
     ...(entry.sourceKind ? { sourceKind:entry.sourceKind } : {}),
+    ...(entry.provenance ? {
+      provenance:entry.provenance,
+      canonicalQuestion:entry.canonicalQuestion,
+      category:entry.category,
+      faroSourceTitle:entry.faroSourceTitle,
+      faroSourceUrl:entry.faroSourceUrl,
+      underlyingOfficialSource:entry.underlyingOfficialSource,
+      authorityLevel:entry.authorityLevel,
+      term:entry.term,
+      applicability:entry.applicability,
+      aliases:entry.aliases,
+      navigationTarget:entry.navigationTarget,
+      reviewedAt:entry.reviewedAt
+    } : {}),
     ...(entry.sourcePages !== undefined ? { sourcePages:entry.sourcePages } : {}),
     ...(entry.sourceKind === "portal-navigation" ? {
       portalSection:entry.portalSection,
@@ -212,7 +235,7 @@ function searchKnowledge(entries, question, contextId, siteIndex = null) {
   // Personal-work language must never fall through to the broad website index.
   // Hosted MIRA can navigate, but it cannot claim to have inspected the account.
   if (/\b(?:what|show|check|where).*(?:current(?:ly)?|in progress|open|active|assigned).*(?:work|task|card)|\b(?:what|show|check|where).*(?:work|task|card).*(?:current(?:ly)?|in progress|open|active|assigned)|\bwhat am i working on\b|\bwhat is currently in progress\b/.test(canonicalQuestion)) {
-    const target=entries.find(entry=>entry.id==="portal-board")||entries.find(entry=>entry.id==="dashboard-personal")||entries.find(entry=>entry.id==="portal-team");
+    const target=entries.find(entry=>entry.id==="portal-my-work")||entries.find(entry=>entry.id==="portal-board")||entries.find(entry=>entry.id==="dashboard-personal")||entries.find(entry=>entry.id==="portal-team");
     if(target)return {status:"matched",matches:[publicEntry(target,1)],links:[]};
     return {status:"unmatched",matches:[],links:[],scopeNote:"Personal work requires the signed-in Capstone portal. MIRA has not checked your account."};
   }

@@ -9,7 +9,7 @@ function normalized($value) {
     return trim(preg_replace('/[^a-z0-9#-]+/', ' ', $value));
 }
 function search_tokens($value) {
-    $aliases = ['retro'=>'retrospective','standup'=>'scrum','stand-up'=>'scrum','deck'=>'slides','colour'=>'color','colours'=>'colors','begin'=>'start','starting'=>'start','teacher'=>'instructor','prof'=>'professor'];
+    $aliases = ['retro'=>'retrospective','standup'=>'scrum','stand-up'=>'scrum','proof'=>'evidence','assignee'=>'owner','blocker'=>'blocked','deck'=>'slides','colour'=>'color','colours'=>'colors','begin'=>'start','starting'=>'start','teacher'=>'instructor','prof'=>'professor'];
     $stop = explode(' ', 'a about an and are can do for from how i in is it me my of on our please the this to we what where which with');
     $out = [];
     foreach (preg_split('/\s+/', normalized($value), -1, PREG_SPLIT_NO_EMPTY) as $token) {
@@ -52,7 +52,11 @@ function keyword_links($entries, $question) {
     return array_slice(array_values($links), 0, 4);
 }
 function public_knowledge_entry($entry, $score) {
-    return array_merge(array_intersect_key($entry, array_flip(['id','title','sourceTitle','url','section','access','answer','sourceKind','sourcePages','portalSection','liveDataConnected'])), ['followUps'=>array_slice($entry['followUps'] ?? [], 0, 5), 'score'=>round($score, 3)]);
+    return array_merge(array_intersect_key($entry, array_flip([
+        'id','title','sourceTitle','url','section','access','answer','sourceKind','sourcePages','portalSection','liveDataConnected',
+        'provenance','canonicalQuestion','category','faroSourceTitle','faroSourceUrl','underlyingOfficialSource',
+        'authorityLevel','term','applicability','aliases','navigationTarget','reviewedAt'
+    ])), ['followUps'=>array_slice($entry['followUps'] ?? [], 0, 5), 'score'=>round($score, 3)]);
 }
 function mira_find($entries, $id) {
     foreach ($entries as $entry) if ($entry['id'] === $id) return $entry;
@@ -98,15 +102,53 @@ function mira_navigation($entries, $question, $contextId) {
 function route_mira($entries, $question, $contextId) {
     $text = normalized($question); $navigation = mira_navigation($entries, $question, $contextId);
     if ($navigation) return $navigation;
+    if (preg_match('/(?:another|other) student|classmate/', $text) && preg_match('/card|work|task|board|project/', $text)) return mira_result($entries, [
+        'status'=>'privacy_restricted','ids'=>['grades-privacy','contact-help'],'accessScope'=>'public-course-policy',
+        'missingEvidence'=>"Another student's private work is never searched or indexed.",
+        'answer'=>function($entry) { return "I cannot retrieve, list, compare, or infer another student's cards, work, project records, or private status. ".$entry['answer']; }
+    ]);
     if (preg_match('/(?:another|other) student|classmate/', $text) && preg_match('/grade|score|feedback/', $text)) return mira_result($entries, [
         'status'=>'privacy_restricted','ids'=>['syllabus-grading','contact-help'],'accessScope'=>'public-course-policy',
         'missingEvidence'=>"Another student's grading record is private and is never searched.",
         'answer'=>function($entry) { return "I cannot retrieve, compare, infer, or explain another student's private grade or circumstances. ".$entry['answer']." Discuss only your own feedback with the instructor through the verified course contact route."; }
     ]);
+    if (preg_match('/(?:read|show|list|give me).*(?:all )?(?:inbox )?(?:messages?|conversations?|threads?)|open all.*(?:messages?|conversations?|threads?)|message bodies/', $text)) return mira_result($entries, [
+        'status'=>'privacy_restricted','ids'=>['portal-messages'],'accessScope'=>'authenticated-navigation-only',
+        'missingEvidence'=>'Inbox access is metadata-only; message bodies and bulk conversation history are excluded.',
+        'answer'=>function($entry) { return 'MIRA cannot read, list, or retain Inbox message bodies or conversation history. '.$entry['answer']; }
+    ]);
+    if (preg_match('/(?:show|read|list|open|give me).*(?:faro )?(?:history|conversations?|private prompts?)/', $text)) return mira_result($entries, [
+        'status'=>'privacy_restricted','ids'=>['grades-privacy'],'accessScope'=>'public-course-policy',
+        'missingEvidence'=>'Private FARO history and generated conversations are excluded from MIRA.',
+        'answer'=>function($entry) { return 'MIRA cannot retrieve or expose private FARO history, prompts, or generated conversations. '.$entry['answer']; }
+    ]);
+    if (preg_match('/(?:everyone|all (?:students?|people)|class roster|student directory).*(?:class|course|portal)?|(?:give|show|list).*(?:everyone|class roster|student directory)/', $text)) return mira_result($entries, [
+        'status'=>'privacy_restricted','ids'=>['portal-classmates','grades-privacy'],'accessScope'=>'authenticated-navigation-only',
+        'missingEvidence'=>'Broad student directories and unrelated people are excluded.',
+        'answer'=>function($entry) { return 'MIRA cannot compile or expose a class roster or broad student directory. '.$entry['answer']; }
+    ]);
+    if (preg_match('/(?:save|store|remember|retain|keep|use).*(?:portal|private|personal).*(?:permanent|forever|future users?|other users?|shared|later)|(?:future users?|other users?).*(?:private|personal|portal) data/', $text)) return mira_result($entries, [
+        'status'=>'privacy_restricted','ids'=>['syllabus-data-policy','grades-privacy'],'accessScope'=>'public-course-policy',
+        'missingEvidence'=>'Personal portal context is session-scoped and cannot be added to shared knowledge or retained for future users.',
+        'answer'=>function($entry) { return 'MIRA will not save personal portal context permanently or reuse it for future users. '.$entry['answer']; }
+    ]);
+    $context = mira_find($entries, (string)$contextId);
+    if (($context['provenance'] ?? '') === 'FARO_CURATED' && preg_match('/^(?:tell me more|what does that mean|how do i use that)$/', $text)) return mira_result($entries, [
+        'status'=>'answered','ids'=>[$context['id']],'accessScope'=>'authenticated-portal-guidance'
+    ]);
+    if (($context['id'] ?? '') === 'faro-board-acceptance-criteria' && preg_match('/who decides (?:that|whether it is accepted)|who approves (?:that|it)$/', $text)) return mira_result($entries, [
+        'status'=>'answered','ids'=>['faro-board-review-decision'],'accessScope'=>'authenticated-portal-guidance'
+    ]);
+    if (($context['id'] ?? '') === 'faro-board-evidence' && preg_match('/(?:does|would) (?:that|it) mean (?:the card is )?done|does (?:that|it) prove (?:approval|acceptance)/', $text)) return mira_result($entries, [
+        'status'=>'answered','ids'=>['faro-board-evidence'],'accessScope'=>'authenticated-portal-guidance'
+    ]);
+    if (($context['id'] ?? '') === 'faro-board-verify' && preg_match('/what happens after (?:verify|verification)|who decides (?:after that|next)/', $text)) return mira_result($entries, [
+        'status'=>'answered','ids'=>['faro-board-review-decision'],'accessScope'=>'authenticated-portal-guidance'
+    ]);
     if (preg_match('/(?:approve|mark|move).*(?:card)?.*done|approve my card/', $text)) return mira_result($entries, [
-        'status'=>'escalation','ids'=>['portal-resources','contact-help'],'accessScope'=>'authenticated-navigation-only',
-        'missingEvidence'=>'No reviewed source identifies an official card approver or approval checklist, and MIRA is read-only.',
-        'answer'=>function() { return "MIRA cannot approve a card or change its status. I could not verify the official Done-approval process from the available content. Open the authenticated portal Resources area for current workflow instructions, or ask the instructor through Canvas Inbox."; }
+        'status'=>'escalation','ids'=>['faro-board-review-decision','contact-help'],'accessScope'=>'authenticated-portal-guidance',
+        'missingEvidence'=>'MIRA cannot inspect enough private state to decide that a card is accepted or Done, and it cannot perform a Product Owner action.',
+        'answer'=>function($entry) { return $entry['answer']." Ask the Product Owner or course staff if an official decision is still needed."; }
     ]);
     if (preg_match('/(?:move|switch|transfer|change).*(?:another|different|new).*(?:team)|(?:another|different|new).*team/', $text)) return mira_result($entries, [
         'status'=>'escalation','ids'=>['contact-help'],'missingEvidence'=>'No reviewed source documents a team-change procedure or promises approval.',
@@ -120,25 +162,47 @@ function route_mira($entries, $question, $contextId) {
         'status'=>'partial','ids'=>['syllabus-late-work','contact-help'],'missingEvidence'=>'Only the instructor can decide an individual request; MIRA cannot grant or submit one.',
         'answer'=>function($entry) { return $entry['answer']." MIRA cannot grant, promise, or send an extension request. Use the verified instructor contact route if the documented grace period is not enough."; }
     ]);
-    if (preg_match('/acceptance criteria|success conditions|\bac\b/', $text)) return mira_result($entries, [
-        'status'=>'link_only','ids'=>['portal-resources','contact-help'],'accessScope'=>'authenticated-navigation-only',
-        'missingEvidence'=>'No reviewed public/syllabus source defines how card acceptance criteria control Verify or Done for this course.',
-        'answer'=>function() { return "I could not verify course-specific acceptance-criteria instructions from the available indexed content. Do not treat criteria as satisfied without evidence or official review. Open the authenticated portal Resources area for the current workflow guidance; ask course staff if the card or policy remains unclear."; }
+    if (preg_match('/\b(?:evidence|proof)\b/', $text) && !preg_match('/what still needs evidence/', $text)) return mira_result($entries, [
+        'status'=>'answered','ids'=>['faro-board-evidence'],'accessScope'=>'authenticated-portal-guidance'
+    ]);
+    if (preg_match('/acceptance criteria|success conditions|\bac\b|criteria.*(?:satisfy|complete)|(?:satisfy|complete).*criteria/', $text)) return mira_result($entries, [
+        'status'=>'answered','ids'=>['faro-board-acceptance-criteria'],'accessScope'=>'authenticated-portal-guidance'
     ]);
     if (preg_match('/definition of done|what does done mean|card.*\bdone\b|\bdone\b.*card/', $text)) return mira_result($entries, [
-        'status'=>'link_only','ids'=>['portal-resources','contact-help'],'accessScope'=>'authenticated-navigation-only',
-        'missingEvidence'=>"No reviewed public/syllabus source contains the course's Definition of Done or approval rule.",
-        'answer'=>function() { return "I could not verify the course's Definition of Done from the available indexed content. A commit or student assertion alone is not verified approval. Open the authenticated portal Resources area for the current workflow instructions, or ask course staff. MIRA will not change the card."; }
+        'status'=>'partial','ids'=>['faro-board-review-decision','faro-board-acceptance-criteria','faro-board-evidence'],'accessScope'=>'authenticated-portal-guidance',
+        'missingEvidence'=>'The reviewed FARO vocabulary distinguishes criteria, evidence, verification and Product Owner decisions, but it does not define a complete official course Definition of Done.',
+        'answer'=>function() { return "MIRA did not find a complete official course Definition of Done. Acceptance criteria, evidence, teammate verification, and Product Owner acceptance are separate steps; none alone proves that the card is Done. MIRA cannot approve or move the card."; }
     ]);
-    if (preg_match('/(?:move|enter|ready).*(?:to )?verify|verification now|before.*verify|verify requirements/', $text)) return mira_result($entries, [
-        'status'=>'link_only','ids'=>['portal-resources','contact-help'],'accessScope'=>'authenticated-navigation-only',
-        'missingEvidence'=>'No reviewed public/syllabus source contains the exact transition requirements for Verify.',
-        'answer'=>function() { return "I could not verify the evidence, checks, fields, or review steps required before entering Verify. Verify and Done are different states, and MIRA will not move the card. Open the authenticated portal Resources area for the current workflow instructions, or ask course staff."; }
+    if (preg_match('/(?:move|enter|ready).*(?:to )?verify|verification now|before.*verif(?:y|ication)|(?:missing|required|need).*before.*verif(?:y|ication)|verify requirements/', $text)) return mira_result($entries, [
+        'status'=>'partial','ids'=>['faro-board-verify','faro-board-acceptance-criteria','faro-board-evidence'],'accessScope'=>'authenticated-portal-guidance',
+        'missingEvidence'=>'FARO provides reviewed terminology but not a complete course-wide checklist for entering Verify.',
+        'answer'=>function($entry) { return $entry['answer']." Review the criteria and evidence recorded on your own card, then ask course staff if the transition requirement remains unclear."; }
     ]);
-    if (preg_match('/what information.*stand ?up|what.*(?:put|include).*(?:stand ?up|daily scrum)|stand ?up (?:fields|template|content)/', $text)) return mira_result($entries, [
-        'status'=>'link_only','ids'=>['daily-scrum','portal-resources'],'accessScope'=>'authenticated-source-unverified',
-        'missingEvidence'=>'The portal lists a Daily Scrum template, but its current field contents were not readable in the approved Overview scope.',
-        'answer'=>function() { return "The authenticated portal lists a Daily Scrum minutes template, but I could not verify its current required fields from the approved Overview-only scope. Open the template in portal Resources and treat its labels as authoritative; MIRA will not invent mandatory fields."; }
+    if (preg_match('/^(?:verify|how (?:do|can|should) i verify|what does verify mean|who can verify a card|can the card owner verify their own work)$/', $text)) return mira_result($entries, [
+        'status'=>'answered','ids'=>['faro-board-verify'],'accessScope'=>'authenticated-portal-guidance'
+    ]);
+    if (preg_match('/who decides whether (?:this|it|a card) is accepted|what can (?:the )?(?:product owner|po) do in rev(?:iew|eiw)|can (?:the )?(?:product owner|po) (?:ask for|request) changes/', $text)) return mira_result($entries, [
+        'status'=>'answered','ids'=>['faro-board-review-decision'],'accessScope'=>'authenticated-portal-guidance'
+    ]);
+    if (preg_match('/can (?:mira|you) approve (?:it|this)|is (?:this|my|the) (?:card )?accepted|has (?:this|my|the) card been accepted/', $text)) return mira_result($entries, [
+        'status'=>'partial','ids'=>['faro-board-review-decision','portal-board'],'accessScope'=>'authenticated-navigation-only',
+        'missingEvidence'=>'MIRA cannot see or decide the current official acceptance state of a private card.',
+        'answer'=>function($entry) { return $entry['answer']." Open your Board to review the current card state."; }
+    ]);
+    if (preg_match('/what is (?:a )?(?:sprint )?card|what does card mean/', $text)) return mira_result($entries, [
+        'status'=>'answered','ids'=>['faro-board-card'],'accessScope'=>'authenticated-portal-guidance'
+    ]);
+    if (preg_match('/what (?:do|does) (?:s m and l|s m l) mean|what is (?:a )?(?:card|story) size|how are cards sized/', $text)) return mira_result($entries, [
+        'status'=>'answered','ids'=>['faro-board-size'],'accessScope'=>'authenticated-portal-guidance'
+    ]);
+    if (preg_match('/who owns a card|what is a card owner|who is the assignee/', $text)) return mira_result($entries, [
+        'status'=>'answered','ids'=>['faro-board-owner'],'accessScope'=>'authenticated-portal-guidance'
+    ]);
+    if (preg_match('/what does blocked mean|what is a blocker|why is a card blocked/', $text)) return mira_result($entries, [
+        'status'=>'answered','ids'=>['faro-board-blocked'],'accessScope'=>'authenticated-portal-guidance'
+    ]);
+    if (preg_match('/what information.*stand ?up|what.*(?:put|include|write|go(?:es)?|belong(?:s)?).*(?:stand ?up|daily scrum|daily update|status update)|stand ?up (?:fields|template|content)/', $text)) return mira_result($entries, [
+        'status'=>'answered','ids'=>['daily-scrum','minutes-usage-guide'],'accessScope'=>'authenticated-linked-documents'
     ]);
     if (preg_match('/how often.*(?:stand ?up|status update)|(?:stand ?up|status update).*frequency|finish.*stand ?up/', $text)) return mira_result($entries, [
         'status'=>'partial','ids'=>['syllabus-attendance'],'missingEvidence'=>"The syllabus states the team's meeting frequency and individual participation basis, but not an exact per-member posting frequency.",

@@ -15,6 +15,7 @@
     <script src="js/shared/attachment-policy.js" defer></script>
     <script src="js/shared/contact-policy.js" defer></script>
     <script src="js/shared/portal-navigation.js" defer></script>
+    <script src="js/shared/mira-guidance.js" defer></script>
     <script src="js/chat/shared-information.js" defer></script>
     <script src="js/chat/capstone-chat.js" defer></script>
   </head>
@@ -110,6 +111,7 @@
             <button type="button" data-question="Do I have any new messages?">Check messages</button>
             <button type="button" data-question="Open my dashboard">Open dashboard</button>
             <button type="button" data-question="Open my sprint board">Sprint board</button>
+            <button type="button" data-question="Open My work">My work</button>
             <button type="button" data-question="Open portal Grade">My grade</button>
           </div>
           <details class="portal-section-list">
@@ -165,7 +167,7 @@
           <div class="trust-mark" aria-hidden="true"><svg class="ui-icon"><use href="css/images/icons.svg#check"></use></svg></div>
           <div>
             <strong>Answers stay grounded in Capstone content</strong>
-              <p>Answers cite saved public-site excerpts or reviewed syllabus content. The assistant does not read your live project, tasks, attendance, grades, private messages or student-directory data. Date conflicts are flagged for instructor confirmation.</p>
+              <p>Answers cite saved public-site excerpts or reviewed syllabus content. Hosted MIRA does not read live personal records. The optional local or future portal-native connector reads only approved, session-scoped fields and never places them in shared knowledge. Date conflicts are flagged for instructor confirmation.</p>
           </div>
         </section>
       </main>
@@ -198,6 +200,19 @@
           <button type="button" class="secondary-action" id="open-shared-information">Use information I share</button>
           <button type="button" class="secondary-action" id="load-sample-information">Load fictional sample</button>
         </div>
+      </section>
+
+      <section class="mira-context-actions" aria-label="MIRA contextual actions">
+        <button type="button" class="secondary-action" data-question="Show my Capstone snapshot">My Capstone</button>
+        <button type="button" class="secondary-action" id="open-check-work" aria-controls="check-work-dialog" aria-haspopup="dialog">Check my work</button>
+        <button type="button" class="secondary-action" id="guide-me-action">Guide me</button>
+        <button type="button" class="secondary-action" data-question="Who should I ask for help with this?">Ask a person</button>
+        <label for="response-depth">Response depth</label>
+        <select id="response-depth" aria-label="Response depth">
+          <option value="quick">Quick</option>
+          <option value="guide">Guide me</option>
+          <option value="step">Step by step</option>
+        </select>
       </section>
 
       <div class="chat-log" role="log" aria-live="polite" aria-relevant="additions">
@@ -287,6 +302,53 @@
           <button type="button" class="secondary-action" id="new-shared-session">Start a new demo session</button>
         </div>
       </section>
+    </dialog>
+
+    <dialog class="shared-information-dialog" id="check-work-dialog" aria-labelledby="check-work-title">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">READ-ONLY GUIDANCE</p>
+          <h2 id="check-work-title">Check my work</h2>
+          <p>Compare fictional, redacted, or authorized current-card context with reviewed criteria. Nothing is submitted, graded, approved, or moved.</p>
+        </div>
+        <button class="dialog-close" id="close-check-work" type="button" aria-label="Close Check my work">Ã—</button>
+      </div>
+      <form id="check-work-form" class="shared-information-form">
+        <label>
+          Context source
+          <select name="sourceMode" id="check-work-source">
+            <option value="paste">Text I paste or attach locally</option>
+            <option value="portal">My authorized current portal card</option>
+          </select>
+        </label>
+        <label>
+          Criteria
+          <select name="criteria">
+            <option value="acceptance">Acceptance criteria and Definition of Done</option>
+            <option value="evidence">Evidence quality</option>
+            <option value="review">Sprint review readiness</option>
+            <option value="custom">Custom criteria</option>
+          </select>
+        </label>
+        <label id="check-custom-field" hidden>
+          Custom criteria
+          <textarea name="customCriteria" rows="3" maxlength="1000" placeholder="Paste only the specific criteria you want checked."></textarea>
+        </label>
+        <label id="check-text-field">
+          Work or evidence to review
+          <textarea name="workText" rows="7" maxlength="20000" placeholder="Use fictional or redacted content. Do not paste passwords, tokens, message bodies, grades, or another student's information."></textarea>
+        </label>
+        <label id="check-file-field">
+          Optional local text evidence
+          <input name="workFile" type="file" accept=".txt,.md,text/plain,text/markdown" aria-describedby="check-file-help">
+          <span id="check-file-help">TXT or Markdown only, up to 256 KB. The file is read in this browser and is not uploaded.</span>
+        </label>
+        <p class="form-status" id="check-work-status" role="status" aria-live="polite"></p>
+        <div class="dialog-actions">
+          <button class="secondary-action" type="button" id="cancel-check-work">Cancel</button>
+          <button class="primary-action" type="submit">Review safely</button>
+        </div>
+      </form>
     </dialog>
 
     <dialog class="support-dialog" id="support-dialog" aria-labelledby="support-title">

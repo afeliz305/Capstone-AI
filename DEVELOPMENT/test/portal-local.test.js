@@ -61,6 +61,32 @@ test('disconnected personal routing preserves a useful reviewed course fallback'
   assert.equal(result.personal,undefined);assert.equal(result.status,'matched');assert.match(result.answer,/PUBLIC fixture/);
   assert.equal(result.privateUnavailable,true);assert.equal(result.connection.state,'helper-ready');assert.equal(f.calls(),0);
 });
+test('My Capstone preserves unknown fields and never converts missing access to zero',async()=>{
+  const f=fixture();await f.connect();
+  const result=await f.service.search('local-a',{question:'Show my Capstone snapshot'});
+  assert.equal(result.personal,true);
+  for(const heading of ['CURRENT SPRINT','NEXT STEP','OPEN / BLOCKED WORK','STANDUPS THIS WEEK','UPCOMING MEETING','UNREAD INBOX'])assert.match(result.answer,new RegExp(heading));
+  assert.match(result.answer,/STANDUPS THIS WEEK\nNot available in the currently authorized snapshot/);
+  assert.doesNotMatch(result.answer,/STANDUPS THIS WEEK\n0\b/);
+});
+test('personal work routing loads My Work before Board and Today, then uses visible evidence',async()=>{
+  const f=fixture();await f.connect();
+  for(const question of ['What am I working on?','What work do I have open?','What should I finish next?','Do I have anything blocked?','What card am I on?','What is waiting for Verify?','What still needs evidence?']){
+    const result=await f.service.search('local-a',{question});
+    assert.equal(result.personal,true,question);
+    for(const section of ['My work','Board','Today'])assert.ok(result.connection.loadedSections.includes(section),question+': '+section);
+  }
+});
+test('human-help routing recommends a role and sends nothing',async()=>{
+  const f=fixture();await f.connect();
+  const cases=[
+    ['Who should I ask about my grade?','Instructor'],
+    ['Who should I ask about acceptance review?','Product Owner'],
+    ['Who should I ask about a blocker?','Team Leader'],
+    ['Who should I ask for technical help?','AI Anchor or Team Leader']
+  ];
+  for(const [question,role] of cases){const result=await f.service.search('local-a',{question});assert.match(result.answer,new RegExp('WHY THIS PERSON\\n'+role));assert.match(result.answer,/WHAT CONTEXT WOULD BE SHARED/);assert.match(result.answer,/WHAT WILL NOT BE SHARED/);assert.match(result.answer,/MIRA has not sent anything/);}
+});
 test('authority and privacy policy questions stay public even while a portal is connected',async()=>{
   const f=fixture();await f.connect();const before=f.calls();
   for(const question of ['What should I do if MIRA cannot answer?','Can Professor Sadjadi give me an extension on my assignment?','What grade will I receive for this sprint?','Can you move me to another Capstone team?','Can you approve my card as Done?',"Why did another student's grade differ?",'What do I put in my standup?','Where do we submit our sprint work?']){
@@ -115,9 +141,9 @@ test('Inbox remains metadata-only even when legacy message-content scope is requ
   f.service.configure('local-a',{messageContent:false});assert.equal(f.service.records.some(record=>record.kind==='message-content'),false);
 });
 test('dashboard capability map accounts for every discovered route and excludes unrelated directories',()=>{
-  assert.equal(Object.keys(SECTION_ROUTES).length,25);
-  for(const section of ['Today','Inbox','Board','Meetings','Projects this term','People','My rhythm','Recognition','Profile and privacy','Start here','Team','Standing','Grade','Connections','Opportunities','Team contacts','AI Anchors','Record','Showcase','Letters','Request a letter','Resources','Brand & templates'])assert.ok(Object.hasOwn(SECTION_ROUTES,section),section);
-  assert.deepEqual([...INTENTIONALLY_EXCLUDED].sort(),['Alumni directory','Classmates','Grade','People','Profile and privacy']);
+  assert.equal(Object.keys(SECTION_ROUTES).length,26);
+  for(const section of ['Today','Inbox','Board','Meetings','My work','Projects this term','People','My rhythm','Recognition','Profile and privacy','Start here','Team','Standing','Grade','Connections','Opportunities','Team contacts','AI Anchors','Record','Showcase','Letters','Request a letter','Resources','Brand & templates'])assert.ok(Object.hasOwn(SECTION_ROUTES,section),section);
+  assert.deepEqual([...INTENTIONALLY_EXCLUDED].sort(),['Alumni directory','Classmates','Grade','Profile and privacy','Projects this term','Recognition']);
 });
 test('question routing distinguishes approved private sections from public course questions',()=>{
   assert.equal(routeQuestion('What is the public grading scale?'),false);
@@ -159,7 +185,7 @@ test('real DOM reader extracts approved visible Today cards without controls or 
   const menu=element('div');menu.querySelector=s=>s==='.avdname'?name:s==='.avdemail'?email:s.startsWith('form[')?element('form'):null;
   function card(heading,text){const h=element('h3',heading),el=element('div','',[h,element('p',text),element('form','SENSITIVE-FORM'),element('script','SCRIPT-INSTRUCTION')]);el.classList.contains=c=>c==='card';el.querySelector=s=>s==='h1,h2,h3,h4'?h:null;return el;}
   const content={children:[card('Aurora project','Fictional project body')]};
-  content.querySelector=()=>null;content.querySelectorAll=selector=>selector==='.hero,.card,.list'?content.children:[];
+  content.querySelector=()=>null;content.querySelectorAll=selector=>selector.includes('.card')?content.children:[];
   const body=element('body');body.querySelector=content.querySelector;body.querySelectorAll=content.querySelectorAll;
   const context={URL,location:{origin:'https://capstone.cs.fiu.edu',href:'https://capstone.cs.fiu.edu/today',pathname:'/today',search:''},performance:{timeOrigin:2,getEntriesByType:()=>[{responseStatus:200,transferSize:200,workerStart:0}]},navigator:{},getComputedStyle:()=>({visibility:'visible'}),document:{body,activeElement:{matches:()=>false},querySelector:s=>s.startsWith('button[')?account:s==='#pubavdrop.open'&&open?menu:s==='main'?content:null,querySelectorAll:()=>[]}};
   const result=vm.runInNewContext('('+readPortalDom.toString()+')("Today")',context);

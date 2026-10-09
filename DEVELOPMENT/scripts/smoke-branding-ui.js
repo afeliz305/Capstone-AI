@@ -15,7 +15,7 @@ async function main() {
   let browser;
   try {
     browser = await chromium.launch({ channel: process.env.CAPSTONE_BROWSER_CHANNEL || "msedge", headless: true });
-    const context = await browser.newContext();
+    const context = await browser.newContext({ reducedMotion:"reduce" });
     context.setDefaultTimeout(15000);
     const origin = "http://127.0.0.1:" + server.address().port;
     await context.route("**/*", route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
@@ -42,9 +42,19 @@ async function main() {
       await page.locator("#assistant").waitFor({ state: "visible" });
       assert.equal(await launcher.getAttribute("aria-expanded"), "true");
       assert.equal(await page.locator("#chat-title").textContent(), "MIRA");
+      assert.equal(await page.locator("#open-check-work").getAttribute("aria-controls"), "check-work-dialog");
+      assert.equal(await page.locator("#open-check-work").getAttribute("aria-haspopup"), "dialog");
+      assert.ok(["quick","guide","step"].includes(await page.locator("#response-depth").inputValue()));
+      assert.equal(await page.evaluate(() => { const dots=document.createElement("div"),span=document.createElement("span");dots.className="typing-dots";dots.append(span);document.body.append(dots);const reduced=parseFloat(getComputedStyle(span).animationDuration)<.1;dots.remove();return reduced; }), true);
       const panel = await page.locator("#assistant").boundingBox();
       assert.ok(panel.x >= 0 && panel.y >= 0 && panel.x + panel.width <= viewport.width && panel.y + panel.height <= viewport.height);
       await page.locator("#chat-input").fill("Fictional unsent test draft");
+      await page.locator("#open-check-work").click();
+      await page.locator("#check-work-dialog").waitFor({ state:"visible" });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      await page.keyboard.press("Escape");
+      assert.equal(await page.locator("#check-work-dialog").evaluate(dialog => dialog.open), false);
+      assert.equal(await page.locator("#open-check-work").evaluate(button => button === document.activeElement), true);
       await page.screenshot({ path: path.join(qa, "chat-" + viewport.width + ".png"), fullPage: true });
       await page.locator("#minimize-chat").click();
       await launcher.waitFor({ state: "visible" });
@@ -68,6 +78,14 @@ async function main() {
       assert.equal(await email.getAttribute("aria-invalid"), "false");
       await page.locator("#support-dialog").evaluate(dialog => dialog.close());
     }
+    await page.setViewportSize({ width:1280, height:900 });
+    await page.goto(origin + basePath);
+    await page.evaluate(() => { document.documentElement.style.zoom="2"; });
+    await page.getByRole("button", { name:"Open MIRA chat", exact:true }).click();
+    await page.locator("#assistant").waitFor({ state:"visible" });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), true, "no page-level horizontal overflow at 200% zoom");
+    const zoomPanel=await page.locator("#assistant").boundingBox();
+    assert.ok(zoomPanel.x>=0&&zoomPanel.x+zoomPanel.width<=1280,"chat remains inside the viewport at 200% zoom");
     await page.goto(origin + basePath + "pages/staff.html");
     await page.locator("#staff-login").waitFor({ state: "visible" });
     assert.match(await page.title(), /MIRA/);
@@ -130,7 +148,7 @@ async function main() {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.equal((await page.request.get(origin + basePath + "css/images/ask-roary-transparent.png")).status(), 404);
     assert.deepEqual(errors, []);
-    console.log("PASS: MIRA branding, portal-aligned tokens, generic SVG, keyboard chat controls, desktop/390px/320px layouts, support-form open and inline email validation, Staff Queue profile/menu/Settings/sign-out focus, reset dialog/recovery layout, retired asset excluded. No cloud, email, password, or ticket writes.");
+    console.log("PASS: MIRA branding, portal-aligned tokens, generic SVG, keyboard chat controls, new context controls/dialog, reduced motion, 200% zoom, desktop/390px/320px layouts, support-form validation, Staff Queue focus flows, recovery layout, and retired asset exclusion. No cloud, email, password, or ticket writes.");
   } finally {
     if (browser) await browser.close();
     server.closeAllConnections();

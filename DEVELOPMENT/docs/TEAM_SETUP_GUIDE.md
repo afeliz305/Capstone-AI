@@ -1,5 +1,7 @@
 # MIRA Team Testing Checklist and setup guide
 
+October 9, 2026 local review candidate: MIRA now has optional **My Capstone**, **Check my work**, **Guide me**, and **Ask a person** actions plus Quick/Guide me/Step by step response depth. The local connector can route personal questions to allowlisted current-portal adapters, including My work and My rhythm, while keeping Inbox message bodies, broad directories, grade values, portal controls, and unrelated records out of the index. This work is local-only and has not been pushed, uploaded, or enabled on Ocelot. See [the portal context audit](PORTAL_CONTEXT_AUDIT.md).
+
 October 8, 2026 update: the current candidate adds bounded Capstone synonym/typo handling, structured temporary-information fields, safe browser Back state, current portal routes/selectors, portal-aligned design tokens, and accessible email feedback. The [19-issue team retest](TEAM_RETEST_2026-10-08.md) maps every Michael/Rome finding to its regression coverage. Use fictional/redacted information only. This candidate has not been pushed or uploaded.
 
 **MIRA** means **Messaging, Information & Resolution Assistant**. The active generated folder and planned hosted path are now `MIRA/`. Earlier dated notes, the repository name, internal identifiers, and the temporary rollback deployment may still use Capstone naming. Use the [current rename and Supabase migration plan](MIRA_RENAME_AND_SUPABASE_MIGRATION.md) when current instructions conflict with a dated note.

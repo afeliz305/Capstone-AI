@@ -10,7 +10,8 @@ function mergeKnowledge(base, supplement) {
 function reviewedKnowledge(base) {
   return mergeKnowledge(base, [
     ...require("../../js/shared/syllabus-data").entries,
-    ...require("../../js/shared/portal-data").entries
+    ...require("../../js/shared/portal-data").entries,
+    ...require("../../js/shared/faro-knowledge").entries
   ]);
 }
 module.exports = { mergeKnowledge, reviewedKnowledge };

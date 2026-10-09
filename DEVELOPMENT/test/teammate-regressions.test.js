@@ -33,7 +33,7 @@ test("Michael and Rome semantic retrieval prompts resolve consistently twice",()
   const groups=[
     [["Where do I submit my course work?","How do I turn in assignments?"],new Set(["minutes-usage-guide","canvas-assignments"])],
     [["What do I put in my standup?","What goes in a stand-up?","What should I write for my daily update?"],new Set(["daily-scrum","minutes-usage-guide"])],
-    [["What am I working on?","What is currently in progress?","What work do I have open?"],new Set(["dashboard-personal","portal-board","portal-team"])]
+    [["What am I working on?","What is currently in progress?","What work do I have open?"],new Set(["dashboard-personal","portal-my-work","portal-board","portal-team"])]
   ];
   for(let pass=0;pass<2;pass++)for(const [questions,allowed] of groups)for(const question of questions){
     const result=searchKnowledge(knowledge,question);
@@ -51,7 +51,7 @@ test("bounded typo correction stays within reviewed vocabulary",()=>{
     assert.doesNotMatch(normalized,/acceptance|assignment|retrospective|standup|submit|verify/,exact);
   }
   const verify=searchKnowledge(knowledge,"verfy");
-  assert.equal(verify.matches[0].id,"portal-resources");
+  assert.equal(verify.matches[0].id,"faro-board-verify");
 });
 
 test("fictional README fields preserve values, missing states, evidence, and follow-up provenance twice",()=>{

@@ -78,7 +78,7 @@ function createPortalServer({root,sourceRoot,service,extensionBridge=null,pairin
         return send(res,200,{csrf:session.csrf,connection:service.status(session.id)},{'Set-Cookie':sessionCookie(session)});
       }
       if(!session||!equal(req.headers['x-capstone-pair'],session.csrf)) return send(res,401,{error:'Local pairing expired. Private data must be cleared.'});
-      const fields={discover:[],connect:['tabId'],status:[],verify:[],content:[],configure:['messageContent'],search:['question','context'],destination:['sourceId'],disconnect:[]};
+      const fields={discover:[],connect:['tabId'],status:[],verify:[],content:[],configure:['messageContent'],search:['question','context','depth'],destination:['sourceId'],disconnect:[]};
       if(!Object.hasOwn(fields,operation)||Object.keys(data).some(k=>!fields[operation].includes(k))) return send(res,400,{error:'Unsupported operation or field.'});
       try {
         let result;

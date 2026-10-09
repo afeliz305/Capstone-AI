@@ -57,15 +57,53 @@ function routeMira(entries, question, contextId, toPublic) {
 
   // Privacy and non-authoritative action requests are checked before general
   // navigation so an overbroad portal shortcut can never expose or imply them.
+  if(/(?:another|other) student|classmate/.test(text) && /card|work|task|board|project/.test(text)) return result(entries,toPublic,{
+    status:"privacy_restricted",ids:["grades-privacy","contact-help"],accessScope:"public-course-policy",
+    missingEvidence:"Another student's private work is never searched or indexed.",
+    answer:entry=>"I cannot retrieve, list, compare, or infer another student's cards, work, project records, or private status. "+entry.answer
+  });
   if(/(?:another|other) student|classmate/.test(text) && /grade|score|feedback/.test(text)) return result(entries,toPublic,{
     status:"privacy_restricted",ids:["syllabus-grading","contact-help"],accessScope:"public-course-policy",
     missingEvidence:"Another student's grading record is private and is never searched.",
     answer:entry=>"I cannot retrieve, compare, infer, or explain another student's private grade or circumstances. "+entry.answer+" Discuss only your own feedback with the instructor through the verified course contact route."
   });
+  if(/(?:read|show|list|give me).*(?:all )?(?:inbox )?(?:messages?|conversations?|threads?)|open all.*(?:messages?|conversations?|threads?)|message bodies/.test(text)) return result(entries,toPublic,{
+    status:"privacy_restricted",ids:["portal-messages"],accessScope:"authenticated-navigation-only",
+    missingEvidence:"Inbox access is metadata-only; message bodies and bulk conversation history are excluded.",
+    answer:entry=>"MIRA cannot read, list, or retain Inbox message bodies or conversation history. "+entry.answer
+  });
+  if(/(?:show|read|list|open|give me).*(?:faro )?(?:history|conversations?|private prompts?)/.test(text)) return result(entries,toPublic,{
+    status:"privacy_restricted",ids:["grades-privacy"],accessScope:"public-course-policy",
+    missingEvidence:"Private FARO history and generated conversations are excluded from MIRA.",
+    answer:entry=>"MIRA cannot retrieve or expose private FARO history, prompts, or generated conversations. "+entry.answer
+  });
+  if(/(?:everyone|all (?:students?|people)|class roster|student directory).*(?:class|course|portal)?|(?:give|show|list).*(?:everyone|class roster|student directory)/.test(text)) return result(entries,toPublic,{
+    status:"privacy_restricted",ids:["portal-classmates","grades-privacy"],accessScope:"authenticated-navigation-only",
+    missingEvidence:"Broad student directories and unrelated people are excluded.",
+    answer:entry=>"MIRA cannot compile or expose a class roster or broad student directory. "+entry.answer
+  });
+  if(/(?:save|store|remember|retain|keep|use).*(?:portal|private|personal).*(?:permanent|forever|future users?|other users?|shared|later)|(?:future users?|other users?).*(?:private|personal|portal) data/.test(text)) return result(entries,toPublic,{
+    status:"privacy_restricted",ids:["syllabus-data-policy","grades-privacy"],accessScope:"public-course-policy",
+    missingEvidence:"Personal portal context is session-scoped and cannot be added to shared knowledge or retained for future users.",
+    answer:entry=>"MIRA will not save personal portal context permanently or reuse it for future users. "+entry.answer
+  });
+  const context=find(entries,String(contextId||""));
+  if(context?.provenance==="FARO_CURATED" && /^(?:tell me more|what does that mean|how do i use that)$/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:[context.id],accessScope:"authenticated-portal-guidance"
+  });
+  if(context?.id==="faro-board-acceptance-criteria" && /who decides (?:that|whether it is accepted)|who approves (?:that|it)$/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:["faro-board-review-decision"],accessScope:"authenticated-portal-guidance"
+  });
+  if(context?.id==="faro-board-evidence" && /(?:does|would) (?:that|it) mean (?:the card is )?done|does (?:that|it) prove (?:approval|acceptance)/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:["faro-board-evidence"],accessScope:"authenticated-portal-guidance"
+  });
+  if(context?.id==="faro-board-verify" && /what happens after (?:verify|verification)|who decides (?:after that|next)/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:["faro-board-review-decision"],accessScope:"authenticated-portal-guidance"
+  });
   if(/(?:approve|mark|move).*(?:card)?.*done|approve my card/.test(text)) return result(entries,toPublic,{
-    status:"escalation",ids:["portal-resources","contact-help"],accessScope:"authenticated-navigation-only",
-    missingEvidence:"No reviewed source identifies an official card approver or approval checklist, and MIRA is read-only.",
-    answer:()=>"MIRA cannot approve a card or change its status. I could not verify the official Done-approval process from the available content. Open the authenticated portal Resources area for current workflow instructions, or ask the instructor through Canvas Inbox."
+    status:"escalation",ids:["faro-board-review-decision","contact-help"],accessScope:"authenticated-portal-guidance",
+    missingEvidence:"MIRA cannot inspect enough private state to decide that a card is accepted or Done, and it cannot perform a Product Owner action.",
+    answer:entry=>entry.answer+" Ask the Product Owner or course staff if an official decision is still needed."
   });
   if(/(?:move|switch|transfer|change).*(?:another|different|new).*(?:team)|(?:another|different|new).*team/.test(text)) return result(entries,toPublic,{
     status:"escalation",ids:["contact-help"],
@@ -82,27 +120,46 @@ function routeMira(entries, question, contextId, toPublic) {
     missingEvidence:"Only the instructor can decide an individual request; MIRA cannot grant or submit one.",
     answer:entry=>entry.answer+" MIRA cannot grant, promise, or send an extension request. Use the verified instructor contact route if the documented grace period is not enough."
   });
-  if(/acceptance criteria|success conditions|\bac\b/.test(text)) return result(entries,toPublic,{
-    status:"link_only",ids:["portal-resources","contact-help"],accessScope:"authenticated-navigation-only",
-    missingEvidence:"Not found after inspecting the available Team, Resources, and linked template sources. A specific team card may still contain its own criteria in the connected private view.",
-    answer:()=>"I did not find a published course-wide acceptance-criteria procedure in the available Team, Resources, or linked template sources. MIRA can report criteria visibly recorded on your own connected team card, but it will not infer approval rules. Ask course staff if the card or policy remains unclear."
+  if(/\b(?:evidence|proof)\b/.test(text) && !/what still needs evidence/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:["faro-board-evidence"],accessScope:"authenticated-portal-guidance"
+  });
+  if(/acceptance criteria|success conditions|\bac\b|criteria.*(?:satisfy|complete)|(?:satisfy|complete).*criteria/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:["faro-board-acceptance-criteria"],accessScope:"authenticated-portal-guidance"
   });
   if(/definition of done|what does done mean|card.*\bdone\b|\bdone\b.*card/.test(text)) return result(entries,toPublic,{
-    status:"link_only",ids:["portal-resources","contact-help"],accessScope:"authenticated-navigation-only",
-    missingEvidence:"Not found after inspecting the available Team, Resources, and linked template sources.",
-    answer:()=>"I did not find an official course Definition of Done or approval rule in the available Team, Resources, or linked templates. A card's visible criteria or evidence are not automatically proof of approval. Ask course staff; MIRA will not change the card."
+    status:"partial",ids:["faro-board-review-decision","faro-board-acceptance-criteria","faro-board-evidence"],accessScope:"authenticated-portal-guidance",
+    missingEvidence:"The reviewed FARO vocabulary distinguishes criteria, evidence, verification and Product Owner decisions, but it does not define a complete official course Definition of Done.",
+    answer:()=>"MIRA did not find a complete official course Definition of Done. Acceptance criteria, evidence, teammate verification, and Product Owner acceptance are separate steps; none alone proves that the card is Done. MIRA cannot approve or move the card."
   });
   if(/(?:move|enter|ready).*(?:to )?verify|verification now|before.*verif(?:y|ication)|(?:missing|required|need).*before.*verif(?:y|ication)|verify requirements/.test(text)) return result(entries,toPublic,{
-    status:"link_only",ids:["portal-resources","contact-help"],accessScope:"authenticated-navigation-only",
-    missingEvidence:"Not found after inspecting the available Team board, Resources, and linked template sources.",
-    answer:()=>"I did not find a published course-wide checklist for entering Verify in the available Team board, Resources, or linked templates. MIRA can report criteria and evidence visibly recorded on your own connected card, but Verify and Done remain different states and MIRA will not move the card. Ask course staff for the transition rule."
+    status:"partial",ids:["faro-board-verify","faro-board-acceptance-criteria","faro-board-evidence"],accessScope:"authenticated-portal-guidance",
+    missingEvidence:"FARO provides reviewed terminology but not a complete course-wide checklist for entering Verify.",
+    answer:entry=>entry.answer+" Review the criteria and evidence recorded on your own card, then ask course staff if the transition requirement remains unclear."
   });
-  if(/^(?:verify|how (?:do|can|should) i verify|what does verify mean)$/.test(text)) return result(entries,toPublic,{
-    status:"link_only",ids:["portal-resources","contact-help"],accessScope:"authenticated-navigation-only",
-    missingEvidence:"A project-specific Verify rule was not found in the reviewed public material.",
-    answer:()=>"Verify is a project workflow state, but MIRA did not find a published course-wide transition rule. Review the criteria and evidence on your own portal card, then ask course staff if the required verification step is unclear."
+  if(/^(?:verify|how (?:do|can|should) i verify|what does verify mean|who can verify a card|can the card owner verify their own work)$/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:["faro-board-verify"],accessScope:"authenticated-portal-guidance"
   });
-  if(/what information.*standup|what.*(?:put|include|write|goes?).*standup|standup (?:fields|template|content)/.test(text)) return result(entries,toPublic,{
+  if(/who decides whether (?:this|it|a card) is accepted|what can the product owner do in review|can the product owner (?:ask for|request) changes/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:["faro-board-review-decision"],accessScope:"authenticated-portal-guidance"
+  });
+  if(/can (?:mira|you) approve (?:it|this)|is (?:this|my|the) (?:card )?accepted|has (?:this|my|the) card been accepted/.test(text)) return result(entries,toPublic,{
+    status:"partial",ids:["faro-board-review-decision","portal-board"],accessScope:"authenticated-navigation-only",
+    missingEvidence:"MIRA cannot see or decide the current official acceptance state of a private card.",
+    answer:entry=>entry.answer+" Open your Board to review the current card state."
+  });
+  if(/what is (?:a )?(?:sprint )?card|what does card mean/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:["faro-board-card"],accessScope:"authenticated-portal-guidance"
+  });
+  if(/what (?:do|does) (?:s m and l|s m l) mean|what is (?:a )?(?:card|story) size|how are cards sized/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:["faro-board-size"],accessScope:"authenticated-portal-guidance"
+  });
+  if(/who owns a card|what is a card owner|who is the assignee/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:["faro-board-owner"],accessScope:"authenticated-portal-guidance"
+  });
+  if(/what does blocked mean|what is a blocker|why is a card blocked/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:["faro-board-blocked"],accessScope:"authenticated-portal-guidance"
+  });
+  if(/what information.*standup|what.*(?:put|include|write|go(?:es)?|belong(?:s)?).*standup|standup (?:fields|template|content)/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["daily-scrum","minutes-usage-guide"],accessScope:"authenticated-linked-documents"
   });
   if(/how often.*(?:standup|status update)|(?:standup|status update).*frequency|finish.*standup/.test(text)) return result(entries,toPublic,{

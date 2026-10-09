@@ -1,6 +1,6 @@
 const HELPER='http://127.0.0.1:3005',PORTAL_PATTERN='https://capstone.cs.fiu.edu/*',SCRIPT_ID='mira-portal-content',ALARM='mira-portal-wake';
-const PORTAL_PATHS=new Set(['/portal','/today','/inbox','/board','/meetings','/this-term','/people','/me/rhythm','/recognition','/me/privacy']);
-const STANDALONE={Today:'/today',Inbox:'/inbox',Board:'/board',Meetings:'/meetings','Projects this term':'/this-term',People:'/people','My rhythm':'/me/rhythm',Recognition:'/recognition','Profile and privacy':'/me/privacy'};
+const PORTAL_PATHS=new Set(['/portal','/today','/inbox','/board','/meetings','/my-work','/this-term','/people','/me/rhythm','/recognition','/me/privacy']);
+const STANDALONE={Today:'/today',Inbox:'/inbox',Board:'/board',Meetings:'/meetings','My work':'/my-work','Projects this term':'/this-term',People:'/people','My rhythm':'/me/rhythm',Recognition:'/recognition','Profile and privacy':'/me/privacy'};
 let pollPromise=null,timer=null;
 const local={get:keys=>chrome.storage.local.get(keys),set:value=>chrome.storage.local.set(value),remove:keys=>chrome.storage.local.remove(keys)};
 

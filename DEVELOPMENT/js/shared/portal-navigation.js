@@ -1,4 +1,4 @@
-// Verified against the live portal navigation controls and router on 2026-10-08.
+// Verified against the live portal navigation controls and router on 2026-10-09.
 // Keep destinations here so Ocelot answers never invent portal routes.
 const PORTAL_ORIGIN = "https://capstone.cs.fiu.edu";
 const PORTAL_URL = PORTAL_ORIGIN + "/portal";
@@ -8,6 +8,7 @@ const definitions = [
   ["messages", "Inbox", null, true, false, "/inbox"],
   ["board", "Board", null, true, false, "/board"],
   ["meetings", "Meetings", null, true, false, "/meetings"],
+  ["my-work", "My work", null, true, false, "/my-work"],
   ["this-term", "Projects this term", null, true, false, "/this-term"],
   ["people", "People", null, true, false, "/people"],
   ["rhythm", "My rhythm", null, true, false, "/me/rhythm"],

@@ -27,6 +27,9 @@ October 8 retrieval, context, current-portal-selector, visual-density, and suppo
 
 ## Feature reference
 
+- [Portal context audit and adapters](PORTAL_CONTEXT_AUDIT.md) - October 9 route/selector map, privacy classifications, My work/My rhythm/Inbox boundaries, source routing, and session-only personal-context model.
+- [FARO reviewed-knowledge integration](FARO_INTEGRATION.md) - bounded use of the 15 reviewed candidates, source precedence, provenance, exclusions, navigation aliases, conflicts, and tests.
+- [FARO deep knowledge audit](FARO_DEEP_KNOWLEDGE_AUDIT.md) - read-only map of FARO's visible architecture, question prompts, curated vocabulary, conflicts, MIRA gaps, navigation, privacy exclusions, and human-review requirements. Its [review dataset](faro-review-dataset.json) remains the review record; only the explicitly documented safe subset and aliases affect MIRA.
 - [MIRA source coverage and acceptance](MIRA_SOURCE_COVERAGE.md) - public/course/private scope map, source authority, fifteen-question results, verified destinations and unresolved workflow-policy gaps.
 - [Local private portal connector](LOCAL_PORTAL_CONNECTOR.md) - Manifest V3 installation/pairing, exact permissions, five-minute refresh, message scope, full dashboard capability matrix, MCP fallback, privacy controls and restart behavior. Development only; never upload it.
 - [Indexed website knowledge and navigation](WEBSITE_INDEX.md) - public crawler, persistent snapshots, source excerpts/actions, maintenance commands, configuration, tests and limitations.

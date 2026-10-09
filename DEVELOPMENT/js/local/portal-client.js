@@ -86,7 +86,7 @@
     if(parsed.pathname==='/api/search') {
       if(!csrf)return original(route,options); // Public/indexed help remains usable when disconnected.
       const before=serial;
-      const result=await request('search',{question:parsed.searchParams.get('q')||'',context:parsed.searchParams.get('context')||''});
+      const result=await request('search',{question:parsed.searchParams.get('q')||'',context:parsed.searchParams.get('context')||'',depth:parsed.searchParams.get('depth')||'quick'});
       if(before!==serial)throw new DOMException('The portal session changed.','AbortError');
       return new Response(JSON.stringify(result),{headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
     }

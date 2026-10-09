@@ -47,7 +47,7 @@ test("root homepage and staff page serve with all referenced local assets in the
   await checkFile(new URL("/index.html", base));
   await checkFile(new URL("/pages/staff.html", base));
   await checkFile(new URL("/pages/recover.html", base));
-  for (const asset of ["css/fonts/mulish-var.woff2", "css/images/FIU_mark_white.svg", "css/images/icons.svg", "css/images/capstone-chat.svg", "js/chat/capstone-chat.js", "js/staff/staff.js", "js/staff/password-recovery.js", "js/shared/contact-policy.js"]) assert.ok(checked.has(`${base}/${asset}`), asset);
+  for (const asset of ["css/fonts/mulish-var.woff2", "css/images/FIU_mark_white.svg", "css/images/icons.svg", "css/images/capstone-chat.svg", "js/chat/capstone-chat.js", "js/staff/staff.js", "js/staff/password-recovery.js", "js/shared/contact-policy.js", "js/shared/mira-guidance.js"]) assert.ok(checked.has(`${base}/${asset}`), asset);
   assert.equal((await (await fetch(base + "/api/health")).json()).status, "ok");
 });
 

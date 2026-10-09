@@ -28,6 +28,16 @@
   const sharedModeStatus = document.querySelector("#shared-mode-status");
   const sharedModeDetail = document.querySelector("#shared-mode-detail");
   const sharedBar = document.querySelector(".shared-information-bar");
+  const responseDepth = document.querySelector("#response-depth");
+  const guideMeAction = document.querySelector("#guide-me-action");
+  const checkWorkDialog = document.querySelector("#check-work-dialog");
+  const checkWorkForm = document.querySelector("#check-work-form");
+  const checkWorkStatus = document.querySelector("#check-work-status");
+  const checkWorkSource = document.querySelector("#check-work-source");
+  const checkTextField = document.querySelector("#check-text-field");
+  const checkFileField = document.querySelector("#check-file-field");
+  const checkCustomField = document.querySelector("#check-custom-field");
+  const guidance = window.MiraGuidance;
   const sharedLibrary = window.CapstoneSharedInformation;
   const sharedStore = sharedLibrary?.createSharedInformationStore({
     cryptoLike:window.crypto,
@@ -76,6 +86,8 @@
   let sharedExpiryTimer = null;
   const topicHistory = [];
   const HISTORY_KEY = "miraPublicState";
+
+  function currentDepth(){return guidance?.normalizeDepth(responseDepth?.value)||"quick";}
 
   function safePublicTopic(value) {
     const ids=String(value||"").split(",").filter(id=>/^[a-z0-9][a-z0-9-]{0,99}$/.test(id)&&!id.startsWith("shared-")&&!id.startsWith("private-")).slice(0,5);
@@ -189,6 +201,13 @@
     } catch { return false; }
   }
 
+  function isPrivatePortalSource(value) {
+    try {
+      const url=new URL(value),allowed=["/portal","/today","/inbox","/board","/meetings","/my-work","/this-term","/people","/me/rhythm","/recognition","/me/privacy","/resources","/projects","/tutorials"];
+      return url.origin==="https://capstone.cs.fiu.edu"&&!url.username&&!url.password&&!url.search&&!url.hash&&allowed.includes(url.pathname);
+    } catch { return false; }
+  }
+
   function isReviewedPublicSource(value) {
     try {
       const url = new URL(value);
@@ -201,7 +220,7 @@
     try {
       const url = new URL(match.url);
       return !url.username && !url.password && (
-        (url.origin === "https://capstone.cs.fiu.edu" && ["/portal","/today","/inbox","/board","/meetings","/this-term","/people","/me/rhythm","/me/privacy","/recognition"].includes(url.pathname) && !url.search) ||
+        (url.origin === "https://capstone.cs.fiu.edu" && ["/portal","/today","/inbox","/board","/meetings","/my-work","/this-term","/people","/me/rhythm","/me/privacy","/recognition"].includes(url.pathname) && !url.search) ||
         (url.origin === "https://fiu.instructure.com" && url.pathname === "/courses/262782" && !url.search && !url.hash)
       );
     } catch { return false; }
@@ -555,7 +574,9 @@
   function renderAnswer(match, links = [], result = {}) {
     const answerMatches = (result.matches || [match]).filter(item => item && typeof item.id === "string").slice(0, 5);
     rememberTopic(answerMatches.map(item => item.id).join(",") || match.id);
-    const message = addAssistantText(match.answer);
+    const sourceLabel=match.provenance==="faro-reviewed-curated"?"Reviewed FARO curated guidance":match.sourceKind==="portal-navigation"?"Portal navigation — live data not checked":"Current Capstone guidance";
+    const answer=guidance?.applyDepth(match.answer,{depth:currentDepth(),sourceLabels:[sourceLabel],nextStep:match.sourceKind==="portal-navigation"?"Open the linked portal section and review the current signed-in information there.":"Review the cited source and apply its conditions to your work."})||match.answer;
+    const message = addAssistantText(answer,"Source: "+sourceLabel);
     addKeywordLinks(message, links);
     if (!links.some(link => link.id === match.id && link.url === match.url && isCapstoneUrl(link.url) && link.keywords?.length)) {
       addSourceCard(message, match);
@@ -635,7 +656,8 @@
     const sources = (result.sources || []).slice(0,5).filter(source => indexedLink(source,result));
     const offeredSourceIds = sources.map(source => source.id).join(",");
     rememberTopic(offeredSourceIds);
-    const message = addAssistantText(result.answer,"Indexed website · source excerpts · no AI generation or live check");
+    const indexedAnswer=guidance?.applyDepth(result.answer,{depth:currentDepth(),sourceLabels:["Indexed Capstone website"],nextStep:"Open the cited section and review its complete conditions."})||result.answer;
+    const message = addAssistantText(indexedAnswer,"Indexed website · source excerpts · no AI generation or live check");
     const choices = result.answerStatus === "clarification_needed";
     for (const source of sources) {
       const group = createElement("section","indexed-source");
@@ -675,7 +697,7 @@
     if(result.publicResult?.indexed) renderIndexed(result.publicResult, "");
     else if(result.publicResult?.status==="matched") renderAnswer(result.publicResult.matches[0],result.publicResult.links||[],result.publicResult);
     const message=addAssistantText(result.answer,"Private portal · source excerpts · not a complete account record");
-    const sources=connected?(result.sources||[]).filter(s=>/^private-[a-f0-9]{24}$/.test(s.id)&&s.url==="https://capstone.cs.fiu.edu/portal"):[];
+    const sources=connected?(result.sources||[]).filter(s=>/^private-(?:[a-f0-9]{24}|\d+-[a-f0-9]{8})$/.test(s.id)&&isPrivatePortalSource(s.url)):[];
     rememberTopic(sources.map(s=>s.id).join(","),{sensitive:true});
     const open=async source=>{
       try {const destination=await window.CapstonePortal.destination(source.id);window.open?.(destination.url,"_blank","noopener,noreferrer");}
@@ -685,7 +707,7 @@
       const section=createElement("section","indexed-source");
       section.append(createElement("h3","",source.sectionTitle));
       if(result.answerStatus!=="clarification_needed")section.append(createElement("blockquote","indexed-excerpt",source.excerpt));
-      section.append(createElement("p","message-note","Retrieved: "+source.retrievedAt+" · Portal → "+source.section+". "+source.coverage));
+      section.append(createElement("p","message-note","Source: "+source.section+" — current portal · Retrieved: "+source.retrievedAt+". "+source.coverage));
       section.append(createActionButton("View in portal · "+source.section,"source-card",()=>void open(source)));
       if(result.answerStatus==="clarification_needed")section.append(createActionButton("Use this private source","follow-up-button",()=>submitQuestion("Where does it say that?",source.id)));
       message.append(section);
@@ -716,7 +738,7 @@
         renderSharedAnswer(result);
         return result;
       }
-      const response = await api.fetch(`/api/search?q=${encodeURIComponent(question)}${contextId ? "&context=" + encodeURIComponent(contextId) : ""}`);
+      const response = await api.fetch(`/api/search?q=${encodeURIComponent(question)}${contextId ? "&context=" + encodeURIComponent(contextId) : ""}&depth=${encodeURIComponent(currentDepth())}`);
       const result = await api.readJson(response);
       if (sequence !== searchSequence) return { status:"cancelled", matches:[], links:[] };
       if (!response.ok) throw new Error(result.error || "Search is unavailable.");
@@ -750,14 +772,18 @@
 
   function contextForQuestion(question) {
     const text=String(question||"").trim().toLowerCase();
-    if(/^(?:and |also )?(?:what about )?(?:the )?next (?:one|sprint)?[.!?]*$|^(?:where do i get it|where can i get it|where does it say that|take me there|open it|open that|show me that section|when is (?:it|that|this) due|when is the deadline|what is the deadline|how many points(?: is (?:it|that|this))?|what is (?:it|that) worth|tell me more|what does that mean|what should i do|what do i need to do|where (?:do i |should i )?(?:submit|post|upload)(?: (?:it|that|this))?|how (?:is it|is that|am i) graded)[.!?]*$/.test(text))return lastTopic;
+    if(/^(?:and |also )?(?:what about )?(?:the )?next (?:one|sprint)?[.!?]*$|^(?:where do i get it|where can i get it|where does it say that|take me there|open it|open that|show me that section|when is (?:it|that|this) due|when is the deadline|what is the deadline|how many points(?: is (?:it|that|this))?|what is (?:it|that) worth|tell me more|what does that mean|what should i do|what do i need to do|guide me through this|just tell me the next step|where (?:do i |should i )?(?:submit|post|upload)(?: (?:it|that|this))?|how (?:is it|is that|am i) graded)[.!?]*$/.test(text))return lastTopic;
     return "";
   }
 
   function submitQuestion(question, contextId) {
     if (input.disabled) return Promise.resolve({ status:"busy", matches:[], links:[] });
-    const value = String(question || "").trim().slice(0, 500);
+    let value = String(question || "").trim().slice(0, 500);
     if (!value) return Promise.resolve({ status: "unmatched", matches: [] });
+    if(/^guide me through this[.!?]*$/i.test(value)&&lastQuestion){
+      if(responseDepth)responseDepth.value="guide";
+      value=lastQuestion;
+    }
     openChat();
     input.value = "";
     return search(value,contextId===undefined?contextForQuestion(value):contextId);
@@ -765,6 +791,53 @@
 
   document.querySelectorAll("[data-question]").forEach((button) => {
     button.addEventListener("click", () => submitQuestion(button.dataset.question, ""));
+  });
+
+  guideMeAction?.addEventListener("click",()=>{
+    responseDepth.value="guide";
+    openChat();
+    input.placeholder="Ask a question and MIRA will explain why and recommend a next actionâ€¦";
+    input.focus({preventScroll:true});
+  });
+  responseDepth?.addEventListener("change",()=>{
+    const mode=currentDepth();
+    input.placeholder=mode==="quick"?"Ask a course question or a follow-upâ€¦":mode==="guide"?"Ask a question and MIRA will explain why and recommend a next actionâ€¦":"Ask a question and MIRA will break it into safe sequential stepsâ€¦";
+  });
+
+  function updateCheckWorkFields(){
+    const portal=checkWorkSource?.value==="portal";
+    if(checkTextField)checkTextField.hidden=portal;
+    if(checkFileField)checkFileField.hidden=portal;
+    const criteria=checkWorkForm?.elements?.criteria?.value;
+    if(checkCustomField)checkCustomField.hidden=criteria!=="custom";
+  }
+  document.querySelector("#open-check-work")?.addEventListener("click",()=>{updateCheckWorkFields();checkWorkStatus.textContent="";checkWorkDialog.showModal();});
+  document.querySelector("#close-check-work")?.addEventListener("click",()=>checkWorkDialog.close());
+  document.querySelector("#cancel-check-work")?.addEventListener("click",()=>checkWorkDialog.close());
+  checkWorkSource?.addEventListener("change",updateCheckWorkFields);
+  checkWorkForm?.elements?.criteria?.addEventListener("change",updateCheckWorkFields);
+  checkWorkForm?.addEventListener("submit",async event=>{
+    event.preventDefault();
+    checkWorkStatus.className="form-status";checkWorkStatus.textContent="Reviewing locallyâ€¦";
+    const fields=new FormData(checkWorkForm),sourceMode=String(fields.get("sourceMode")||"paste"),criteria=String(fields.get("criteria")||"acceptance");
+    if(sourceMode==="portal"){
+      checkWorkDialog.close();
+      await submitQuestion("Can you check my current card against its acceptance criteria and evidence?","");
+      return;
+    }
+    try{
+      let workText=String(fields.get("workText")||""),file=fields.get("workFile");
+      if(file instanceof File&&file.size){
+        if(file.size>256*1024)throw new Error("Use a TXT or Markdown file no larger than 256 KB.");
+        if(!/\.(?:txt|md)$/i.test(file.name))throw new Error("Only TXT and Markdown evidence can be checked locally.");
+        workText+=(workText?"\n\n":"")+await file.text();
+      }
+      const result=guidance.checkWork({text:workText,criteria,customCriteria:fields.get("customCriteria")});
+      checkWorkDialog.close();openChat();
+      addUserMessage("Check my work against the selected criteria.",{sensitive:true});
+      addAssistantText(guidance.formatCheck(result),"Local read-only guidance Â· supplied content was not uploaded, saved, graded, approved, or submitted",{sensitive:true});
+      checkWorkForm.reset();updateCheckWorkFields();
+    }catch(error){checkWorkStatus.className="form-status error";checkWorkStatus.textContent=error.message;}
   });
 
   form?.addEventListener("submit", (event) => {
