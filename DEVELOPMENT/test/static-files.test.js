@@ -56,7 +56,7 @@ test("only the sidebar exposes the public syllabus PDF while the searchable refe
   const publicPdf = "documents/Fall-Term-2026-CIS-4951-RVC-Capstone-II-public.pdf";
   const links = [...html.matchAll(/<a[^>]+href="documents\/Fall-Term-2026-CIS-4951-RVC-Capstone-II-public\.pdf"[^>]*>[\s\S]*?<\/a>/g)].map(match => match[0]);
   assert.equal(links.length, 1);
-  assert.match(html, /<aside class="side-nav"[\s\S]*?<a href="documents\/Fall-Term-2026-CIS-4951-RVC-Capstone-II-public\.pdf" target="_blank" rel="noreferrer">Fall 2026 syllabus<\/a>[\s\S]*?<\/aside>/);
+  assert.match(html, /<aside class="side-nav"[\s\S]*?<a href="documents\/Fall-Term-2026-CIS-4951-RVC-Capstone-II-public\.pdf" target="_blank" rel="noreferrer">[\s\S]*?Fall 2026 syllabus[\s\S]*?<\/a>[\s\S]*?<\/aside>/);
   assert.doesNotMatch(html, /view-syllabus-home|view-syllabus-chat|syllabus-shortcut/);
   for (const appRoot of [base + "/", base + "/MIRA/"]) {
     assert.equal(new URL(publicPdf, appRoot).href, appRoot + publicPdf);

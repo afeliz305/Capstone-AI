@@ -30,6 +30,8 @@
   const sharedBar = document.querySelector(".shared-information-bar");
   const responseDepth = document.querySelector("#response-depth");
   const guideMeAction = document.querySelector("#guide-me-action");
+  const moreTools = document.querySelector(".mira-tools-menu");
+  const pageContextStatus = document.querySelector("#page-context-status");
   const checkWorkDialog = document.querySelector("#check-work-dialog");
   const checkWorkForm = document.querySelector("#check-work-form");
   const checkWorkStatus = document.querySelector("#check-work-status");
@@ -86,6 +88,7 @@
   let sharedExpiryTimer = null;
   const topicHistory = [];
   const HISTORY_KEY = "miraPublicState";
+  const LAUNCHER_HINT_KEY = "miraLauncherHintDismissed";
 
   function currentDepth(){return guidance?.normalizeDepth(responseDepth?.value)||"quick";}
 
@@ -121,7 +124,17 @@
     if(saved.open){chatPanel.hidden=false;launcher.hidden=true;openButtons.forEach(button=>button.setAttribute("aria-expanded","true"));}
   }
 
+  function dismissLauncherHint() {
+    launcher.classList?.toggle("hint-dismissed", true);
+    try { window.localStorage?.setItem(LAUNCHER_HINT_KEY, "1"); } catch { /* storage is optional */ }
+  }
+
+  try {
+    launcher.classList?.toggle("hint-dismissed", window.localStorage?.getItem(LAUNCHER_HINT_KEY) === "1");
+  } catch { /* storage is optional */ }
+
   function openChat() {
+    dismissLauncherHint();
     chatPanel.hidden = false;
     launcher.hidden = true;
     openButtons.forEach((button) => button.setAttribute("aria-expanded", "true"));
@@ -144,6 +157,11 @@
     if (event.key === "Escape" && !supportDialog.open) {
       event.preventDefault();
       event.stopPropagation();
+      if (moreTools?.open) {
+        moreTools.open = false;
+        moreTools.querySelector?.("summary")?.focus?.({ preventScroll: true });
+        return;
+      }
       minimizeChat();
     }
   });
@@ -153,6 +171,10 @@
     if (className) element.className = className;
     if (text !== undefined) element.textContent = text;
     return element;
+  }
+
+  function closeMoreTools() {
+    if (moreTools) moreTools.open = false;
   }
 
   function scrollToLatest(answer) {
@@ -359,6 +381,9 @@
       } else {
         sharedModeStatus.textContent="No shared information loaded";
         sharedModeDetail.textContent="Public and course answers are active.";
+      }
+      if (pageContextStatus) {
+        pageContextStatus.textContent = state.activeMode === "shared" ? "Shared context" : state.activeMode === "sample" ? "Fictional sample" : window.CapstonePortal ? "Portal context" : "Public + course";
       }
     }
     renderSharedSources(state);
@@ -582,6 +607,9 @@
       addSourceCard(message, match);
     }
     for (const related of answerMatches.slice(1)) addSourceCard(message, related);
+    if (/show my capstone snapshot/i.test(lastQuestion) && window.CapstonePortal?.status?.().state !== "connected") {
+      appendCapstoneSummary(message, { sources: [] });
+    }
     if (result.responseStatus) {
       message.append(createElement("p", "message-note", "Response status: " + String(result.responseStatus).replaceAll("_", " ")));
     }
@@ -621,6 +649,9 @@
       choices.append(button);
     });
     message.append(choices);
+    if (/show my capstone snapshot/i.test(lastQuestion) && window.CapstonePortal?.status?.().state !== "connected") {
+      appendCapstoneSummary(message, { sources: [] });
+    }
     addKeywordLinks(message, links);
     scrollToLatest(message);
   }
@@ -637,6 +668,9 @@
       createActionButton("Create support request", "primary-action", () => openSupportDialog())
     );
     message.append(actions);
+    if (/show my capstone snapshot/i.test(lastQuestion) && window.CapstonePortal?.status?.().state !== "connected") {
+      appendCapstoneSummary(message, { sources: [] });
+    }
     scrollToLatest(message);
   }
 
@@ -673,6 +707,9 @@
       message.append(group);
     }
     if (sources.length) message.append(createActionButton("Where does it say that?","follow-up-button",()=>submitQuestion("Where does it say that?",offeredSourceIds)));
+    if (/show my capstone snapshot/i.test(lastQuestion) && window.CapstonePortal?.status?.().state !== "connected") {
+      appendCapstoneSummary(message, { sources: [] });
+    }
     addFeedback(message);
     scrollToLatest(message);
     // Only an explicit navigation request can open a destination. A regular
@@ -688,8 +725,49 @@
     log.replaceChildren();
     conversation.length = 0; lastTopic = ""; topicHistory.length=0; lastQuestion = ""; input.value = "";
     input.disabled = false; form.querySelector("button[type='submit']").disabled = false;
+    if (pageContextStatus) pageContextStatus.textContent = "Public + course";
   }
   if (window.CapstonePortal) window.addEventListener("capstone-portal-clear",clearPortalConversation);
+
+  function appendCapstoneSummary(message, result) {
+    const sources = Array.isArray(result.sources) ? result.sources : [];
+    const sourceFor = (...sections) => sources.find(source => sections.some(section => String(source.section || source.sectionTitle || "").toLowerCase().includes(section)));
+    const cards = [
+      ["Current sprint", sourceFor("today", "my work", "board")],
+      ["Next step", sourceFor("today", "my work")],
+      ["Open work", sourceFor("my work", "board")],
+      ["Blocked work", sourceFor("board", "my work")],
+      ["Stand-ups this week", sourceFor("my rhythm", "rhythm")],
+      ["Upcoming meeting", sourceFor("meetings")],
+      ["Inbox", sourceFor("inbox")]
+    ];
+    const panel = createElement("section", "capstone-summary");
+    panel.setAttribute("aria-label", "My Capstone summary");
+    for (const [label, source] of cards) {
+      const card = createElement("div", "capstone-summary-card" + (source ? "" : " unavailable"));
+      const value = source ? String(source.excerpt || "Available in the cited portal source.").replace(/\s+/g, " ").slice(0, 180) : "Unavailable in this session";
+      card.append(createElement("strong", "", label), createElement("span", "", value));
+      panel.append(card);
+    }
+    message.append(panel);
+  }
+
+  function renderUnavailableCapstone() {
+    const message=addAssistantText(
+      "Your personal Capstone summary is unavailable in this session.",
+      "MIRA has not read your dashboard. Connect the approved local portal preview, or open a reviewed portal section and check the current information there."
+    );
+    appendCapstoneSummary(message,{sources:[]});
+    const actions=createElement("div","message-actions");
+    for(const id of ["overview","my-work","messages"]){
+      const destination=portalNavigation?.resolvePortalDestination?.(id);
+      if(!destination||!isReviewedPortalDestination({sourceKind:"portal-navigation",url:destination.url}))continue;
+      actions.append(createActionButton(`Open ${destination.label}`,"secondary-action",()=>window.open?.(destination.url,"_blank","noopener,noreferrer")));
+    }
+    message.append(actions);
+    addFeedback(message);
+    scrollToLatest(message);
+  }
 
   function renderPersonal(result,question) {
     const connected=window.CapstonePortal?.accepts(result);
@@ -697,7 +775,12 @@
     if(result.publicResult?.indexed) renderIndexed(result.publicResult, "");
     else if(result.publicResult?.status==="matched") renderAnswer(result.publicResult.matches[0],result.publicResult.links||[],result.publicResult);
     const message=addAssistantText(result.answer,"Private portal · source excerpts · not a complete account record");
+    if (/show my capstone snapshot/i.test(question)) appendCapstoneSummary(message,result);
     const sources=connected?(result.sources||[]).filter(s=>/^private-(?:[a-f0-9]{24}|\d+-[a-f0-9]{8})$/.test(s.id)&&isPrivatePortalSource(s.url)):[];
+    if (pageContextStatus && connected) {
+      const sections=[...new Set(sources.map(source=>String(source.section||"").trim()).filter(Boolean))];
+      pageContextStatus.textContent=sections.length?`Using ${sections.slice(0,2).join(" + ")}`:"Portal context";
+    }
     rememberTopic(sources.map(s=>s.id).join(","),{sensitive:true});
     const open=async source=>{
       try {const destination=await window.CapstonePortal.destination(source.id);window.open?.(destination.url,"_blank","noopener,noreferrer");}
@@ -737,6 +820,11 @@
         const result=sharedState?.activeMode?sharedStore.ask(question):{status:"expired",mode:null,privateLocal:true,answer:"Your shared information expired or was cleared. Start a new demo session or share an updated copy; this question was not sent to the public search.",sources:[]};
         renderSharedAnswer(result);
         return result;
+      }
+      if(/show my capstone snapshot/i.test(question)&&window.CapstonePortal?.status?.()?.state!=="connected"){
+        loading.remove();
+        renderUnavailableCapstone();
+        return{status:"personal-unavailable",matches:[],links:[]};
       }
       const response = await api.fetch(`/api/search?q=${encodeURIComponent(question)}${contextId ? "&context=" + encodeURIComponent(contextId) : ""}&depth=${encodeURIComponent(currentDepth())}`);
       const result = await api.readJson(response);
@@ -790,10 +878,11 @@
   }
 
   document.querySelectorAll("[data-question]").forEach((button) => {
-    button.addEventListener("click", () => submitQuestion(button.dataset.question, ""));
+    button.addEventListener("click", () => { closeMoreTools(); return submitQuestion(button.dataset.question, ""); });
   });
 
   guideMeAction?.addEventListener("click",()=>{
+    closeMoreTools();
     responseDepth.value="guide";
     openChat();
     input.placeholder="Ask a question and MIRA will explain why and recommend a next actionâ€¦";
@@ -811,7 +900,26 @@
     const criteria=checkWorkForm?.elements?.criteria?.value;
     if(checkCustomField)checkCustomField.hidden=criteria!=="custom";
   }
-  document.querySelector("#open-check-work")?.addEventListener("click",()=>{updateCheckWorkFields();checkWorkStatus.textContent="";checkWorkDialog.showModal();});
+  function appendGuidanceReview(message,result){
+    const panel=createElement("section","guidance-review");
+    panel.setAttribute("aria-label","Check my work guidance");
+    const add=(title,items,className="")=>{
+      const section=createElement("section","guidance-review-section"+(className?" "+className:""));
+      section.append(createElement("h3","",title));
+      const list=createElement("ul");
+      const values=items?.length?items:["Nothing additional identified from the supplied text."];
+      values.forEach(item=>list.append(createElement("li","",item)));
+      section.append(list);panel.append(section);
+    };
+    add("What looks complete",result.looksComplete);
+    add("What is weak or missing",result.missing);
+    add("Evidence needed",result.evidenceNeeded);
+    add("Questions a reviewer may ask",result.reviewerQuestions);
+    add("Recommended next step",[result.nextStep],"guidance-review-next");
+    panel.append(createElement("p","guidance-review-disclaimer",result.disclaimer));
+    message.append(panel);
+  }
+  document.querySelector("#open-check-work")?.addEventListener("click",()=>{closeMoreTools();updateCheckWorkFields();checkWorkStatus.textContent="";checkWorkDialog.showModal();});
   document.querySelector("#close-check-work")?.addEventListener("click",()=>checkWorkDialog.close());
   document.querySelector("#cancel-check-work")?.addEventListener("click",()=>checkWorkDialog.close());
   checkWorkSource?.addEventListener("change",updateCheckWorkFields);
@@ -835,7 +943,8 @@
       const result=guidance.checkWork({text:workText,criteria,customCriteria:fields.get("customCriteria")});
       checkWorkDialog.close();openChat();
       addUserMessage("Check my work against the selected criteria.",{sensitive:true});
-      addAssistantText(guidance.formatCheck(result),"Local read-only guidance Â· supplied content was not uploaded, saved, graded, approved, or submitted",{sensitive:true});
+      const reviewMessage=addAssistantText("Here is a structured review of the information you supplied.","Local read-only guidance · supplied content was not uploaded, saved, graded, approved, or submitted",{sensitive:true});
+      appendGuidanceReview(reviewMessage,result);scrollToLatest(reviewMessage);
       checkWorkForm.reset();updateCheckWorkFields();
     }catch(error){checkWorkStatus.className="form-status error";checkWorkStatus.textContent=error.message;}
   });
@@ -858,6 +967,7 @@
   });
 
   document.querySelector("#open-shared-information")?.addEventListener("click",()=>{
+    closeMoreTools();
     refreshSharedUi();
     sharedDialog?.showModal();
   });
@@ -879,6 +989,7 @@
     }catch(error){sharedStatus.className="form-status error";sharedStatus.textContent=error.message;}
   });
   document.querySelector("#load-sample-information")?.addEventListener("click",()=>{
+    closeMoreTools();
     sharedStore.loadSample();sharedRoutingLock=false;
     resetConversation("Sample data — not your account. Ask about the fictional task, sprint, or component scores.",{sensitive:true});
     refreshSharedUi();openChat();

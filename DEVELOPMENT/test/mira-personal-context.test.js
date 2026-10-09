@@ -99,9 +99,9 @@ test('privacy attack prompts fail closed before broad public or portal matching'
 test('MIRA UI exposes optional context actions without forcing a mode',()=>{
   const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
   assert.match(html,/id="response-depth"/);
-  assert.match(html,/>Quick<\/option>/);
+  assert.match(html,/value="quick">Just the next step<\/option>/);
   assert.match(html,/>Guide me<\/option>/);
-  assert.match(html,/>Step by step<\/option>/);
+  assert.match(html,/value="step">Teach me step by step<\/option>/);
   assert.match(html,/id="open-check-work"/);
   assert.match(html,/id="open-check-work"[^>]*aria-controls="check-work-dialog"[^>]*aria-haspopup="dialog"/);
   assert.match(html,/Show my Capstone snapshot/);

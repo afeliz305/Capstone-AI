@@ -11,6 +11,7 @@
     <link rel="icon" type="image/svg+xml" href="css/images/capstone-chat.svg">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/capstone-chat.css">
+    <script src="js/shared/theme.js" defer></script>
     <script src="js/shared/api-client.js" defer></script>
     <script src="js/shared/attachment-policy.js" defer></script>
     <script src="js/shared/contact-policy.js" defer></script>
@@ -31,6 +32,10 @@
       <nav aria-label="Prototype navigation">
         <a href="https://capstone.cs.fiu.edu/resources" target="_blank" rel="noreferrer">Resources</a>
         <a href="https://capstone.cs.fiu.edu/tutorials" target="_blank" rel="noreferrer">Tutorials</a>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Theme: system. Switch to dark mode." aria-pressed="false">
+          <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#theme"></use></svg>
+          <span data-theme-label>System</span>
+        </button>
         <a class="staff-link" href="pages/staff.html">Staff queue</a>
       </nav>
     </header>
@@ -41,11 +46,25 @@
         <button type="button" class="active" data-open-chat aria-controls="assistant" aria-expanded="false" aria-haspopup="dialog">
           <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#chat"></use></svg> MIRA
         </button>
-        <a href="https://capstone.cs.fiu.edu/portal" target="_blank" rel="noreferrer">
-          <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#home"></use></svg> My Dashboard
+        <a href="https://capstone.cs.fiu.edu/today" target="_blank" rel="noreferrer">
+          <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#today"></use></svg> Today
+        </a>
+        <a href="https://capstone.cs.fiu.edu/board" target="_blank" rel="noreferrer">
+          <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#board"></use></svg> Board
+        </a>
+        <a href="https://capstone.cs.fiu.edu/meetings" target="_blank" rel="noreferrer">
+          <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#calendar"></use></svg> Meetings
+        </a>
+        <a href="https://capstone.cs.fiu.edu/inbox" target="_blank" rel="noreferrer">
+          <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#inbox"></use></svg> Inbox
+        </a>
+        <a href="https://capstone.cs.fiu.edu/my-work" target="_blank" rel="noreferrer">
+          <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#work"></use></svg> My work
         </a>
         <p class="nav-label">REFERENCE</p>
-        <a href="documents/Fall-Term-2026-CIS-4951-RVC-Capstone-II-public.pdf" target="_blank" rel="noreferrer">Fall 2026 syllabus</a>
+        <a href="documents/Fall-Term-2026-CIS-4951-RVC-Capstone-II-public.pdf" target="_blank" rel="noreferrer">
+          <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#book"></use></svg> Fall 2026 syllabus
+        </a>
         <a href="https://capstone.cs.fiu.edu/resources" target="_blank" rel="noreferrer">
           <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#file"></use></svg> Resources
         </a>
@@ -176,6 +195,7 @@
     <button type="button" class="chat-launcher" id="chat-launcher" aria-label="Open MIRA chat" aria-controls="assistant" aria-expanded="false" aria-haspopup="dialog">
       <img class="chat-launcher-art" src="css/images/capstone-chat.svg" width="64" height="64" alt="" decoding="async" />
       <span class="chat-launcher-label"><span class="chat-launcher-name">MIRA</span><span>Let's chat</span></span>
+      <span class="launcher-signal" aria-hidden="true"></span>
     </button>
 
     <section class="chat-panel" id="assistant" role="dialog" aria-modal="false" aria-labelledby="chat-title" tabindex="-1" hidden>
@@ -183,36 +203,55 @@
         <div class="assistant-avatar" aria-hidden="true"><svg class="ui-icon"><use href="css/images/icons.svg#chat"></use></svg></div>
         <div>
           <h2 id="chat-title">MIRA</h2>
-          <p><span class="status-dot" aria-hidden="true"></span> Messaging, Information &amp; Resolution Assistant</p>
+          <p><span class="status-dot" aria-hidden="true"></span> Grounded Capstone guidance</p>
         </div>
         <div class="chat-header-actions">
+          <button type="button" class="icon-button theme-icon-button" data-theme-toggle aria-label="Theme: system. Switch to dark mode." aria-pressed="false" title="Change theme"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#theme"></use></svg><span class="sr-only" data-theme-label>System</span></button>
           <button type="button" class="icon-button" id="clear-chat" aria-label="Clear conversation" title="Clear conversation"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#refresh"></use></svg></button>
           <button type="button" class="icon-button" id="minimize-chat" aria-label="Minimize chat" title="Minimize chat (Escape)"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#minimize"></use></svg></button>
         </div>
       </header>
 
-      <section class="shared-information-bar" aria-label="Temporary information sources">
-        <div>
-          <strong id="shared-mode-status">No shared information loaded</strong>
-          <span id="shared-mode-detail">Public and course answers are active.</span>
-        </div>
-        <div class="shared-bar-actions">
-          <button type="button" class="secondary-action" id="open-shared-information">Use information I share</button>
-          <button type="button" class="secondary-action" id="load-sample-information">Load fictional sample</button>
-        </div>
-      </section>
+      <details class="mira-status-panel">
+        <summary>
+          <span class="status-chip"><span class="status-dot" aria-hidden="true"></span><span id="page-context-status">Public + course</span></span>
+          <span class="status-summary">Context</span>
+        </summary>
+        <section class="shared-information-bar" aria-label="Temporary information sources">
+          <div>
+            <strong id="shared-mode-status">No shared information loaded</strong>
+            <span id="shared-mode-detail">Public and course answers are active.</span>
+          </div>
+        </section>
+      </details>
 
-      <section class="mira-context-actions" aria-label="MIRA contextual actions">
-        <button type="button" class="secondary-action" data-question="Show my Capstone snapshot">My Capstone</button>
-        <button type="button" class="secondary-action" id="open-check-work" aria-controls="check-work-dialog" aria-haspopup="dialog">Check my work</button>
-        <button type="button" class="secondary-action" id="guide-me-action">Guide me</button>
-        <button type="button" class="secondary-action" data-question="Who should I ask for help with this?">Ask a person</button>
-        <label for="response-depth">Response depth</label>
-        <select id="response-depth" aria-label="Response depth">
-          <option value="quick">Quick</option>
-          <option value="guide">Guide me</option>
-          <option value="step">Step by step</option>
-        </select>
+      <section class="mira-context-actions" aria-label="MIRA tools and response style">
+        <div class="primary-tool-row">
+          <button type="button" class="context-action context-action-primary" data-question="Show my Capstone snapshot">
+            <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#compass"></use></svg><span><strong>My Capstone</strong><small>Current priorities</small></span>
+          </button>
+          <button type="button" class="context-action" id="open-check-work" aria-controls="check-work-dialog" aria-haspopup="dialog">
+            <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#check"></use></svg><span><strong>Check my work</strong><small>Review safely</small></span>
+          </button>
+          <details class="mira-tools-menu">
+            <summary aria-label="Open more MIRA tools"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#more"></use></svg><span>More tools</span></summary>
+            <div class="tool-menu-panel">
+              <button type="button" class="tool-menu-action" id="guide-me-action"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#guide"></use></svg><span><strong>Guide me</strong><small>Explain why and suggest a next step</small></span></button>
+              <button type="button" class="tool-menu-action" data-question="Who should I ask for help with this?"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#people"></use></svg><span><strong>Ask a person</strong><small>Get a role recommendation; nothing is sent</small></span></button>
+              <button type="button" class="tool-menu-action" id="open-shared-information"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#share"></use></svg><span><strong>Use information I share</strong><small>Temporary, local, and cleared after five minutes</small></span></button>
+              <button type="button" class="tool-menu-action" id="load-sample-information"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#sample"></use></svg><span><strong>Load fictional sample</strong><small>Explore without using personal information</small></span></button>
+              <p class="tool-menu-note">MIRA never sends a message, submits work, or contacts anyone automatically.</p>
+            </div>
+          </details>
+        </div>
+        <div class="response-style-control">
+          <label for="response-depth">Response style</label>
+          <select id="response-depth" aria-label="Response style">
+            <option value="quick">Just the next step</option>
+            <option value="guide">Guide me</option>
+            <option value="step">Teach me step by step</option>
+          </select>
+        </div>
       </section>
 
       <div class="chat-log" role="log" aria-live="polite" aria-relevant="additions">
@@ -221,16 +260,21 @@
           <p>Hi! Ask about your course, choose a sprint, or explore the syllabus. You can ask follow-ups such as “When is it due?” after choosing a topic.</p>
           <p class="message-note">I cite reviewed sources, not live personal records. For course questions, the syllabus directs you to Canvas Inbox. This prototype can also create a test support ticket.</p>
         </article>
-        <div class="starter-prompts" aria-label="Suggested questions">
+        <div class="starter-prompts starter-prompts-primary" aria-label="Suggested questions">
           <button type="button" data-question="Do I have any new messages?">Check messages</button>
           <button type="button" data-question="Open my dashboard">Open dashboard</button>
           <button type="button" data-question="How do I get started with Capstone?">Getting started</button>
           <button type="button" data-question="Show me the syllabus">Ask about syllabus</button>
-          <button type="button" data-question="What are the course deadlines?">Deadlines</button>
-          <button type="button" data-question="How are sprints graded?">Grading rules</button>
-          <button type="button" data-question="Where are the Capstone tutorials?">Find tutorials</button>
-          <button type="button" data-question="How should our team prepare for the showcase?">Showcase checklist</button>
         </div>
+        <details class="starter-more">
+          <summary>More question ideas</summary>
+          <div class="starter-prompts" aria-label="More suggested questions">
+            <button type="button" data-question="What are the course deadlines?">Deadlines</button>
+            <button type="button" data-question="How are sprints graded?">Grading rules</button>
+            <button type="button" data-question="Where are the Capstone tutorials?">Find tutorials</button>
+            <button type="button" data-question="How should our team prepare for the showcase?">Showcase checklist</button>
+          </div>
+        </details>
       </div>
 
       <form class="chat-composer" id="chat-form">
@@ -360,6 +404,11 @@
             <p>This demo saves the request on this app's server. It does not send an email. Use fictional test information only.</p>
           </div>
           <button class="dialog-close" type="button" aria-label="Close support form">×</button>
+        </div>
+
+        <div class="escalation-disclosure" role="note">
+          <strong>You stay in control.</strong>
+          <span>MIRA can recommend the right support route, but nothing is sent automatically. Only the fields and attachments you submit here are shared with the support queue.</span>
         </div>
 
         <div class="account-notice">

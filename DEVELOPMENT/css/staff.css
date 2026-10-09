@@ -27,7 +27,7 @@
 .staff-access-card p { margin: 12px 0; font-size: 16px; }
 #staff-login-form { display: grid; gap: 8px; margin: 22px 0; }
 #staff-login-form label { font-size: 14px; font-weight: 800; }
-#staff-login-form input { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; margin-bottom: 8px; border: 1px solid var(--line); border-radius: var(--control-radius); font-size: 16px; }
+#staff-login-form input { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; margin-bottom: 8px; border: 1px solid var(--line); border-radius: var(--control-radius); color: var(--ink); background: var(--surface); font-size: 16px; }
 .password-control { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: stretch; gap: 8px; min-width: 0; }
 .password-control[hidden] { display: none; }
 #staff-login-form .password-control { margin-bottom: 8px; }

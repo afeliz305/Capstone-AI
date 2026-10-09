@@ -135,6 +135,7 @@ function mount(fetchResult = async () => ({ ok: true, json: async () => ({ statu
     clearShared: document.querySelector("#clear-shared-information"),
     newSharedSession: document.querySelector("#new-shared-session"),
     loadSample: document.querySelector("#load-sample-information"),
+    moreTools: document.querySelector(".mira-tools-menu"),
     attachmentInput: document.querySelector("#ticket-attachments"),
     attachmentList: document.querySelector("#attachment-list"),
     attachmentStatus: document.querySelector("#attachment-status"),
@@ -184,6 +185,34 @@ test("chat starts hidden in HTML and opens only when requested", () => {
   assert.equal(ui.launcher.attributes["aria-expanded"], "true");
   assert.equal(ui.sidebar.attributes["aria-expanded"], "true");
   assert.equal(ui.document.activeElement, ui.input);
+});
+
+test("Escape closes More tools before minimizing the chat", () => {
+  const ui = mount();
+  ui.launcher.emit("click");
+  ui.moreTools.open = true;
+  ui.panel.emit("keydown", { key: "Escape" });
+  assert.equal(ui.moreTools.open, false);
+  assert.equal(ui.panel.hidden, false);
+  ui.panel.emit("keydown", { key: "Escape" });
+  assert.equal(ui.panel.hidden, true);
+});
+
+test("My Capstone renders unavailable fields honestly without a connected portal", async () => {
+  let requests=0;
+  const ui = mount(async () => { requests++; return ({ ok:true, json:async () => ({
+    status:"matched",
+    matches:[{ id:"portal-overview", title:"Today", answer:"Open Today for your current account information.", url:"https://capstone.cs.fiu.edu/today", sourceKind:"portal-navigation", section:"Dashboard", access:"authenticated", followUps:[] }],
+    links:[]
+  }) }); });
+  ui.input.value = "Show my Capstone snapshot";
+  await ui.chatForm.emit("submit");
+  await new Promise(resolve => setImmediate(resolve));
+  const cards = descendants(ui.log).filter(node => (node.className || "").split(" ").includes("capstone-summary-card"));
+  assert.equal(cards.length, 7);
+  assert.ok(cards.every(card => descendants(card).some(node => node.textContent === "Unavailable in this session")));
+  assert.equal(requests,0,"an unavailable personal summary should not be sent to the public search");
+  assert.ok(descendants(ui.log).some(node => node.textContent === "Your personal Capstone summary is unavailable in this session."));
 });
 
 test("browser history retains bounded public source context without storing questions or shared text",async()=>{

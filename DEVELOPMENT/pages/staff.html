@@ -9,6 +9,7 @@
     <link rel="icon" type="image/svg+xml" href="../css/images/capstone-chat.svg">
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/staff.css">
+    <script src="../js/shared/theme.js" defer></script>
     <script src="../js/shared/api-client.js" defer></script>
     <script src="../js/staff/staff-view.js" defer></script>
     <script src="../js/shared/contact-policy.js" defer></script>
@@ -27,6 +28,10 @@
       </a>
       <nav aria-label="Staff navigation">
         <a href="../index.html">Student assistant</a>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Theme: system. Switch to dark mode." aria-pressed="false">
+          <svg class="ui-icon" aria-hidden="true"><use href="../css/images/icons.svg#theme"></use></svg>
+          <span data-theme-label>System</span>
+        </button>
         <button class="refresh-button" id="refresh-tickets" type="button" hidden>Refresh queue</button>
         <div class="staff-profile" id="staff-profile" hidden>
           <button class="staff-profile-trigger" id="staff-profile-trigger" type="button" aria-label="Open staff account menu" aria-haspopup="menu" aria-controls="staff-profile-menu" aria-expanded="false">

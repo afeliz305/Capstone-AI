@@ -9,6 +9,7 @@
     <link rel="icon" type="image/svg+xml" href="../css/images/capstone-chat.svg">
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/staff.css">
+    <script src="../js/shared/theme.js" defer></script>
     <script src="../js/shared/api-client.js" defer></script>
     <script src="../js/staff/password-recovery.js" defer></script>
   </head>
@@ -21,7 +22,13 @@
           <span>MIRA · PROTOTYPE</span>
         </span>
       </a>
-      <nav aria-label="Recovery navigation"><a href="staff.html">Staff Queue</a></nav>
+      <nav aria-label="Recovery navigation">
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Theme: system. Switch to dark mode." aria-pressed="false">
+          <svg class="ui-icon" aria-hidden="true"><use href="../css/images/icons.svg#theme"></use></svg>
+          <span data-theme-label>System</span>
+        </button>
+        <a href="staff.html">Staff Queue</a>
+      </nav>
     </header>
     <main class="staff-access">
       <section class="staff-access-card" aria-labelledby="recovery-title">

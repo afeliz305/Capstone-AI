@@ -60,7 +60,7 @@ async function createOcelotPackage({ root = path.resolve(__dirname, ".."), outpu
       }
       bytes = Buffer.from(html);
     }
-    if (file === "css/styles.css") bytes = Buffer.concat([bytes, Buffer.from('\n.hosting-test-notice { margin: 0; padding: .75rem 1.5rem; background: #fff4d1; color: #172b4d; border-bottom: 1px solid #d9a836; font-size: .95rem; line-height: 1.5; }\n')]);
+    if (file === "css/styles.css") bytes = Buffer.concat([bytes, Buffer.from('\n.hosting-test-notice { margin: 0; padding: .75rem 1.5rem; background: var(--warning-bg); color: var(--ink); border-bottom: 1px solid var(--fiu-gold); font-size: .95rem; line-height: 1.5; }\n')]);
     await write(file, bytes);
   }
   if (transport === "browser") {
