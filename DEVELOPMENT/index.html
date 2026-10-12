@@ -20,7 +20,7 @@
     <script src="js/chat/shared-information.js" defer></script>
     <script src="js/chat/capstone-chat.js" defer></script>
   </head>
-  <body>
+  <body class="mira-dashboard-page">
     <header class="site-header">
       <a class="brand" href="https://capstone.cs.fiu.edu/" target="_blank" rel="noreferrer" aria-label="Open the FIU KFSCIS Capstone site">
         <img class="brand-fiu" src="css/images/FIU_mark_white.svg" alt="FIU" width="79" height="38">
@@ -32,15 +32,162 @@
       <nav aria-label="Prototype navigation">
         <a href="https://capstone.cs.fiu.edu/resources" target="_blank" rel="noreferrer">Resources</a>
         <a href="https://capstone.cs.fiu.edu/tutorials" target="_blank" rel="noreferrer">Tutorials</a>
-        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Theme: system. Switch to dark mode." aria-pressed="false">
-          <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#theme"></use></svg>
-          <span data-theme-label>System</span>
-        </button>
         <a class="staff-link" href="pages/staff.html">Staff queue</a>
       </nav>
     </header>
 
-    <div class="portal-shell">
+    <div class="dashboard-shell">
+      <aside class="side-nav dashboard-nav" aria-label="MIRA dashboard sections">
+        <div class="nav-product">
+          <span class="nav-product-mark" aria-hidden="true"><svg class="ui-icon"><use href="css/images/icons.svg#compass"></use></svg></span>
+          <span><strong>My Capstone</strong><small>Student workspace</small></span>
+        </div>
+        <p class="nav-label">OVERVIEW</p>
+        <a class="active" href="#dashboard-top" aria-current="page"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#dashboard"></use></svg><span>Dashboard</span></a>
+        <button type="button" data-open-chat aria-controls="assistant" aria-expanded="false" aria-haspopup="dialog"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#chat"></use></svg><span>Ask MIRA</span></button>
+        <button type="button" data-open-check-work aria-controls="check-work-dialog" aria-haspopup="dialog"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#check-work"></use></svg><span>Check my work</span></button>
+
+        <p class="nav-label">MY CAPSTONE</p>
+        <a href="https://capstone.cs.fiu.edu/today" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#today"></use></svg><span>Today</span></a>
+        <a href="https://capstone.cs.fiu.edu/board" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#board"></use></svg><span>Board</span></a>
+        <a href="https://capstone.cs.fiu.edu/my-work" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#work"></use></svg><span>My work</span></a>
+        <a href="https://capstone.cs.fiu.edu/meetings" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#meetings"></use></svg><span>Meetings</span></a>
+        <a href="https://capstone.cs.fiu.edu/inbox" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#inbox"></use></svg><span>Inbox</span></a>
+        <a href="https://capstone.cs.fiu.edu/me/rhythm" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#rhythm"></use></svg><span>My rhythm</span></a>
+
+        <p class="nav-label">ACADEMIC</p>
+        <a href="https://capstone.cs.fiu.edu/portal#mygrade" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#grade"></use></svg><span>My grade</span></a>
+        <a href="https://capstone.cs.fiu.edu/portal#compare" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#standing"></use></svg><span>Standing</span></a>
+        <a href="https://capstone.cs.fiu.edu/portal#team" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#team"></use></svg><span>Team</span></a>
+
+        <p class="nav-label">RESOURCES</p>
+        <a href="documents/Fall-Term-2026-CIS-4951-RVC-Capstone-II-public.pdf" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#syllabus"></use></svg><span>Fall 2026 syllabus</span></a>
+        <a href="https://capstone.cs.fiu.edu/resources" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#resources"></use></svg><span>Resources</span></a>
+        <a href="https://capstone.cs.fiu.edu/tutorials" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#tutorials"></use></svg><span>Tutorials</span></a>
+        <button type="button" data-question="Who should I ask for help with this?"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#help"></use></svg><span>Ask a person</span></button>
+        <div class="scope-note">
+          <span class="status-dot" aria-hidden="true"></span>
+          <strong>Grounded guidance</strong>
+          <span>Public site + Fall 2026 syllabus</span>
+        </div>
+      </aside>
+
+      <main class="dashboard-workspace" id="dashboard-top">
+        <header class="dashboard-heading">
+          <div>
+            <p class="dashboard-greeting" id="dashboard-greeting">Welcome</p>
+            <h1>My Capstone</h1>
+            <p>Your work, deadlines, resources, and help in one place.</p>
+          </div>
+          <div class="dashboard-context" aria-label="Current dashboard context">
+            <span class="term-chip">Fall 2026</span>
+            <span class="context-status"><span class="status-dot" aria-hidden="true"></span> Course guidance ready</span>
+            <div class="dashboard-profile" id="dashboard-profile">
+              <button class="profile-trigger" id="dashboard-profile-trigger" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="dashboard-profile-menu">
+                <span class="profile-avatar" aria-hidden="true">M</span><span class="profile-trigger-copy"><strong id="dashboard-profile-trigger-name">MIRA user</strong><small>Standalone mode</small></span><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#chevron"></use></svg>
+              </button>
+              <section class="profile-menu" id="dashboard-profile-menu" role="menu" aria-label="MIRA profile and settings" hidden>
+                <header><span class="profile-avatar" aria-hidden="true">M</span><span><strong id="dashboard-profile-name">MIRA user</strong><small id="dashboard-profile-role">Student workspace</small></span></header>
+                <div class="profile-status" id="dashboard-profile-status"><span class="status-dot" aria-hidden="true"></span><span><strong>Course guidance ready</strong><small>Personal context unavailable</small></span></div>
+                <div class="profile-menu-group"><span>Account</span><a role="menuitem" href="https://capstone.cs.fiu.edu/me/privacy" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#profile"></use></svg>Portal profile</a><button role="menuitem" type="button" data-question="Explain MIRA privacy and consent"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#shield"></use></svg>Privacy &amp; consent</button></div>
+                <div class="profile-menu-group appearance-group"><span>Appearance</span><div class="theme-options" role="group" aria-label="MIRA appearance"><button type="button" data-theme-choice="portal">Follow portal</button><button type="button" data-theme-choice="light">Light</button><button type="button" data-theme-choice="dark">Dark</button><button type="button" data-theme-choice="system">Auto</button></div><small id="portal-theme-note">Portal theme unavailable; Follow portal uses Auto.</small></div>
+                <div class="profile-menu-group"><span>Help</span><button role="menuitem" type="button" data-question="What is MIRA and what can it do?"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#info"></use></svg>About MIRA</button><button role="menuitem" type="button" data-question="How can I send feedback about MIRA?"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#chat"></use></svg>Send feedback</button><a role="menuitem" href="pages/staff.html"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#settings"></use></svg>Staff Queue</a></div>
+              </section>
+            </div>
+          </div>
+        </header>
+
+        <details class="mobile-dashboard-nav">
+          <summary><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#grid"></use></svg><span>Navigate</span></summary>
+          <div>
+            <a href="https://capstone.cs.fiu.edu/today" target="_blank" rel="noreferrer">Today</a>
+            <a href="https://capstone.cs.fiu.edu/board" target="_blank" rel="noreferrer">Board</a>
+            <a href="https://capstone.cs.fiu.edu/my-work" target="_blank" rel="noreferrer">My work</a>
+            <a href="https://capstone.cs.fiu.edu/inbox" target="_blank" rel="noreferrer">Inbox</a>
+            <button type="button" data-open-chat>Ask MIRA</button>
+            <button type="button" data-open-check-work>Check work</button>
+          </div>
+        </details>
+
+        <section class="next-step-hero" aria-labelledby="next-step-title" data-state="unavailable">
+          <div class="hero-copy">
+            <span class="hero-kicker"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#compass"></use></svg> Next best step</span>
+            <h2 id="next-step-title">Open your Capstone Today view</h2>
+            <p>Connect to your signed-in Capstone portal to see current work and a personalized next step. MIRA will not invent a task when live context is unavailable.</p>
+            <div class="hero-actions">
+              <a class="dashboard-button dashboard-button-primary" href="https://capstone.cs.fiu.edu/today" target="_blank" rel="noreferrer">Open Today <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#external"></use></svg></a>
+              <button class="dashboard-button" type="button" data-open-check-work>Check my work</button>
+              <button class="dashboard-button dashboard-button-quiet" type="button" data-question="What should I do next?">Guide me</button>
+            </div>
+            <div class="hero-status" aria-label="Personal data status"><span class="status-dot" aria-hidden="true"></span><strong>Personal context unavailable</strong><span>Open the portal for live data.</span></div>
+          </div>
+        </section>
+
+        <div class="dashboard-primary-grid">
+          <div class="dashboard-flow">
+            <section class="work-overview" aria-labelledby="work-summary-title">
+              <div class="dashboard-section-heading"><div><p class="eyebrow">MY WORK</p><h2 id="work-summary-title">At a glance</h2></div><a href="https://capstone.cs.fiu.edu/board" target="_blank" rel="noreferrer">Open board <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#external"></use></svg></a></div>
+              <div class="metric-grid">
+                <a class="metric-tile" href="https://capstone.cs.fiu.edu/my-work" target="_blank" rel="noreferrer" aria-label="In progress: unavailable. Open My work."><span class="metric-icon metric-blue"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#work"></use></svg></span><span class="metric-label">In progress</span><strong>Unavailable</strong><small>Open My work</small></a>
+                <a class="metric-tile" href="https://capstone.cs.fiu.edu/board" target="_blank" rel="noreferrer" aria-label="Blocked work: unavailable. Open Board."><span class="metric-icon metric-warn"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#blocked"></use></svg></span><span class="metric-label">Blocked</span><strong>Unavailable</strong><small>Open Board</small></a>
+                <a class="metric-tile" href="https://capstone.cs.fiu.edu/board" target="_blank" rel="noreferrer" aria-label="Verify or review work: unavailable. Open Board."><span class="metric-icon metric-green"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#check-work"></use></svg></span><span class="metric-label">Verify / review</span><strong>Unavailable</strong><small>Open Board</small></a>
+                <a class="metric-tile" href="https://capstone.cs.fiu.edu/today" target="_blank" rel="noreferrer" aria-label="Current sprint: unavailable. Open Today."><span class="metric-icon metric-gold"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#rhythm"></use></svg></span><span class="metric-label">Current sprint</span><strong>Unavailable</strong><small>Open Today</small></a>
+              </div>
+            </section>
+
+            <section class="week-overview" aria-labelledby="week-title">
+              <div class="dashboard-section-heading"><div><p class="eyebrow">THIS WEEK</p><h2 id="week-title">What needs attention</h2></div></div>
+              <div class="week-list">
+                <a href="https://capstone.cs.fiu.edu/me/rhythm" target="_blank" rel="noreferrer"><span class="week-icon"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#rhythm"></use></svg></span><span><strong>Standups</strong><small>Open My rhythm to check</small></span><b>Unavailable</b><svg class="ui-icon row-arrow" aria-hidden="true"><use href="css/images/icons.svg#chevron"></use></svg></a>
+                <a href="https://capstone.cs.fiu.edu/meetings" target="_blank" rel="noreferrer"><span class="week-icon"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#meetings"></use></svg></span><span><strong>Next meeting</strong><small>Open Meetings to view</small></span><b>Unavailable</b><svg class="ui-icon row-arrow" aria-hidden="true"><use href="css/images/icons.svg#chevron"></use></svg></a>
+                <button type="button" data-question="What are the course deadlines?"><span class="week-icon"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#deadline"></use></svg></span><span><strong>Upcoming deadline</strong><small>Ask MIRA about course dates</small></span><b>Course guidance</b><svg class="ui-icon row-arrow" aria-hidden="true"><use href="css/images/icons.svg#chevron"></use></svg></button>
+                <a href="https://capstone.cs.fiu.edu/inbox" target="_blank" rel="noreferrer"><span class="week-icon"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#inbox"></use></svg></span><span><strong>Inbox</strong><small>Open Inbox to check messages</small></span><b>Unavailable</b><svg class="ui-icon row-arrow" aria-hidden="true"><use href="css/images/icons.svg#chevron"></use></svg></a>
+              </div>
+            </section>
+          </div>
+
+          <section class="mira-dashboard-assistant" id="ask-mira" aria-labelledby="ask-mira-title">
+            <div class="mira-dashboard-header">
+              <span class="mira-orb" aria-hidden="true"><svg class="ui-icon"><use href="css/images/icons.svg#chat"></use></svg></span>
+              <div><p class="eyebrow">CONTEXTUAL ASSISTANCE</p><h2 id="ask-mira-title">Ask MIRA</h2><p>Get course guidance, check your work, or find where to go next.</p></div>
+              <span class="mira-ready"><span class="status-dot" aria-hidden="true"></span> Ready</span>
+            </div>
+            <form class="dashboard-mira-form" id="dashboard-mira-form">
+              <label for="dashboard-mira-input">What do you need help with?</label>
+              <div><input id="dashboard-mira-input" maxlength="500" autocomplete="off" placeholder="Ask about a deadline, task, or Capstone process…" required><button type="submit" aria-label="Ask MIRA"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#send"></use></svg></button></div>
+            </form>
+            <div class="dashboard-prompt-list" aria-label="Suggested MIRA prompts">
+              <button type="button" data-question="What should I do next?"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#compass"></use></svg>What should I do next?</button>
+              <button type="button" data-open-check-work><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#check-work"></use></svg>Check my work</button>
+              <button type="button" data-question="Explain acceptance criteria"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#guide"></use></svg>Explain this</button>
+              <button type="button" data-question="Open my dashboard"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#external"></use></svg>Take me there</button>
+            </div>
+            <div class="dashboard-guidance">
+              <span>Guidance mode</span>
+              <div role="group" aria-label="MIRA guidance mode">
+                <button type="button" class="active" data-dashboard-depth="quick" aria-pressed="true">Quick</button>
+                <button type="button" data-dashboard-depth="guide" aria-pressed="false">Guide me</button>
+                <button type="button" data-dashboard-depth="step" aria-pressed="false">Step by step</button>
+              </div>
+            </div>
+            <div class="mira-boundary"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#shield"></use></svg><span><strong>Grounded, not guessing.</strong> Answers use reviewed Capstone sources. Personal records stay in the portal unless you explicitly share approved temporary context.</span></div>
+          </section>
+        </div>
+
+        <section class="shortcut-directory" aria-labelledby="shortcut-title">
+          <div class="dashboard-section-heading"><div><p class="eyebrow">EXPLORE</p><h2 id="shortcut-title">Resources &amp; shortcuts</h2></div><span>Everything else, without the clutter.</span></div>
+          <div class="shortcut-groups">
+            <div><h3>My portal</h3><nav aria-label="My portal shortcuts"><a href="https://capstone.cs.fiu.edu/today" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#today"></use></svg><span>Today</span></a><a href="https://capstone.cs.fiu.edu/board" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#board"></use></svg><span>Board</span></a><a href="https://capstone.cs.fiu.edu/my-work" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#work"></use></svg><span>My work</span></a><a href="https://capstone.cs.fiu.edu/meetings" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#meetings"></use></svg><span>Meetings</span></a><a href="https://capstone.cs.fiu.edu/inbox" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#inbox"></use></svg><span>Inbox</span></a><a href="https://capstone.cs.fiu.edu/me/rhythm" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#rhythm"></use></svg><span>My rhythm</span></a><a href="https://capstone.cs.fiu.edu/portal#mygrade" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#grade"></use></svg><span>Grade</span></a><a href="https://capstone.cs.fiu.edu/portal#compare" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#standing"></use></svg><span>Standing</span></a></nav></div>
+            <div><h3>Course</h3><nav aria-label="Course shortcuts"><button type="button" data-question="Show me the syllabus"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#syllabus"></use></svg><span>Syllabus</span></button><a href="https://capstone.cs.fiu.edu/resources" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#resources"></use></svg><span>Resources</span></a><a href="https://capstone.cs.fiu.edu/tutorials" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#tutorials"></use></svg><span>Tutorials</span></a><button type="button" data-question="Where are the sprint minutes?"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#rhythm"></use></svg><span>Sprint guidance</span></button><button type="button" data-question="Where are the brand templates?"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#layers"></use></svg><span>Brand &amp; templates</span></button></nav></div>
+            <div><h3>People &amp; help</h3><nav aria-label="People and help shortcuts"><a href="https://capstone.cs.fiu.edu/portal#team" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#team"></use></svg><span>Team</span></a><button type="button" data-question="Who is my Product Owner?"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#people"></use></svg><span>Product Owner</span></button><a href="https://capstone.cs.fiu.edu/portal#ai-anchors" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#chat"></use></svg><span>AI Anchor</span></a><button type="button" data-question="How do I contact the instructor?"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#instructor"></use></svg><span>Instructor</span></button><button type="button" data-question="Who should I ask for help with this?"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#help"></use></svg><span>Ask a person</span></button></nav></div>
+          </div>
+        </section>
+
+        <section class="trust-strip" aria-label="MIRA information boundary"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#shield"></use></svg><div><strong>Your dashboard stays honest.</strong><span>Unknown personal values are labeled unavailable—not shown as zero. Open the signed-in portal for current records.</span></div><button type="button" data-open-chat>Ask MIRA about the boundary</button></section>
+      </main>
+    </div>
+
+    <div class="portal-shell legacy-home" hidden>
       <aside class="side-nav" aria-label="Capstone sections">
         <p class="nav-label">SUPPORT</p>
         <button type="button" class="active" data-open-chat aria-controls="assistant" aria-expanded="false" aria-haspopup="dialog">
@@ -62,9 +209,7 @@
           <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#work"></use></svg> My work
         </a>
         <p class="nav-label">REFERENCE</p>
-        <a href="documents/Fall-Term-2026-CIS-4951-RVC-Capstone-II-public.pdf" target="_blank" rel="noreferrer">
-          <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#book"></use></svg> Fall 2026 syllabus
-        </a>
+        <span>Fall 2026 syllabus</span>
         <a href="https://capstone.cs.fiu.edu/resources" target="_blank" rel="noreferrer">
           <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#file"></use></svg> Resources
         </a>

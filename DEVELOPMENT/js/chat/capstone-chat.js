@@ -893,6 +893,67 @@
     input.placeholder=mode==="quick"?"Ask a course question or a follow-upâ€¦":mode==="guide"?"Ask a question and MIRA will explain why and recommend a next actionâ€¦":"Ask a question and MIRA will break it into safe sequential stepsâ€¦";
   });
 
+  const dashboardGreeting=document.querySelector("#dashboard-greeting");
+  if(dashboardGreeting){
+    const hour=new Date().getHours();
+    dashboardGreeting.textContent=hour<12?"Good morning":hour<18?"Good afternoon":"Good evening";
+  }
+  const dashboardForm=document.querySelector("#dashboard-mira-form");
+  const dashboardInput=document.querySelector("#dashboard-mira-input");
+  dashboardForm?.addEventListener("submit",event=>{
+    event.preventDefault();
+    const question=String(dashboardInput?.value||"").trim();
+    if(!question)return;
+    dashboardInput.value="";
+    submitQuestion(question,"");
+  });
+  document.querySelectorAll("[data-dashboard-depth]").forEach(button=>{
+    button.addEventListener("click",()=>{
+      const depth=button.dataset.dashboardDepth;
+      if(!["quick","guide","step"].includes(depth))return;
+      if(responseDepth){responseDepth.value=depth;responseDepth.dispatchEvent?.(new Event("change"));}
+      document.querySelectorAll("[data-dashboard-depth]").forEach(option=>{
+        const selected=option===button;
+        option.classList.toggle("active",selected);
+        option.setAttribute("aria-pressed",String(selected));
+      });
+    });
+  });
+
+  const dashboardProfile=document.querySelector("#dashboard-profile");
+  const dashboardProfileTrigger=document.querySelector("#dashboard-profile-trigger");
+  const dashboardProfileMenu=document.querySelector("#dashboard-profile-menu");
+  const closeDashboardProfile=({restore=false}={})=>{
+    if(!dashboardProfileMenu||dashboardProfileMenu.hidden)return;
+    dashboardProfileMenu.hidden=true;
+    dashboardProfileTrigger?.setAttribute("aria-expanded","false");
+    if(restore)dashboardProfileTrigger?.focus({preventScroll:true});
+  };
+  dashboardProfileTrigger?.addEventListener("click",()=>{
+    const open=dashboardProfileMenu.hidden;
+    dashboardProfileMenu.hidden=!open;
+    dashboardProfileTrigger.setAttribute("aria-expanded",String(open));
+    if(open)dashboardProfileMenu.querySelector("a,button")?.focus({preventScroll:true});
+  });
+  dashboardProfileMenu?.addEventListener("keydown",event=>{
+    if(event.key==="Escape"){event.preventDefault();closeDashboardProfile({restore:true});}
+  });
+  dashboardProfileMenu?.addEventListener("click",event=>{
+    if(event.target.closest?.('[role="menuitem"],[data-theme-choice]'))closeDashboardProfile();
+  });
+  document.addEventListener("click",event=>{
+    if(dashboardProfile&&!dashboardProfile.contains(event.target))closeDashboardProfile();
+  });
+  window.addEventListener("mira-portal-profile",event=>{
+    const name=String(event.detail?.name||"").trim().slice(0,80);
+    const role=String(event.detail?.role||"Portal user").trim().slice(0,60);
+    if(!name)return;
+    document.querySelector("#dashboard-profile-name").textContent=name;
+    document.querySelector("#dashboard-profile-trigger-name").textContent=name;
+    document.querySelector("#dashboard-profile-role").textContent=role;
+    const triggerMode=dashboardProfileTrigger?.querySelector("small");if(triggerMode)triggerMode.textContent="Portal connected";
+  });
+
   function updateCheckWorkFields(){
     const portal=checkWorkSource?.value==="portal";
     if(checkTextField)checkTextField.hidden=portal;
@@ -919,7 +980,9 @@
     panel.append(createElement("p","guidance-review-disclaimer",result.disclaimer));
     message.append(panel);
   }
-  document.querySelector("#open-check-work")?.addEventListener("click",()=>{closeMoreTools();updateCheckWorkFields();checkWorkStatus.textContent="";checkWorkDialog.showModal();});
+  const openCheckWork=()=>{closeMoreTools();updateCheckWorkFields();checkWorkStatus.textContent="";checkWorkDialog.showModal();};
+  document.querySelector("#open-check-work")?.addEventListener("click",openCheckWork);
+  document.querySelectorAll("[data-open-check-work]").forEach(button=>button.addEventListener("click",openCheckWork));
   document.querySelector("#close-check-work")?.addEventListener("click",()=>checkWorkDialog.close());
   document.querySelector("#cancel-check-work")?.addEventListener("click",()=>checkWorkDialog.close());
   checkWorkSource?.addEventListener("change",updateCheckWorkFields);

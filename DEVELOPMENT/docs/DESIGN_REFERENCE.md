@@ -1,5 +1,23 @@
 # Capstone portal design reference
 
+October 12, 2026 compact-dashboard refinement: MIRA now uses a 212px icon-led desktop sidebar, a 68px tablet rail, the existing mobile navigation disclosure, a compact account menu, denser work/weekly/assistant surfaces, an inline next-step status, and an icon-sized launcher on the dashboard. The profile remains **MIRA user / Standalone mode** unless an authorized local or portal-native adapter deliberately provides a display name; email, account IDs, grades, and unrelated profile fields are never requested for this UI. The status presentation describes connection capability only and does not imitate presence.
+
+## Portal theme signal audit
+
+Read-only checks of the current published portal stylesheets and signed-out portal document found no stable, documented root class, `data-theme` attribute, `color-scheme` rule, or public JavaScript preference contract that MIRA can safely treat as the authenticated portal theme. The signed-out page exposes only a navy browser `theme-color` metadata value; that is page chrome, not a user theme preference. MIRA therefore does not inspect portal `localStorage`, cookies, account settings, or arbitrary computed styles.
+
+| Audit item | Result |
+| --- | --- |
+| Portal theme signal | No stable public/authenticated signal verified |
+| Accepted adapter values | Exact `light` or `dark` only |
+| Safe to read | **Yes**, only when supplied through the authorized local/portal-native adapter contract |
+| Portal preference modified | **No** |
+| Follow Portal without a signal | Falls back to Auto/system preference |
+
+The shared theme controller supports **Follow portal**, **Light**, **Dark**, and **Auto**. Follow Portal applies only an allowlisted `light`/`dark` event from an authorized adapter. Missing, cleared, or unrecognized values immediately use the operating-system preference; explicit MIRA Light/Dark choices remain independent. The normal theme button continues to cycle Auto, Dark, and Light for compatibility and accessibility.
+
+October 12, 2026 dashboard candidate: the homepage now presents MIRA as a student operating system rather than a utility landing page. A navy Next Best Step hero establishes priority; compact work metrics and weekly rows carry secondary status; the embedded Ask MIRA surface is visually prominent without exposing every tool at once; and portal, course, and people destinations are grouped into a restrained directory. The desktop navigation rail collapses to icon-only at intermediate widths and to an accessible disclosure on mobile. Every private-data widget defines live, unavailable, and loading presentation; the standalone build defaults to unavailable and never displays an unknown value as zero. The icon sprite now covers the full dashboard vocabulary with one outline family. Dark mode uses the established deep-navy surfaces rather than color inversion, while the mobile launcher is deliberately compact to avoid hiding hero actions.
+
 October 9, 2026 UX modernization candidate: the shared theme layer now supports system, dark, and light presentation across MIRA, Staff Queue, recovery, syllabus, cards, dialogs, chips, and generated hosting notices. The floating assistant prioritizes **My Capstone** and **Check my work**; Guide me, Ask a person, temporary shared information, and fictional sample data are grouped under **More tools**. Context is a compact collapsible chip, response depth is an optional compact selector, source/guidance blocks use reusable raised-surface tokens, and the launcher has subtle hover/open motion plus a one-time dismissible signal. Desktop, tablet, 200% zoom, 390px, and 320px are the required browser smoke sizes. The redesign does not copy FARO, change source authority, or grant hosted access to private portal data.
 
 October 8, 2026 candidate refresh: MIRA now defines shared audited tokens for FIU navy `#081E3F`, gold `#D1A644`, dark canvas `#0B1426`, dark cards `#111D33`, border `#24365A`, primary text `#E6EBF3`, muted text `#A3B0C4`, success `#2E7D4F`, and warning `#9A6212`. Mulish, approximately 15px/24px body text, 8px controls, 10px cards, 4px badges, pill controls, consistent focus treatment, and denser staff surfaces align the prototype with the current portal without copying its stylesheet or administrative controls. MIRA-specific chat, source/evidence, privacy, temporary-information, and staff-workflow patterns remain distinct. Responsive acceptance covers desktop, 390px, and 320px.

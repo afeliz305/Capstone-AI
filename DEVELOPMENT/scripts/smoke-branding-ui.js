@@ -27,9 +27,14 @@ async function main() {
     page.on("pageerror", error => errors.push(error.message));
     const qa = path.join(root, "dist/staging/branding-ui");
     await fs.mkdir(qa, { recursive: true });
-    for (const viewport of [{ width: 1280, height: 900 }, { width: 768, height: 1024 }, { width: 390, height: 844 }, { width: 320, height: 568 }]) {
+    for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 900 }, { width: 1024, height: 768 }, { width: 768, height: 1024 }, { width: 390, height: 844 }, { width: 320, height: 568 }]) {
       await page.setViewportSize(viewport);
       await page.goto(origin + basePath);
+      await page.locator(".next-step-hero").waitFor({ state: "visible" });
+      assert.equal(await page.locator(".metric-tile").count(), 4);
+      assert.equal(await page.locator(".mira-dashboard-assistant").isVisible(), true);
+      assert.match(await page.locator(".next-step-hero").textContent(), /personalized next step/i);
+      assert.doesNotMatch(await page.locator(".metric-grid").textContent(), /\b0\b/);
       const launcher = page.locator("#chat-launcher");
       await page.getByRole("button", { name: "Open MIRA chat", exact: true }).waitFor({ state: "visible" });
       assert.match(await page.title(), /^MIRA/);
@@ -39,6 +44,26 @@ async function main() {
       const rect = await launcher.boundingBox();
       assert.ok(rect.x >= 0 && rect.y >= 0 && rect.x + rect.width <= viewport.width && rect.y + rect.height <= viewport.height);
       assert.ok(rect.height >= 44 && rect.height <= 80, "compact, usable target without mascot-sized space");
+      const profileTrigger = page.locator("#dashboard-profile-trigger");
+      await profileTrigger.click();
+      await page.locator("#dashboard-profile-menu").waitFor({ state:"visible" });
+      const profileMenu = await page.locator("#dashboard-profile-menu").boundingBox();
+      assert.ok(profileMenu.x >= 0 && profileMenu.y >= 0 && profileMenu.x + profileMenu.width <= viewport.width && profileMenu.y + profileMenu.height <= viewport.height);
+      assert.equal(await page.locator("#dashboard-profile-name").textContent(), "MIRA user");
+      assert.match(await page.locator("#dashboard-profile-status").textContent(), /Personal context unavailable/);
+      await page.keyboard.press("Escape");
+      assert.equal(await page.locator("#dashboard-profile-menu").isVisible(), false);
+      assert.equal(await profileTrigger.evaluate(button => button === document.activeElement), true);
+      if (viewport.width === 1280) {
+        await profileTrigger.click();
+        await page.locator('[data-theme-choice="portal"]').click();
+        assert.equal(await page.evaluate(() => window.MiraTheme.preference), "portal");
+        assert.equal(await page.evaluate(() => window.MiraTheme.portalAvailable), false);
+        assert.equal(await page.locator("html").getAttribute("data-theme"), null);
+        await page.evaluate(() => window.MiraTheme.setPortalTheme("dark"));
+        assert.equal(await page.locator("html").getAttribute("data-theme"), "dark");
+        await page.evaluate(() => window.MiraTheme.set("system"));
+      }
       await page.screenshot({ path: path.join(qa, "launcher-" + viewport.width + ".png"), fullPage: true });
       await launcher.focus();
       await page.keyboard.press("Enter");

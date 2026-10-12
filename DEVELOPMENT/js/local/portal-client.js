@@ -31,6 +31,8 @@
     if(!next)return;
     if(next.generation!==state.generation || (state.state==='connected'&&next.state!=='connected')) resetVisible();
     state=next;status.textContent=(labels[next.state]||'Not connected')+(next.name?' · '+next.name:'');note.textContent=next.note||'Only locally verified data can be searched.';stage.hidden=!next.diagnostic?.stage;stage.textContent=next.diagnostic?.stage?'Connection stage: '+next.diagnostic.stage.replaceAll('-',' '):'';
+    window.dispatchEvent(new CustomEvent('mira-portal-theme',{detail:{theme:['light','dark'].includes(next.theme)?next.theme:null}}));
+    if(next.state==='connected'&&next.name)window.dispatchEvent(new CustomEvent('mira-portal-profile',{detail:{name:next.name,role:'Portal user'}}));
     renderProgress(next);renderSuggestions(next);renderCapabilities(next);
     primary.hidden=next.state==='connected'||['verifying','retrieving','tab-selection-required'].includes(next.state);
     connectedActions.hidden=next.state!=='connected';

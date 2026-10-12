@@ -17,13 +17,14 @@ function themeFixture({ saved = null, darkSystem = false } = {}) {
     setAttribute(name, value) { attributes[name] = value; },
     querySelector(selector) { return selector === "[data-theme-label]" ? label : null; }
   };
-  let clickHandler;
+  const clickHandlers = [];
   let mediaHandler;
   const documentElement = { dataset: {}, style: {} };
   const document = {
     documentElement,
     querySelectorAll(selector) { return selector === "[data-theme-toggle]" ? [button] : []; },
-    addEventListener(type, handler) { if (type === "click") clickHandler = handler; }
+    querySelector() { return null; },
+    addEventListener(type, handler) { if (type === "click") clickHandlers.push(handler); }
   };
   const events = [];
   const media = {
@@ -45,7 +46,7 @@ function themeFixture({ saved = null, darkSystem = false } = {}) {
   vm.runInNewContext(themeScript, { document, window, CustomEvent });
   return {
     documentElement, button, label, attributes, values, events, media,
-    click() { clickHandler({ target: { closest: () => button } }); },
+    click() { for (const handler of clickHandlers) handler({ target: { closest: selector => selector === "[data-theme-toggle]" ? button : null } }); },
     systemChanged(matches) { media.matches = matches; mediaHandler?.(); },
     api: window.MiraTheme
   };
@@ -84,6 +85,23 @@ test("system theme follows a changed OS preference and explicit themes do not", 
   ui.systemChanged(true);
   assert.equal(ui.api.resolved, "light");
   assert.equal(ui.documentElement.style.colorScheme, "light");
+});
+
+test("follow portal accepts only a safe light or dark signal and otherwise falls back to system", () => {
+  const ui = themeFixture({ darkSystem: true });
+  ui.api.set("portal");
+  assert.equal(ui.api.preference, "portal");
+  assert.equal(ui.api.portalAvailable, false);
+  assert.equal(ui.api.resolved, "dark");
+  assert.equal(ui.documentElement.dataset.theme, undefined);
+  ui.api.setPortalTheme("light");
+  assert.equal(ui.api.portalAvailable, true);
+  assert.equal(ui.api.resolved, "light");
+  assert.equal(ui.documentElement.dataset.theme, "light");
+  ui.api.setPortalTheme("sepia");
+  assert.equal(ui.api.portalAvailable, false);
+  assert.equal(ui.api.resolved, "dark");
+  assert.equal(ui.documentElement.dataset.theme, undefined);
 });
 
 test("public pages expose the shared theme controller and accessible controls", () => {
