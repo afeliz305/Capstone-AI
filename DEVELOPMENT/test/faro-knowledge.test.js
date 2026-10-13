@@ -93,7 +93,7 @@ test("Tier 1 Verify explains the role but keeps the transition checklist incompl
 });
 
 test("Tier 1 Product Owner guidance never grants approval or claims private status",()=>{
-  for(const question of ["Who decides whether this is accepted?","What can the PO do in reveiw?"]){
+  for(const question of ["Who decides whether this is accepted?","Who decides if a card is accepted?","What can the PO do in reveiw?"]){
     assert.equal(search(question).matches[0].id,"faro-board-review-decision",question);
   }
   const approval=search("Can MIRA approve it?");

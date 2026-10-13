@@ -139,7 +139,7 @@ function routeMira(entries, question, contextId, toPublic) {
   if(/^(?:verify|how (?:do|can|should) i verify|what does verify mean|who can verify a card|can the card owner verify their own work)$/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["faro-board-verify"],accessScope:"authenticated-portal-guidance"
   });
-  if(/who decides whether (?:this|it|a card) is accepted|what can the product owner do in review|can the product owner (?:ask for|request) changes/.test(text)) return result(entries,toPublic,{
+  if(/who decides (?:if|whether) (?:this|it|a card) is accepted|what can the product owner do in review|can the product owner (?:ask for|request) changes/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["faro-board-review-decision"],accessScope:"authenticated-portal-guidance"
   });
   if(/can (?:mira|you) approve (?:it|this)|is (?:this|my|the) (?:card )?accepted|has (?:this|my|the) card been accepted/.test(text)) return result(entries,toPublic,{

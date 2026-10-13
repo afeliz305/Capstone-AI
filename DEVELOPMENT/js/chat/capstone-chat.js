@@ -840,10 +840,11 @@
     } catch (error) {
       if (sequence !== searchSequence) return { status:"cancelled", matches:[], links:[] };
       loading.remove();
-      addAssistantText(
-        "The local knowledge search is temporarily unavailable.",
-        error.message || "Please try again or create a support request."
-      );
+      console.error("MIRA search request failed.", error);
+      const hostedMessage = api.storageMode && !["node","php"].includes(api.storageMode)
+        ? "MIRA couldn't search course guidance right now. Try again in a moment."
+        : error.message || "Please try again or create a support request.";
+      addAssistantText("The local knowledge search is temporarily unavailable.", hostedMessage);
       return { status: "error", matches: [], links: [] };
     } finally {
       if (sequence === searchSequence) {
@@ -885,12 +886,12 @@
     closeMoreTools();
     responseDepth.value="guide";
     openChat();
-    input.placeholder="Ask a question and MIRA will explain why and recommend a next actionâ€¦";
+    input.placeholder="Ask a question and MIRA will explain why and recommend a next action…";
     input.focus({preventScroll:true});
   });
   responseDepth?.addEventListener("change",()=>{
     const mode=currentDepth();
-    input.placeholder=mode==="quick"?"Ask a course question or a follow-upâ€¦":mode==="guide"?"Ask a question and MIRA will explain why and recommend a next actionâ€¦":"Ask a question and MIRA will break it into safe sequential stepsâ€¦";
+    input.placeholder=mode==="quick"?"Ask a course question or a follow-up…":mode==="guide"?"Ask a question and MIRA will explain why and recommend a next action…":"Ask a question and MIRA will break it into safe sequential steps…";
   });
 
   const dashboardGreeting=document.querySelector("#dashboard-greeting");
@@ -944,6 +945,86 @@
   document.addEventListener("click",event=>{
     if(dashboardProfile&&!dashboardProfile.contains(event.target))closeDashboardProfile();
   });
+
+  const secondaryNavigation=document.querySelector("#secondary-navigation");
+  const secondaryNavigationTrigger=document.querySelector("#secondary-nav-trigger");
+  const secondaryNavigationClose=document.querySelector("#secondary-nav-close");
+  const secondaryNavigationBackdrop=document.querySelector("#secondary-nav-backdrop");
+  const compactNavigation=window.matchMedia?.("(max-width: 1100px)");
+  const setSecondaryNavigation=(open,{restore=false}={})=>{
+    if(!secondaryNavigation)return;
+    const modal=Boolean(compactNavigation?.matches);
+    secondaryNavigation.hidden=!open;
+    document.body.classList.toggle("secondary-navigation-closed",!open);
+    document.body.classList.toggle("secondary-navigation-open",open&&modal);
+    secondaryNavigationTrigger?.setAttribute("aria-expanded",String(open));
+    secondaryNavigationBackdrop.hidden=!(open&&modal);
+    if(modal){secondaryNavigation.setAttribute("role","dialog");secondaryNavigation.setAttribute("aria-modal","true");}
+    else{secondaryNavigation.removeAttribute("role");secondaryNavigation.removeAttribute("aria-modal");}
+    if(open)secondaryNavigationClose?.focus({preventScroll:true});
+    else if(restore)secondaryNavigationTrigger?.focus({preventScroll:true});
+  };
+  secondaryNavigationTrigger?.addEventListener("click",()=>setSecondaryNavigation(secondaryNavigation.hidden));
+  secondaryNavigationClose?.addEventListener("click",()=>setSecondaryNavigation(false,{restore:true}));
+  secondaryNavigationBackdrop?.addEventListener("click",()=>setSecondaryNavigation(false,{restore:true}));
+  secondaryNavigation?.addEventListener("keydown",event=>{
+    if(event.key==="Escape"){event.preventDefault();setSecondaryNavigation(false,{restore:true});return;}
+    if(event.key!=="Tab"||!compactNavigation?.matches)return;
+    const focusable=[...secondaryNavigation.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(element=>!element.hidden&&element.getClientRects().length);
+    if(!focusable.length)return;
+    const first=focusable[0],last=focusable.at(-1);
+    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+  });
+  secondaryNavigation?.querySelectorAll("a").forEach(link=>link.addEventListener("click",()=>{
+    secondaryNavigation.querySelectorAll("a.selected").forEach(item=>item.classList.remove("selected"));
+    link.classList.add("selected");
+    if(compactNavigation?.matches)setSecondaryNavigation(false);
+  }));
+  const syncSecondaryNavigation=event=>setSecondaryNavigation(!event.matches);
+  if(compactNavigation){syncSecondaryNavigation(compactNavigation);compactNavigation.addEventListener?.("change",syncSecondaryNavigation);}
+
+  const presenceTrigger=document.querySelector("#dashboard-presence-trigger");
+  const presenceDrawer=document.querySelector("#dashboard-presence-drawer");
+  const presenceClose=document.querySelector("#presence-close");
+  const closePresence=({restore=false}={})=>{
+    if(!presenceDrawer||presenceDrawer.hidden)return;
+    presenceDrawer.hidden=true;
+    presenceTrigger?.setAttribute("aria-expanded","false");
+    if(restore)presenceTrigger?.focus({preventScroll:true});
+  };
+  const openPresence=()=>{
+    if(!presenceDrawer)return;
+    closeDashboardProfile();
+    presenceDrawer.hidden=false;
+    presenceTrigger?.setAttribute("aria-expanded","true");
+    presenceDrawer.focus({preventScroll:true});
+  };
+  presenceTrigger?.addEventListener("click",()=>presenceDrawer?.hidden?openPresence():closePresence({restore:true}));
+  presenceClose?.addEventListener("click",()=>closePresence({restore:true}));
+  presenceDrawer?.addEventListener("keydown",event=>{
+    if(event.key==="Escape"){event.preventDefault();closePresence({restore:true});return;}
+    const tabs=[...presenceDrawer.querySelectorAll('[role="tab"]')];
+    const index=tabs.indexOf(document.activeElement);
+    if(index<0||!["ArrowLeft","ArrowRight","Home","End"].includes(event.key))return;
+    event.preventDefault();
+    const next=event.key==="Home"?0:event.key==="End"?tabs.length-1:(index+(event.key==="ArrowRight"?1:-1)+tabs.length)%tabs.length;
+    tabs[next].click();tabs[next].focus();
+  });
+  presenceDrawer?.querySelectorAll('[role="tab"]').forEach(tab=>tab.addEventListener("click",()=>{
+    presenceDrawer.querySelectorAll('[role="tab"]').forEach(option=>{const selected=option===tab;option.setAttribute("aria-selected",String(selected));option.tabIndex=selected?0:-1;});
+    presenceDrawer.querySelectorAll('[role="tabpanel"]').forEach(panel=>panel.hidden=panel.id!==tab.getAttribute("aria-controls"));
+  }));
+  document.addEventListener("click",event=>{
+    if(!presenceDrawer?.hidden&&!presenceDrawer.contains(event.target)&&!presenceTrigger?.contains(event.target))closePresence();
+  });
+  window.addEventListener("mira-portal-presence",event=>{
+    const count=Number(event.detail?.count);
+    if(event.detail?.authorized!==true||!Number.isInteger(count)||count<0||count>50)return;
+    const label=presenceTrigger?.querySelector("span");if(label)label.textContent=count?`${count} here`:"Team";
+    const capability=document.querySelector("#presence-capability");
+    if(capability)capability.innerHTML=`<span class="status-dot" aria-hidden="true"></span><span><strong>${count?`${count} team member${count===1?"":"s"} here`:"No team members shown online"}</strong><small>Authorized local portal presence; no contact details are displayed.</small></span>`;
+  });
   window.addEventListener("mira-portal-profile",event=>{
     const name=String(event.detail?.name||"").trim().slice(0,80);
     const role=String(event.detail?.role||"Portal user").trim().slice(0,60);
@@ -989,7 +1070,7 @@
   checkWorkForm?.elements?.criteria?.addEventListener("change",updateCheckWorkFields);
   checkWorkForm?.addEventListener("submit",async event=>{
     event.preventDefault();
-    checkWorkStatus.className="form-status";checkWorkStatus.textContent="Reviewing locallyâ€¦";
+    checkWorkStatus.className="form-status";checkWorkStatus.textContent="Reviewing locally…";
     const fields=new FormData(checkWorkForm),sourceMode=String(fields.get("sourceMode")||"paste"),criteria=String(fields.get("criteria")||"acceptance");
     if(sourceMode==="portal"){
       checkWorkDialog.close();

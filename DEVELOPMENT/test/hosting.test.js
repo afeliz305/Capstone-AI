@@ -25,11 +25,34 @@ test("browser bootstrap discovers the app folder from its own script URL on eith
   for (const base of ["http://localhost:3000/", "https://example.edu/~student/MIRA/"]) {
     for (const page of ["index.html", "pages/staff.html"]) {
       const window = { fetch: async () => {} };
-      vm.runInNewContext(source, { window, URL, document: { currentScript: { src: base + "js/shared/api-client.js" }, baseURI: base + page } });
+      const transport = base.includes("localhost") ? undefined : "php";
+      vm.runInNewContext(source, { window, URL, location:new URL(base), document: { currentScript: { src: base + "js/shared/api-client.js", dataset:{ apiTransport:transport } }, scripts:[], baseURI: base + page } });
       assert.equal(window.CapstoneApi.baseUrl, base);
-      assert.equal(window.CapstoneApi.url("/api/staff/session"), base + "api/staff/session");
+      const sessionUrl=window.CapstoneApi.url("/api/staff/session");
+      if(transport==="php") assert.match(sessionUrl,/api\/index\.php\?route=%2Fstaff%2Fsession$/);
+      else assert.equal(sessionUrl, base + "api/staff/session");
     }
   }
+});
+
+test("packaged bootstrap recovers its explicit transport when currentScript is unavailable", async () => {
+  const source = await fs.readFile(path.join(__dirname, "../js/shared/api-client.js"), "utf8");
+  const base="https://example.edu/~student/MIRA/", script={src:base+"js/shared/api-client.js",dataset:{apiTransport:"supabase"}};
+  const expected={baseUrl:base,storageMode:"supabase"};
+  const window={fetch:async()=>{},CapstoneSupabase:{create:options=>({...expected,options})}};
+  vm.runInNewContext(source,{window,URL,location:new URL(base),console,document:{currentScript:null,scripts:[script],baseURI:base}});
+  assert.equal(window.CapstoneApi.storageMode,"supabase");
+  assert.equal(window.CapstoneApi.options.transport,"supabase");
+});
+
+test("non-local packaged pages fail closed instead of silently selecting Node", async () => {
+  const source = await fs.readFile(path.join(__dirname, "../js/shared/api-client.js"), "utf8");
+  const base="https://example.edu/~student/MIRA/", messages=[];
+  const window={fetch:async()=>{throw new Error("must not fetch");}};
+  vm.runInNewContext(source,{window,URL,location:new URL(base),console:{error:value=>messages.push(value)},document:{currentScript:null,scripts:[],baseURI:base}});
+  assert.equal(window.CapstoneApi.storageMode,"unavailable");
+  await assert.rejects(()=>window.CapstoneApi.fetch("/api/search?q=test"),/couldn't search course guidance/);
+  assert.equal(messages.length,1);
 });
 
 test("API URLs work at the site root and inside an encoded hosting folder", async () => {

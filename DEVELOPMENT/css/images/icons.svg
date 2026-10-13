@@ -21,6 +21,9 @@
   <symbol id="more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
   <symbol id="guide" viewBox="0 0 24 24"><path d="M4 19V5l8-3 8 3v14l-8 3Zm8-17v20M7 7h2M15 8h2M15 13h2"/></symbol>
   <symbol id="people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 20c0-4 2.5-6 6-6s6 2 6 6M15 15c3 0 5 1.7 5 5"/></symbol>
+  <symbol id="projects" viewBox="0 0 24 24"><path d="M3 7h7l2 2h9v11H3Z"/><path d="M3 7V4h7l2 3"/></symbol>
+  <symbol id="recognition" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0Z"/><path d="M8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4M12 13v4M8 21h8M9 17h6"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5ZM10 20h4"/></symbol>
   <symbol id="share" viewBox="0 0 24 24"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="5" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.5 10.5 7-4M8.5 13.5l7 4"/></symbol>
   <symbol id="sample" viewBox="0 0 24 24"><path d="M9 3h6M10 3v5l-5 9a3 3 0 0 0 2.6 4h8.8a3 3 0 0 0 2.6-4l-5-9V3M7 16h10"/></symbol>
   <symbol id="dashboard" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="10" rx="2"/><rect x="14" y="3" width="7" height="6" rx="2"/><rect x="3" y="17" width="7" height="4" rx="2"/><rect x="14" y="13" width="7" height="8" rx="2"/></symbol>

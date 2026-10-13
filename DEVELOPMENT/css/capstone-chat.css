@@ -13,12 +13,12 @@
 .chat-panel:not([hidden]) { animation: chat-enter 220ms var(--ease); }
 @keyframes chat-enter { from { opacity: 0; transform: translateY(10px) scale(.985); } }
 .chat-header { padding: 14px 16px; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); background: var(--surface-raised); }
-.chat-header-actions { display: flex; gap: 4px; }
+.chat-header-actions { display: flex; gap: 5px; }
 .assistant-avatar { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 10px; color: var(--info); background: var(--info-bg); }
 .chat-header h2 { margin: 0; color: var(--ink); font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
 .chat-header p { margin: 3px 0 0; color: var(--muted); font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
 .chat-header .status-dot { margin-right: 4px; }
-.icon-button { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid transparent; border-radius: var(--control-radius); color: var(--muted); background: transparent; }
+.icon-button { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: var(--control-radius); color: var(--muted); background: var(--surface); }
 .icon-button:hover { color: var(--ink); background: var(--tint); }
 .theme-icon-button[data-theme-preference="dark"] { color: var(--fiu-gold); }
 .mira-status-panel { border-bottom: 1px solid var(--line); background: var(--surface); }
@@ -205,7 +205,7 @@
   .chat-header .assistant-avatar { display: none; }
   .chat-header { grid-template-columns: minmax(0,1fr) auto; }
   .chat-header-actions { gap: 1px; }
-  .chat-header .icon-button { width: 40px; }
+  .chat-header .icon-button { width: 44px; }
   .primary-tool-row { grid-template-columns: minmax(0,1fr) minmax(0,1fr) 44px; gap: 5px; }
   .context-action { padding: 7px; gap: 6px; }
   .context-action .ui-icon { width: 17px; height: 17px; }
@@ -225,3 +225,37 @@
 .follow-up-button { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--info); padding: 8px 12px; min-height: 40px; font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
 .follow-up-button:hover { background: var(--info-bg); }
 .follow-up-button:focus-visible { outline: 2px solid var(--fiu-gold); outline-offset: 2px; }
+
+/* Final narrow-screen containment: correct layout sources before clipping. */
+@media (max-width: 760px) {
+  .mira-dashboard-page .chat-launcher { right: max(10px,env(safe-area-inset-right)); bottom: calc(78px + env(safe-area-inset-bottom)); }
+  .mira-dashboard-page .chat-panel { right: max(8px,env(safe-area-inset-right)); bottom: calc(76px + env(safe-area-inset-bottom)); left: max(8px,env(safe-area-inset-left)); width: auto; min-width: 0; max-width: none; height: min(720px,calc(100dvh - 88px - env(safe-area-inset-top) - env(safe-area-inset-bottom))); }
+  .mira-dashboard-page .chat-panel > *,
+  .mira-dashboard-page .chat-header > *,
+  .mira-dashboard-page .mira-context-actions > *,
+  .mira-dashboard-page .primary-tool-row > *,
+  .mira-dashboard-page .chat-composer > * { min-width: 0; max-width: 100%; }
+  .mira-dashboard-page .chat-header { grid-template-columns: auto minmax(0,1fr) auto; }
+  .mira-dashboard-page .chat-header-actions { flex: none; }
+  .mira-dashboard-page .mira-context-actions, .mira-dashboard-page .chat-log, .mira-dashboard-page .chat-composer { overflow-x: clip; }
+  .mira-dashboard-page .tool-menu-panel { right: 0; width: min(330px,calc(100vw - 32px - env(safe-area-inset-left) - env(safe-area-inset-right))); max-width: calc(100vw - 32px); }
+  .mira-dashboard-page .chat-composer { grid-template-columns: minmax(0,1fr) 48px; gap: 8px; }
+  .mira-dashboard-page .chat-composer textarea { min-width: 0; max-width: 100%; }
+  .mira-dashboard-page .chat-composer button { min-width: 44px; min-height: 50px; }
+}
+@media (max-width: 380px) {
+  .mira-dashboard-page .chat-header { padding: 10px; grid-template-columns: minmax(0,1fr) auto; gap: 5px; }
+  .mira-dashboard-page .chat-header .assistant-avatar { display: none; }
+  .mira-dashboard-page .chat-header p { font-size: 11px; line-height: 1.2; }
+  .mira-dashboard-page .chat-header-actions { gap: 0; }
+  .mira-dashboard-page .chat-header .icon-button { width: 44px; height: 44px; }
+  .mira-dashboard-page .mira-context-actions { padding-inline: 8px; }
+  .mira-dashboard-page .primary-tool-row { grid-template-columns: repeat(2,minmax(0,1fr)) 44px; gap: 4px; }
+  .mira-dashboard-page .context-action { padding-inline: 6px; }
+  .mira-dashboard-page .response-style-control { grid-template-columns: 1fr; gap: 4px; }
+  .mira-dashboard-page .response-style-control label { white-space: normal; }
+  .mira-dashboard-page .chat-log { padding: 12px; scrollbar-gutter: auto; }
+  .mira-dashboard-page .chat-composer { padding: 10px; grid-template-columns: minmax(0,1fr) 44px; gap: 6px; }
+  .mira-dashboard-page .chat-composer button { width: 44px; }
+  .mira-dashboard-page .chat-composer p { font-size: 10px; overflow-wrap: anywhere; }
+}

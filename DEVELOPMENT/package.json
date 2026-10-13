@@ -18,6 +18,7 @@
     "package:portal-owner": "node scripts/package-portal-owner.js",
     "test": "node --test test/*.test.js",
     "test:branding:ui": "node scripts/smoke-branding-ui.js",
+    "test:mobile:ui": "node scripts/smoke-mobile-ui.js",
     "supabase:check": "node scripts/check-supabase.js",
     "supabase:test": "node scripts/test-supabase-live.js",
     "test:supabase:ui": "node scripts/smoke-supabase-ui.js",

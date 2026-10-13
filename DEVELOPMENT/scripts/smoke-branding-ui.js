@@ -27,14 +27,15 @@ async function main() {
     page.on("pageerror", error => errors.push(error.message));
     const qa = path.join(root, "dist/staging/branding-ui");
     await fs.mkdir(qa, { recursive: true });
-    for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 900 }, { width: 1024, height: 768 }, { width: 768, height: 1024 }, { width: 390, height: 844 }, { width: 320, height: 568 }]) {
+    for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 900 }, { width: 1024, height: 768 }, { width: 768, height: 1024 }, { width: 440, height: 844 }, { width: 390, height: 844 }, { width: 375, height: 812 }, { width: 360, height: 800 }, { width: 320, height: 568 }]) {
       await page.setViewportSize(viewport);
       await page.goto(origin + basePath);
       await page.locator(".next-step-hero").waitFor({ state: "visible" });
-      assert.equal(await page.locator(".metric-tile").count(), 4);
+      assert.equal(await page.locator(".work-fallback").isVisible(), true);
+      assert.equal(await page.locator(".work-destination-list a").count(), 4);
       assert.equal(await page.locator(".mira-dashboard-assistant").isVisible(), true);
       assert.match(await page.locator(".next-step-hero").textContent(), /personalized next step/i);
-      assert.doesNotMatch(await page.locator(".metric-grid").textContent(), /\b0\b/);
+      assert.doesNotMatch(await page.locator(".work-fallback").textContent(), /Unavailable|\b0\b/i);
       const launcher = page.locator("#chat-launcher");
       await page.getByRole("button", { name: "Open MIRA chat", exact: true }).waitFor({ state: "visible" });
       assert.match(await page.title(), /^MIRA/);
@@ -48,7 +49,7 @@ async function main() {
       await profileTrigger.click();
       await page.locator("#dashboard-profile-menu").waitFor({ state:"visible" });
       const profileMenu = await page.locator("#dashboard-profile-menu").boundingBox();
-      assert.ok(profileMenu.x >= 0 && profileMenu.y >= 0 && profileMenu.x + profileMenu.width <= viewport.width && profileMenu.y + profileMenu.height <= viewport.height);
+      assert.ok(profileMenu.x >= 0 && profileMenu.y >= 0 && profileMenu.x + profileMenu.width <= viewport.width && profileMenu.y + profileMenu.height <= viewport.height,`profile menu must fit ${viewport.width}x${viewport.height}: ${JSON.stringify(profileMenu)}`);
       assert.equal(await page.locator("#dashboard-profile-name").textContent(), "MIRA user");
       assert.match(await page.locator("#dashboard-profile-status").textContent(), /Personal context unavailable/);
       await page.keyboard.press("Escape");
@@ -63,6 +64,63 @@ async function main() {
         await page.evaluate(() => window.MiraTheme.setPortalTheme("dark"));
         assert.equal(await page.locator("html").getAttribute("data-theme"), "dark");
         await page.evaluate(() => window.MiraTheme.set("system"));
+
+        // Exercise the portal-aligned navigation rather than checking only that it renders.
+        await page.evaluate(() => {
+          window.__miraTestNavigation = [];
+          document.addEventListener("click", event => {
+            const link=event.target.closest?.("a[data-smoke-navigation]");
+            if(!link)return;
+            event.preventDefault();
+            window.__miraTestNavigation.push(link.href);
+          },true);
+        });
+        const verifyLinks = async selector => {
+          const links=page.locator(`${selector}:visible`);
+          const count=await links.count();
+          for(let index=0;index<count;index++){
+            const link=links.nth(index);
+            await link.setAttribute?.("data-smoke-navigation","true");
+            if(!await link.getAttribute("data-smoke-navigation"))await link.evaluate(node=>node.dataset.smokeNavigation="true");
+            const expected=await link.getAttribute("href");
+            await link.click();
+            const actual=await page.evaluate(() => window.__miraTestNavigation.at(-1));
+            assert.equal(actual,new URL(expected,page.url()).href);
+          }
+        };
+        await verifyLinks(".primary-rail > a[target='_blank']");
+        await verifyLinks("#secondary-navigation a");
+        assert.equal(await page.locator("#secondary-navigation a.selected").count(),1);
+        await page.locator("#secondary-nav-close").click();
+        assert.equal(await page.locator("#secondary-navigation").isVisible(),false);
+        assert.equal(await page.locator("#secondary-nav-trigger").getAttribute("aria-expanded"),"false");
+        await page.locator("#secondary-nav-trigger").click();
+        assert.equal(await page.locator("#secondary-navigation").isVisible(),true);
+        await page.keyboard.press("Escape");
+        assert.equal(await page.locator("#secondary-navigation").isVisible(),false);
+        assert.equal(await page.locator("#secondary-nav-trigger").evaluate(button=>button===document.activeElement),true);
+
+        const presenceTrigger=page.locator("#dashboard-presence-trigger");
+        await presenceTrigger.click();
+        await page.locator("#dashboard-presence-drawer").waitFor({state:"visible"});
+        assert.match(await page.locator("#presence-capability").textContent(),/does not invent a count/i);
+        assert.doesNotMatch(await page.locator("#dashboard-presence-drawer").textContent(),/@fiu\.edu/i);
+        await page.locator("#presence-tab-team").click();
+        assert.equal(await page.locator("#presence-panel-team").isVisible(),true);
+        await page.locator("#presence-tab-staff").focus();
+        await page.keyboard.press("ArrowLeft");
+        assert.equal(await page.locator("#presence-tab-team").getAttribute("aria-selected"),"true");
+        await verifyLinks("#dashboard-presence-drawer footer a");
+        await page.keyboard.press("Escape");
+        assert.equal(await page.locator("#dashboard-presence-drawer").isVisible(),false);
+        assert.equal(await presenceTrigger.evaluate(button=>button===document.activeElement),true);
+
+        await profileTrigger.click();
+        await page.locator(".profile-more-screens > summary").click();
+        assert.equal(await page.locator(".profile-more-screens").evaluate(details=>details.open),true);
+        await verifyLinks(".profile-more-screens a");
+        assert.equal(await page.getByRole("menuitem",{name:"Sign out"}).count(),0);
+        await page.keyboard.press("Escape");
       }
       await page.screenshot({ path: path.join(qa, "launcher-" + viewport.width + ".png"), fullPage: true });
       await launcher.focus();
@@ -141,6 +199,16 @@ async function main() {
     assert.ok(zoomPanel.x>=0&&zoomPanel.x+zoomPanel.width<=1280,"chat remains inside the viewport at 200% zoom");
     if (existingPackage) {
       await page.evaluate(() => { document.documentElement.style.zoom="1"; });
+      const runtime=await page.evaluate(()=>({storageMode:window.CapstoneApi?.storageMode,baseUrl:window.CapstoneApi?.baseUrl,transport:[...document.scripts].find(script=>/api-client\.js/.test(script.src))?.dataset.apiTransport,bundle:[...document.scripts].find(script=>/supabase\.bundle\.js/.test(script.src))?.src}));
+      assert.deepEqual(runtime,{storageMode:"supabase",baseUrl:origin+basePath,transport:"supabase",bundle:origin+basePath+"js/shared/supabase.bundle.js"});
+      await page.locator("#minimize-chat").click();
+      const embeddedBefore=await page.locator(".assistant-message").count();
+      await page.locator("#dashboard-mira-input").fill("What are acceptance criteria?");
+      await page.locator("#dashboard-mira-form").getByRole("button",{name:"Ask MIRA"}).click();
+      await page.waitForFunction(count=>{const messages=[...document.querySelectorAll(".assistant-message")];return messages.length>count&&!messages.at(-1)?.classList.contains("typing-message")&&!document.querySelector("#chat-input")?.disabled;},embeddedBefore);
+      assert.match(await page.locator(".assistant-message").last().textContent(),/acceptance criteria/i);
+      assert.match(await page.locator(".assistant-message").last().locator(".message-note").first().textContent(),/Source:/i);
+      assert.doesNotMatch(await page.locator(".assistant-message").last().textContent(),/backend is not available|temporarily unavailable/i);
       const ask = async question => {
         const before=await page.locator(".assistant-message").count();
         await page.locator("#chat-input").fill(question);
@@ -155,7 +223,7 @@ async function main() {
         ["What are acceptance criteria?",/acceptance criteria/i],
         ["What counts as evidence?",/evidence/i],
         ["Who can verify a card?",/verify/i],
-        ["Who decides whether a card is accepted?",/Product Owner/i],
+        ["Who decides if a card is accepted?",/Product Owner/i],
         ["What goes in my daily scrum update?",/stand-?up|Daily Scrum/i]
       ]) {
         const answer=await ask(question);

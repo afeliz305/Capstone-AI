@@ -181,7 +181,7 @@ function route_mira($entries, $question, $contextId) {
     if (preg_match('/^(?:verify|how (?:do|can|should) i verify|what does verify mean|who can verify a card|can the card owner verify their own work)$/', $text)) return mira_result($entries, [
         'status'=>'answered','ids'=>['faro-board-verify'],'accessScope'=>'authenticated-portal-guidance'
     ]);
-    if (preg_match('/who decides whether (?:this|it|a card) is accepted|what can (?:the )?(?:product owner|po) do in rev(?:iew|eiw)|can (?:the )?(?:product owner|po) (?:ask for|request) changes/', $text)) return mira_result($entries, [
+    if (preg_match('/who decides (?:if|whether) (?:this|it|a card) is accepted|what can (?:the )?(?:product owner|po) do in rev(?:iew|eiw)|can (?:the )?(?:product owner|po) (?:ask for|request) changes/', $text)) return mira_result($entries, [
         'status'=>'answered','ids'=>['faro-board-review-decision'],'accessScope'=>'authenticated-portal-guidance'
     ]);
     if (preg_match('/can (?:mira|you) approve (?:it|this)|is (?:this|my|the) (?:card )?accepted|has (?:this|my|the) card been accepted/', $text)) return mira_result($entries, [

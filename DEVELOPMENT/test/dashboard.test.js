@@ -14,9 +14,10 @@ test("homepage presents the premium My Capstone hierarchy without invented perso
   assert.match(html, /<h1>My Capstone<\/h1>/);
   assert.match(html, /class="next-step-hero"[\s\S]*data-state="unavailable"/);
   assert.match(html, /Connect to your signed-in Capstone portal/);
-  assert.match(html, /class="metric-grid"[\s\S]*In progress[\s\S]*Blocked[\s\S]*Verify \/ review[\s\S]*Current sprint/);
-  assert.equal((html.match(/class="metric-tile"/g) || []).length, 4);
-  assert.doesNotMatch(html.match(/class="metric-grid"[\s\S]*?<\/section>/)[0], />\s*0\s*</);
+  assert.match(html, /class="work-fallback"[\s\S]*In progress[\s\S]*Blocked[\s\S]*Verify \/ review[\s\S]*Current sprint/);
+  assert.equal((html.match(/class="work-destination-list"/g) || []).length, 1);
+  assert.match(html,/Open your signed-in portal for personal work/);
+  assert.doesNotMatch(html.match(/class="work-fallback"[\s\S]*?<\/section>/)[0], />\s*0\s*</);
   assert.match(html, /id="dashboard-mira-form"/);
   assert.match(html, /data-dashboard-depth="quick"[\s\S]*data-dashboard-depth="guide"[\s\S]*data-dashboard-depth="step"/);
 });
@@ -52,4 +53,40 @@ test("dashboard profile remains neutral and exposes compact account, theme, and 
   assert.match(html, /Portal theme unavailable; Follow portal uses Auto/);
   assert.match(script, /mira-portal-profile/);
   assert.match(script, /event\.key==="Escape"/);
+});
+
+test("portal-aligned navigation and presence controls stay verified and privacy safe", () => {
+  assert.match(html, /class="side-nav dashboard-nav primary-rail"/);
+  for (const label of ["Dashboard", "Today", "Board", "Meetings", "Inbox", "My Work", "Projects", "People", "My Rhythm", "Recognition", "Profile", "Ask MIRA", "More"]) {
+    assert.match(html, new RegExp(`(?:title=\\"${label}|>${label}<)`), label);
+  }
+  for (const route of ["/this-term", "/people", "/recognition", "/me/privacy", "#orientation", "#netconn", "#netteam", "#aidir", "#caprecord", "#myshowcase", "#brandhub"]) {
+    assert.ok(html.includes(route), route);
+  }
+  assert.doesNotMatch(html.match(/id="secondary-navigation"[\s\S]*?<main/)[0], /Alumni directory|Opportunities|Classmates/);
+  assert.match(html, /id="dashboard-presence-trigger"[^>]+aria-controls="dashboard-presence-drawer"/);
+  assert.match(html, /Live presence is not connected/);
+  assert.match(html, /Standalone MIRA does not invent a count or availability/);
+  assert.doesNotMatch(html.match(/id="dashboard-presence-drawer"[\s\S]*?<section class="next-step-hero"/)[0], /@fiu\.edu|Sign out/);
+  assert.match(script, /mira-portal-presence/);
+  assert.match(script, /event\.detail\?\.authorized!==true/);
+  assert.match(script, /setSecondaryNavigation/);
+  assert.match(script, /closePresence\(\{restore:true\}\)/);
+  assert.match(css, /\.presence-drawer/);
+  assert.match(css, /\.secondary-navigation/);
+  assert.match(css, /bottom: 68px/);
+});
+
+test("mobile navigation uses five primary destinations, shared rail tokens, and an accessible secondary sheet", () => {
+  const rail = html.match(/<aside class="side-nav dashboard-nav primary-rail"[\s\S]*?<\/aside>/)?.[0] || "";
+  assert.equal((rail.match(/data-mobile-primary/g) || []).length, 5);
+  for (const token of ["--rail-bg", "--rail-icon", "--rail-label", "--rail-hover-bg", "--rail-active-bg", "--rail-active-icon", "--rail-divider"]) {
+    assert.match(css, new RegExp(token), token);
+  }
+  assert.match(html, /id="secondary-nav-backdrop"[^>]+hidden/);
+  assert.match(html, /class="mobile-primary-destinations"/);
+  assert.match(script, /secondary-navigation-open/);
+  assert.match(script, /setAttribute\("aria-modal","true"\)/);
+  assert.match(script, /event\.key!=="Tab"/);
+  assert.match(css, /\.primary-rail > :is\(a,button\):not\(\[data-mobile-primary\]\)/);
 });

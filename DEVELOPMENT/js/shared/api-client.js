@@ -1,10 +1,14 @@
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory();
   else {
-    const source = document.currentScript?.src;
+    // `document.currentScript` can be null in delayed or instrumented
+    // executions. Resolve this script explicitly so a packaged page never
+    // loses its declared transport and silently behaves like the Node build.
+    const script = document.currentScript || [...document.scripts].reverse().find(item => /\/js\/shared\/api-client\.js(?:[?#]|$)/.test(item.src));
+    const source = script?.src;
     const options = {
       baseUrl: new URL("../../", source || new URL("js/shared/api-client.js", document.baseURI)).href,
-      transport: document.currentScript?.dataset?.apiTransport,
+      transport: script?.dataset?.apiTransport,
       fetchImpl: root.fetch.bind(root)
     };
     if (options.transport === "browser") {
@@ -12,7 +16,12 @@
       root.CapstoneApi = root.CapstoneBrowserDemo.create(options);
     } else if (options.transport === "supabase") {
       root.CapstoneApi = root.CapstoneSupabase.create(options);
-    } else root.CapstoneApi = factory().createApiClient({ ...options, indexedSearch:options.transport === "php" ? root.CapstoneIndexedSearch : undefined });
+    } else if (options.transport === "php" || (!options.transport && /^(?:localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname))) {
+      root.CapstoneApi = factory().createApiClient({ ...options, indexedSearch:options.transport === "php" ? root.CapstoneIndexedSearch : undefined });
+    } else {
+      console.error("MIRA packaged runtime is missing an explicit data-api-transport value.");
+      root.CapstoneApi = factory().createUnavailableClient(options.baseUrl);
+    }
   }
 })(typeof window === "undefined" ? globalThis : window, function () {
   "use strict";
@@ -68,7 +77,17 @@
         throw new Error("The MIRA backend returned an invalid response. Contact the project owner; this is not an incorrect-password message.");
       }
     }
-    return { baseUrl: base.href, url, fetch: request, readJson };
+    return { baseUrl: base.href, storageMode:transport, url, fetch: request, readJson };
   }
-  return { createApiClient };
+  function createUnavailableClient(baseUrl) {
+    const error = "MIRA couldn't search course guidance right now. Try again in a moment.";
+    return {
+      baseUrl,
+      storageMode:"unavailable",
+      url(){ throw new Error(error); },
+      fetch(){ return Promise.reject(new Error(error)); },
+      readJson(){ return Promise.reject(new Error(error)); }
+    };
+  }
+  return { createApiClient, createUnavailableClient };
 });
