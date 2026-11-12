@@ -15,8 +15,8 @@ function answer(q, id, context) {
   return result.matches[0];
 }
 
-test("all 27 reviewed portal destinations are centralized and navigation-only",()=>{
-  assert.equal(portal.entries.length,27);
+test("all 28 reviewed portal destinations are centralized and navigation-only",()=>{
+  assert.equal(portal.entries.length,28);
   assert.equal(new Set(entries.map(e=>e.id)).size,entries.length);
   for(const entry of portal.entries) {
     const destination=navigation.resolvePortalDestination(entry.portalSectionId);
@@ -36,6 +36,9 @@ test("all 27 reviewed portal destinations are centralized and navigation-only",(
       if (entry.portalSectionId === "grade") {
         assert.match(result.answer,/Personal grades are not yet available inside this Ocelot chat/);
         assert.match(result.answer,/land on Today, choose Grade/);
+      } else if (["resources","tutorials"].includes(entry.portalSectionId)) {
+        assert.match(result.answer,/public Capstone/);
+        assert.match(result.answer,/does not require MIRA to read personal portal data/);
       } else assert.match(result.answer,/Ocelot MIRA (?:cannot|has not read)/);
     }
     for(const followUp of entry.followUps) assert.notEqual(search(followUp,entry.id).status,"unmatched",followUp);
@@ -44,10 +47,14 @@ test("all 27 reviewed portal destinations are centralized and navigation-only",(
   assert.equal(navigation.resolvePortalDestination("overview").url,"https://capstone.cs.fiu.edu/today");
   assert.equal(navigation.resolvePortalDestination("messages").url,"https://capstone.cs.fiu.edu/inbox");
   assert.equal(navigation.resolvePortalDestination("board").url,"https://capstone.cs.fiu.edu/board");
+  assert.equal(navigation.resolvePortalDestination("resources").url,"https://capstone.cs.fiu.edu/resources");
+  assert.equal(navigation.resolvePortalDestination("resources").authCapability,"public");
+  assert.equal(navigation.resolvePortalDestination("tutorials").url,"https://capstone.cs.fiu.edu/tutorials");
+  assert.equal(navigation.resolvePortalDestination("tutorials").authCapability,"public");
   for(const id of ["overview","messages","board","meetings","grade","team","standing"]) assert.equal(navigation.resolvePortalDestination(id).signedInVerified,true);
   assert.equal(navigation.resolvePortalDestination("grade").refreshVerified,true);
   assert.equal(navigation.resolvePortalDestination("messages").refreshVerified,false);
-  assert.equal(navigation.resolvePortalDestination("resources").signedInVerified,false);
+  assert.equal(navigation.resolvePortalDestination("resources").refreshVerified,true);
   assert.equal(navigation.resolvePortalDestination("unknown"),null);
 });
 
@@ -77,6 +84,24 @@ test("portal and Canvas messaging are separate and course facts remain searchabl
   assert.equal(search("When is Sprint 2 due in Spring 2027?").status,"unmatched");
 });
 
+test("Projects this term uses one canonical verified destination",()=>{
+  const expected="https://capstone.cs.fiu.edu/this-term";
+  for(const q of ["Open Projects this term","Open portal Projects this term","Where are projects this term?","Take me to current-term projects"]){
+    const result=search(q);
+    assert.equal(result.status,"matched",q);
+    assert.equal(result.matches.length,1,q);
+    assert.equal(result.matches[0].id,"portal-this-term",q);
+    assert.equal(result.matches[0].url,expected,q);
+    const followUp=search("Take me there",result.matches[0].id);
+    assert.equal(followUp.status,"matched",q+" follow-up");
+    assert.equal(followUp.matches[0].id,"portal-this-term",q+" follow-up");
+    assert.equal(followUp.matches[0].url,expected,q+" follow-up");
+  }
+  const gettingStarted=answer("Open Getting Started","getting-started");
+  assert.equal(gettingStarted.url,"https://capstone.cs.fiu.edu/portal");
+  answer("Open Start here","portal-start");
+});
+
 test("portal shortcuts make no Auth, dashboard or paid model calls in Supabase mode",async()=>{
   const {createSupabaseApi}=require("../js/shared/supabase-api");
   const forbidden=new Proxy({}, {get(){throw new Error("Navigation must not access live account data");}});
@@ -93,7 +118,7 @@ test("homepage exposes every section and explains the portal privacy boundary",(
   const markup=html.match(/<section class="topic-grid portal-shortcuts"[\s\S]*?<\/section>/)[0];
   assert.match(markup,/Personal messages, grades, and account records remain inside the authenticated portal/);
   const questions=[...markup.matchAll(/data-question="([^"]+)"/g)].map(m=>m[1].replaceAll("&amp;","&"));
-  assert.equal(questions.length,27);
+  assert.equal(questions.length,28);
   const matches=questions.map(q=>search(q).matches[0].id);
   assert.deepEqual(new Set(matches),new Set(portal.entries.map(e=>e.id)));
   assert.doesNotMatch(JSON.stringify(portal),/sb_secret_|pwd=|https?:\/\/[^\s"]+:[^\s"]+@|afeli016@/);

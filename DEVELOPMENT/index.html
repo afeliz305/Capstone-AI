@@ -17,7 +17,10 @@
     <script src="js/shared/contact-policy.js" defer></script>
     <script src="js/shared/portal-navigation.js" defer></script>
     <script src="js/shared/mira-guidance.js" defer></script>
+    <script src="js/shared/team-workspace.js" defer></script>
+    <script src="js/shared/ai-gateway.js" defer></script>
     <script src="js/chat/shared-information.js" defer></script>
+    <script src="js/chat/team-workspace-ui.js" defer></script>
     <script src="js/chat/capstone-chat.js" defer></script>
   </head>
   <body class="mira-dashboard-page">
@@ -171,6 +174,41 @@
           </section>
         </div>
 
+        <section class="team-workspace" id="team-workspace" aria-labelledby="team-workspace-title" data-source-state="snapshot">
+          <div class="dashboard-section-heading team-workspace-heading">
+            <div><p class="eyebrow">SPRINT WORKSPACE</p><h2 id="team-workspace-title">Prepare work together</h2><p class="workspace-source-note">Verified portal audit snapshot · November 12, 2026 · read-only</p></div>
+            <a href="https://capstone.cs.fiu.edu/board" target="_blank" rel="noreferrer">Open current board <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#external"></use></svg></a>
+          </div>
+          <div class="workspace-state-banner" role="note"><strong>Snapshot, not live portal state.</strong> MIRA can explain, check, and draft here. Only the signed-in Capstone portal can confirm current status or submit changes.</div>
+          <div class="team-workspace-controls">
+            <div class="workspace-view-switcher" role="group" aria-label="Workspace view"><button type="button" class="active" data-workspace-view="team" aria-pressed="true">Team work</button><button type="button" data-workspace-view="mine" aria-pressed="false">My work</button></div>
+            <label>Filter cards <select id="workspace-status-filter"><option value="active">Active work</option><option value="all">All cards</option><option value="ready">Ready</option><option value="in-progress">In progress</option><option value="done">Done</option></select></label>
+          </div>
+          <div class="team-workspace-grid">
+            <div class="team-card-browser"><div class="workspace-summary" id="workspace-summary" aria-live="polite"></div><div class="team-card-list" id="team-card-list" aria-label="Sprint cards"></div></div>
+            <article class="selected-work-card" id="selected-work-card" aria-live="polite"><p>Select a permitted card to review its details, criteria, evidence, and preparation tools.</p></article>
+          </div>
+          <div class="workspace-preparation-grid">
+            <section class="standup-assistant" aria-labelledby="standup-title">
+              <div class="workspace-panel-heading"><div><p class="eyebrow">DRAFT · NOT SUBMITTED</p><h3 id="standup-title">Stand-up Assistant</h3></div><span class="source-chip">Portal field format</span></div>
+              <p id="standup-submission-status">Latest verified snapshot: 2 of 2 weekly stand-ups submitted. Review before drafting to avoid a duplicate.</p>
+              <form id="standup-draft-form">
+                <label>What I did<textarea name="did" rows="3" maxlength="1200"></textarea></label>
+                <label>What I will do<textarea name="willDo" rows="3" maxlength="1200"></textarea></label>
+                <label>What's blocking me<textarea name="blockers" rows="3" maxlength="1200"></textarea></label>
+                <div class="workspace-form-actions"><button type="button" data-prepare-standup>Prepare from selected card</button><button type="button" data-clear-standup>Clear draft</button></div>
+                <p class="workspace-form-status" id="standup-draft-status" role="status" aria-live="polite">Draft stays in this page. MIRA does not post stand-ups.</p>
+              </form>
+            </section>
+            <section class="ceremony-preparation" aria-labelledby="ceremony-title">
+              <div class="workspace-panel-heading"><div><p class="eyebrow">PREPARATION</p><h3 id="ceremony-title">Review &amp; retrospective</h3></div><span class="source-chip">Not submitted</span></div>
+              <div class="ceremony-tabs" role="tablist" aria-label="Ceremony preparation"><button type="button" role="tab" class="active" data-ceremony="review" aria-selected="true">Sprint Review</button><button type="button" role="tab" data-ceremony="retro" aria-selected="false">Retrospective</button></div>
+              <div id="ceremony-prompts"></div>
+              <p class="workspace-form-status">Prepare here, then review with the team and submit only through the authorized portal workflow.</p>
+            </section>
+          </div>
+        </section>
+
         <section class="shortcut-directory" aria-labelledby="shortcut-title">
           <div class="dashboard-section-heading"><div><p class="eyebrow">EXPLORE</p><h2 id="shortcut-title">Resources &amp; shortcuts</h2></div><span>Everything else, without the clutter.</span></div>
           <div class="shortcut-groups">
@@ -298,6 +336,7 @@
               <button type="button" data-question="Open portal Letters">Letters</button>
               <button type="button" data-question="Open portal Request a letter">Request a letter</button>
               <button type="button" data-question="Open portal Resources">Resources</button>
+              <button type="button" data-question="Open Capstone tutorials">Tutorials</button>
               <button type="button" data-question="Open portal Brand &amp; templates">Brand &amp; templates</button>
               <button type="button" data-question="Open portal Canvas">Canvas</button>
             </div>

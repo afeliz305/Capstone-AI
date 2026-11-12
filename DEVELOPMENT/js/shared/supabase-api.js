@@ -6,7 +6,7 @@ const { searchKnowledge } = require("../../server/lib/search");
 const fail = (message, statusCode = 400, classification) => Object.assign(new Error(message), { statusCode, ...(classification ? { classification } : {}) });
 const reply = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 const setupError = "Supabase database setup is not complete. Ask the project owner to follow SUPABASE_SETUP.md. No save was confirmed.";
-const MIRA_RECOVERY_URL = "https://ocelot.aul.fiu.edu/~afeli016/MIRA/pages/recover.html";
+const MIRA_RECOVERY_URL = typeof CAPSTONE_RECOVERY_URL === "string" ? CAPSTONE_RECOVERY_URL : "https://ocelot.aul.fiu.edu/~afeli016/MIRA/pages/recover.html";
 const RESET_CONFIRMATION = "If an eligible staff account exists for that email, a password reset message has been sent.";
 function serviceError(error) {
   if (!error) return;
@@ -39,7 +39,7 @@ async function filesFor(input) {
 
 function verifiedRecoveryUrl(value = MIRA_RECOVERY_URL) {
   const target = new URL(value);
-  if (target.href !== MIRA_RECOVERY_URL || target.protocol !== "https:" || target.username || target.password || target.search || target.hash) {
+  if (target.href !== MIRA_RECOVERY_URL || target.protocol !== "https:" || target.username || target.password || target.search || target.hash || !target.pathname.endsWith("/pages/recover.html")) {
     throw fail("Password recovery is not configured for the approved MIRA destination.", 503);
   }
   return target.href;

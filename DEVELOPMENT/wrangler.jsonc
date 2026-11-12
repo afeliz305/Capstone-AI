@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "mira-capstone",
+  "pages_build_output_dir": "./dist/cloudflare/MIRA",
+  "compatibility_date": "2026-11-12",
+  "send_metrics": false,
+  "vars": {
+    "MIRA_AI_PROVIDER": "mock",
+    "MIRA_AI_LIVE_ENABLED": "false"
+  }
+}

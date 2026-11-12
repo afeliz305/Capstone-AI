@@ -32,6 +32,51 @@ function result(entries, toPublic, spec) {
   };
 }
 
+// Exception questions combine a published rule with a request for a human
+// decision. Keep that distinction explicit and reusable across course and
+// Board topics. MIRA may explain the reviewed rule and route the student, but
+// it never grants, predicts, submits, or impersonates an approval.
+function authorityExceptionRoute(entries, text, contextId, toPublic) {
+  const exceptionAction = /\b(?:exception|waiv(?:e|ed|er)|exempt(?:ion|ed)?|excus(?:e|ed)|override|skip|make an exception|do i still have to|cannot meet|can t meet|unable to meet)\b/;
+  const approvalAction = /\b(?:approve|approval|authorize|permission)\b/;
+  const humanActor = /\b(?:professor|instructor|product owner|team leader|ai anchor|course staff|someone|mira|you)\b/;
+  const decisionTopic = /\b(?:attendance|attend|absence|absent|grade|grading|score|points?|deadline|due|late|extension|submit|submission|assignment|product owner|card|acceptance|accepted|verify|review|done|requirement)\b/;
+  const context = find(entries, String(contextId || ""));
+  // Preserve the established card-action escalation. That route carries a
+  // stronger status and a more specific explanation than the general
+  // exception/authority family below.
+  if (/(?:approve|mark|move).*(?:card)?.*done|approve my card/.test(text)) return null;
+  if (!exceptionAction.test(text) && !(approvalAction.test(text) && humanActor.test(text) && (decisionTopic.test(text) || context))) return null;
+
+  const personalDecision = "MIRA cannot grant, promise, submit, or predict an individual exception. A human with the appropriate course or workflow authority must decide it.";
+  const contact = "Use the verified course contact path and include the requirement, relevant date or card, and the specific circumstance. No request is sent automatically.";
+  let ids;
+  let accessScope = "public-course-policy";
+
+  if (/\b(?:attendance|attend|absence|absent|miss class|missed class|standup|stand up)\b/.test(text)) {
+    ids = ["syllabus-attendance", "contact-help"];
+  } else if (/\b(?:grade|grading|score|points?|extra credit|curve)\b/.test(text)) {
+    ids = ["syllabus-grading", "contact-help"];
+  } else if (/\b(?:deadline|due|late|extension|extra time|submit|submission|assignment)\b/.test(text)) {
+    ids = ["syllabus-late-work", "contact-help"];
+  } else if (/\b(?:product owner|card|acceptance|accepted|verify|review|done)\b/.test(text)) {
+    ids = ["faro-board-review-decision", "contact-help"];
+    accessScope = "authenticated-portal-guidance";
+  } else if (context && context.sourceKind !== "prototype" && context.sourceKind !== "portal-navigation") {
+    ids = [context.id, "contact-help"];
+  } else {
+    ids = ["contact-help"];
+  }
+
+  return result(entries, toPublic, {
+    status: "partial",
+    ids,
+    accessScope,
+    missingEvidence: "Reviewed sources can explain the general rule, but they cannot establish or approve an individual exception.",
+    answer: entry => `${entry.answer} ${personalDecision} ${contact}`
+  });
+}
+
 function courseNavigation(entries, question, contextId, toPublic) {
   const text = normalize(question);
   if (!navigationText.test(text)) return null;
@@ -54,6 +99,9 @@ function routeMira(entries, question, contextId, toPublic) {
   const text=normalize(question);
   const navigation=courseNavigation(entries,question,contextId,toPublic);
   if(navigation) return navigation;
+
+  const authorityException=authorityExceptionRoute(entries,text,contextId,toPublic);
+  if(authorityException) return authorityException;
 
   // Privacy and non-authoritative action requests are checked before general
   // navigation so an overbroad portal shortcut can never expose or imply them.
@@ -120,13 +168,13 @@ function routeMira(entries, question, contextId, toPublic) {
     missingEvidence:"Only the instructor can decide an individual request; MIRA cannot grant or submit one.",
     answer:entry=>entry.answer+" MIRA cannot grant, promise, or send an extension request. Use the verified instructor contact route if the documented grace period is not enough."
   });
-  if(/\b(?:evidence|proof)\b/.test(text) && !/what still needs evidence/.test(text)) return result(entries,toPublic,{
+  if(/\b(?:evidence|proof|prove)\b/.test(text) && !/what still needs evidence/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["faro-board-evidence"],accessScope:"authenticated-portal-guidance"
   });
-  if(/acceptance criteria|success conditions|\bac\b|criteria.*(?:satisfy|complete)|(?:satisfy|complete).*criteria/.test(text)) return result(entries,toPublic,{
+  if(/acceptance criteria|success conditions|\bac\b|criteria.*(?:satisfy|complete)|(?:satisfy|complete).*criteria|card.*(?:need|has).*satisfy|what does (?:this|the) card need/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["faro-board-acceptance-criteria"],accessScope:"authenticated-portal-guidance"
   });
-  if(/definition of done|what does done mean|card.*\bdone\b|\bdone\b.*card/.test(text)) return result(entries,toPublic,{
+  if(/definition of done|what does done mean|card.*\bdone\b|\bdone\b.*card|who decides after verify/.test(text)) return result(entries,toPublic,{
     status:"partial",ids:["faro-board-review-decision","faro-board-acceptance-criteria","faro-board-evidence"],accessScope:"authenticated-portal-guidance",
     missingEvidence:"The reviewed FARO vocabulary distinguishes criteria, evidence, verification and Product Owner decisions, but it does not define a complete official course Definition of Done.",
     answer:()=>"MIRA did not find a complete official course Definition of Done. Acceptance criteria, evidence, teammate verification, and Product Owner acceptance are separate steps; none alone proves that the card is Done. MIRA cannot approve or move the card."
@@ -136,7 +184,7 @@ function routeMira(entries, question, contextId, toPublic) {
     missingEvidence:"FARO provides reviewed terminology but not a complete course-wide checklist for entering Verify.",
     answer:entry=>entry.answer+" Review the criteria and evidence recorded on your own card, then ask course staff if the transition requirement remains unclear."
   });
-  if(/^(?:verify|how (?:do|can|should) i verify|what does verify mean|who can verify a card|can the card owner verify their own work)$/.test(text)) return result(entries,toPublic,{
+  if(/^(?:verify|how (?:do|can|should) i verify|what does verify mean|who can verify a card|who checks (?:my|the|a) card|can the card owner verify their own work)$/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["faro-board-verify"],accessScope:"authenticated-portal-guidance"
   });
   if(/who decides (?:if|whether) (?:this|it|a card) is accepted|what can the product owner do in review|can the product owner (?:ask for|request) changes/.test(text)) return result(entries,toPublic,{
@@ -175,24 +223,27 @@ function routeMira(entries, question, contextId, toPublic) {
   });
   if(asksBrandColors) return result(entries,toPublic,{status:"answered",ids:["brand-colors"],accessScope:"public-brand-guide"});
   if(asksBrandLogo) return result(entries,toPublic,{status:"answered",ids:["brand-logo"],accessScope:"public-brand-guide"});
-  if(!/^open (?:portal )?brand (?:and )?templates$/.test(text) && /\b(?:brand|branding|powerpoint|presentation|letterhead)\b.*\b(?:templates?|downloads?)\b|\b(?:templates?|downloads?)\b.*\b(?:brand|branding|powerpoint|presentation|letterhead)\b/.test(text)) return result(entries,toPublic,{
+  if(!/^open (?:portal )?brand (?:and )?templates$/.test(text) && /\b(?:brand|branding|powerpoint|presentation|letterhead)\b.*\b(?:templates?|downloads?|deck|slides?)\b|\b(?:templates?|downloads?|deck|slides?)\b.*\b(?:brand|branding|powerpoint|presentation|letterhead)\b/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["brand-downloads"],accessScope:"public-brand-guide"
   });
-  if(/\b(?:sprint|scrum|ceremony|team meeting)\b.*\b(?:minutes|records|notes|templates?)\b|\b(?:minutes|records|notes|templates?)\b.*\b(?:sprint|scrum|ceremony|team meeting)\b/.test(text)) return result(entries,toPublic,{
+  if(!/sprint (?:review|retrospective)/.test(text) && /\b(?:sprint|scrum|ceremony|meeting|team meeting)\b.*\b(?:minutes|records|notes|templates?)\b|\b(?:minutes|records|notes|templates?)\b.*\b(?:sprint|scrum|ceremony|meeting|team meeting)\b/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["minutes-overview"],accessScope:"public-linked-document"
   });
   if(/sprint retrospective|\bretro\b|process improvement/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["sprint-retrospective-template","syllabus-sprint-retrospective"],accessScope:"authenticated-linked-document"
   });
-  if(/sprint review|review meeting|sprint demo/.test(text) && !/showcase/.test(text)) return result(entries,toPublic,{
+  if(/sprint review|review meeting|sprint demo|demo meeting/.test(text) && !/showcase/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["sprint-review-template","syllabus-sprint-review"],accessScope:"authenticated-linked-document"
   });
   if(/\bweekly assignment\b/.test(text)&&/\b(?:where|how|submit|upload|turn in|hand in)\b/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["canvas-assignments"],accessScope:"course-syllabus"
   });
-  if(/(?:where|how).*(?:sprint work|course work|work|assignment).*(?:submit|document|upload)|(?:where|how).*(?:submit|document|upload).*(?:sprint work|course work|work|assignment)|(?:submit|upload).*(?:sprint work|course work|assignment)/.test(text)) return result(entries,toPublic,{
-    status:"partial",ids:["minutes-usage-guide","canvas-assignments"],missingEvidence:"The linked minutes guide distinguishes Capstone-site ceremony/board filing from Canvas weekly assignments. The exact destination depends on the specific work item."
-  });
+  if(/(?:where|how).*(?:sprint work|course work|work|assignment).*(?:submit|document|upload)|(?:where|how).*(?:submit|document|upload).*(?:sprint work|course work|work|assignment)|(?:submit|upload).*(?:sprint work|course work|assignment)/.test(text)) {
+    const assignmentFirst=/\b(?:assignment|canvas|course work)\b/.test(text);
+    return result(entries,toPublic,{
+      status:"partial",ids:assignmentFirst?["canvas-assignments","minutes-usage-guide"]:["minutes-usage-guide","canvas-assignments"],missingEvidence:"The linked minutes guide distinguishes Capstone-site ceremony/board filing from Canvas weekly assignments. The exact destination depends on the specific work item."
+    });
+  }
   if(/(?:mira|you).*(?:cannot|can t|don t|doesn t|do not).*(?:answer|know)|who should i ask.*(?:don t|do not|cannot|can t) know|question.*(?:cannot|can t).*(?:answer|find)/.test(text)) return result(entries,toPublic,{
     status:"escalation",ids:["contact-help"],answer:entry=>entry.answer+" Include the course/term, sprint or assignment, the page/section you checked, and the specific point that remains unclear. No message or support request is sent automatically."
   });

@@ -27,6 +27,9 @@ October 8 retrieval, context, current-portal-selector, visual-density, and suppo
 
 ## Feature reference
 
+- [Unified team workspace](UNIFIED_TEAM_WORKSPACE.md) - sourced Sprint 5 snapshot, card/criteria/evidence preparation, stand-up drafts, ceremony preparation, permission boundaries, and future explicit-approval submission design.
+- [Cloudflare Pages foundation](CLOUDFLARE_FOUNDATION.md) - deterministic public packaging, safe preview, proposed redirects, mock AI Function, provider decisions, privacy gate, and Ocelot rollback.
+- [Team workspace + Cloudflare owner review](TEAM_WORKSPACE_CLOUDFLARE_OWNER_REVIEW.md) - completed local status, permission matrix, exact regression/browser results, screenshots, unchanged systems, and remaining owner decisions.
 - [Portal context audit and adapters](PORTAL_CONTEXT_AUDIT.md) - October 9 route/selector map, privacy classifications, My work/My rhythm/Inbox boundaries, source routing, and session-only personal-context model.
 - [FARO reviewed-knowledge integration](FARO_INTEGRATION.md) - bounded use of the 15 reviewed candidates, source precedence, provenance, exclusions, navigation aliases, conflicts, and tests.
 - [FARO deep knowledge audit](FARO_DEEP_KNOWLEDGE_AUDIT.md) - read-only map of FARO's visible architecture, question prompts, curated vocabulary, conflicts, MIRA gaps, navigation, privacy exclusions, and human-review requirements. Its [review dataset](faro-review-dataset.json) remains the review record; only the explicitly documented safe subset and aliases affect MIRA.

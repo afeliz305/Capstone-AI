@@ -1,4 +1,4 @@
-// Verified against the live portal navigation controls and router on 2026-10-09.
+// Verified against the live portal navigation controls and public routes on 2026-11-06.
 // Keep destinations here so Ocelot answers never invent portal routes.
 const PORTAL_ORIGIN = "https://capstone.cs.fiu.edu";
 const PORTAL_URL = PORTAL_ORIGIN + "/portal";
@@ -28,23 +28,24 @@ const definitions = [
   ["showcase", "Showcase", "myshowcase"],
   ["letters", "Letters", "myletters"],
   ["request-letter", "Request a letter", "reqletter"],
-  ["resources", "Resources", "resources"],
+  ["resources", "Resources", null, false, true, "/resources", true],
+  ["tutorials", "Tutorials", null, false, true, "/tutorials", true],
   ["brand", "Brand & templates", "brandhub"]
 ];
 
-const destinations = Object.fromEntries(definitions.map(([id, label, viewId, signedInVerified=false, refreshVerified=false, pathname=null]) => [id, Object.freeze({
+const destinations = Object.fromEntries(definitions.map(([id, label, viewId, signedInVerified=false, refreshVerified=false, pathname=null, publicAccess=false]) => [id, Object.freeze({
   id,
   label,
   viewId,
   url: pathname ? PORTAL_ORIGIN + pathname : PORTAL_URL + "#" + viewId,
   navigationCapability: "exact-section",
   dataCapability: "navigation-only",
-  authCapability: "existing-portal-session",
+  authCapability: publicAccess ? "public" : "existing-portal-session",
   mappedFromObservedControl: true,
   signedInVerified,
   refreshVerified,
   loginReturnVerified: false,
-  verifiedMechanism: pathname ? "portal route" : "portal hash router"
+  verifiedMechanism: publicAccess ? "public canonical route" : pathname ? "portal route" : "portal hash router"
 })]));
 
 destinations.canvas = Object.freeze({

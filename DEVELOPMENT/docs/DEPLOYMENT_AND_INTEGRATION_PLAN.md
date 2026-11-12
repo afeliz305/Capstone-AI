@@ -1,5 +1,34 @@
 # MIRA — shared testing, site integration, and future go-live
 
+## Cloudflare Pages owner-review plan (November 12, 2026)
+
+**Status: local foundation implemented; owner review required.** The source now includes deterministic Cloudflare packaging, hash verification, a loopback preview, security headers, an exact build-time recovery origin, and a mock-only Pages Function for the future AI gateway. No Cloudflare project, DNS record, Supabase setting, deployment, commit, or push was changed. The actual Pages origin is still required before a stable preview package can be prepared. See [Cloudflare foundation](CLOUDFLARE_FOUNDATION.md).
+
+### Proposed project configuration
+
+| Setting | Proposed value |
+| --- | --- |
+| Production branch | `main` |
+| Root directory | `DEVELOPMENT` |
+| Build command | `npm ci && npm run package:cloudflare` |
+| Build output directory | `dist/cloudflare/MIRA` |
+| Production URL | `https://<cloudflare-project>.pages.dev/` |
+| Supabase Site URL | `https://<cloudflare-project>.pages.dev/` |
+| Supabase recovery redirect | `https://<cloudflare-project>.pages.dev/pages/recover.html` |
+
+The production recovery URL must be an exact Supabase Auth allow-list entry. Keep only explicit local-development callbacks that are still used; do not add a broad production wildcard. Preview deployments should receive individually reviewed redirect entries only when password-recovery testing on a preview is required. Changing the origin will intentionally create a new browser storage/session scope, so testers should expect to sign in again; it does not require a schema, RLS, roster, ticket, or attachment migration.
+
+### Implemented foundation and remaining migration work
+
+1. **Implemented:** `package:cloudflare`, `verify:cloudflare`, and `preview:cloudflare` operate only under `dist/cloudflare`; the sibling Ocelot rollback package is untouched.
+2. **Implemented:** repeated builds from identical source/configuration are byte-identical and manifest-verified.
+3. **Implemented:** Cloudflare packaging requires `MIRA_PUBLIC_ORIGIN`; Supabase bundling injects its exact `/pages/recover.html` callback. The actual reviewed Pages origin remains an owner input.
+4. **Implemented for preview:** `_headers` limits scripts/assets/connections and adds browser hardening. Final preview acceptance must test Auth, Storage, PDF, assistants, and recovery under the hosted policy.
+5. **Preserved:** no SPA catch-all; unknown/private paths remain 404.
+6. **Implemented locally:** packaging regression covers determinism, allowlist, headers, recovery asset, private-path exclusion, and privileged-key patterns. Hosted acceptance remains pending.
+
+Cloudflare Pages Functions are not required for deterministic search. A mock-only `/api/ai` Function now establishes the future boundary. A live provider remains disabled until ownership, budget, privacy, retention, logging, limits, and key management are approved. A private key must never enter the static package.
+
 October 13, 2026 local mobile-parity candidate: one rail token system now controls inactive, hover, active, focus, badge, and divider states. The mobile shell no longer reserves desktop columns or scrolls a 13-item rail; it exposes five primary bottom destinations and moves the rest into an accessible secondary sheet. Oversized decorative pseudo-elements were bounded within their components, grid/flex children can shrink, hero actions stack, and the embedded/floating assistants, composer, profile menu, and Team drawer remain within the viewport. Automated component measurements and click-through flows passed at 440, 390, 375, 360, and 320px in both themes. The full suite passed 370 runnable tests with one optional PHP integration skipped; exact-package browser/static checks passed, and all 28 generated files (5,119,291 bytes) matched their manifest with zero extras. No deployment, Git commit/push, Supabase change, portal/FARO mutation, ticket write, or authentication action occurred.
 
 October 12, 2026 local navigation/account candidate: MIRA now uses a compact icon-first primary rail, a collapsible verified-destination panel, neutral standalone Team presence, an accessible Team drawer, and a structured profile menu while preserving its existing dashboard and assistant. No hosted presence or private profile data is inferred; connected identity/theme/count signals remain opt-in and adapter-authorized. The local Supabase package was refreshed to 28 files and 5,109,606 bytes after 369 runnable tests and the multi-viewport/200%-zoom browser smoke passed; one optional PHP integration test remains skipped. This preparation changed no Supabase configuration, portal data, FARO data, Ocelot deployment, Git commit, or GitHub branch.

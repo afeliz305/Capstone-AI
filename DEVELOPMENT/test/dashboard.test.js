@@ -32,6 +32,14 @@ test("dashboard exposes required destinations, tools, and privacy-safe fallback 
   assert.match(script, /\[data-open-check-work\]/);
 });
 
+test("dashboard includes one sourced preparation-only team workspace", () => {
+  assert.match(html, /id="team-workspace"[^>]+data-source-state="snapshot"/);
+  assert.match(html, /Verified portal audit snapshot[^<]+read-only/);
+  assert.match(html, /What I did[\s\S]*What I will do[\s\S]*What's blocking me/);
+  assert.match(html, /MIRA does not post stand-ups/);
+  assert.match(html, /Sprint Review[\s\S]*Retrospective/);
+});
+
 test("dashboard icon family and responsive layouts cover the requested experience", () => {
   for (const id of ["dashboard", "chat", "check-work", "today", "board", "work", "meetings", "inbox", "rhythm", "grade", "standing", "team", "syllabus", "resources", "tutorials", "help", "theme", "settings", "external", "profile", "info"]) {
     assert.match(icons, new RegExp(`<symbol id="${id}"`), id);

@@ -291,6 +291,76 @@ button:disabled { cursor: wait; opacity: .6; }
   .notification-trigger { display: none; }
   .profile-menu { bottom: 78px; top: auto; max-height: calc(100dvh - 96px); }
 }
+
+/* Unified sprint workspace: preparation-only, sourced team context. */
+.team-workspace { margin-top: 28px; padding: 24px; border: 1px solid var(--line); border-radius: 22px; background: var(--surface); box-shadow: var(--shadow); }
+.team-workspace-heading { align-items: flex-start; }
+.workspace-source-note { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+.workspace-state-banner { margin: 14px 0 18px; padding: 11px 13px; border-left: 3px solid var(--fiu-gold); border-radius: 0 9px 9px 0; color: var(--muted); background: var(--warning-bg); font-size: 12px; line-height: 1.5; }
+.workspace-state-banner strong { color: var(--ink); }
+.team-workspace-controls { margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.workspace-view-switcher, .ceremony-tabs { padding: 3px; display: inline-flex; gap: 2px; border-radius: 10px; background: var(--tint); }
+.workspace-view-switcher button, .ceremony-tabs button { min-height: 34px; padding: 6px 11px; border: 0; border-radius: 8px; color: var(--muted); background: transparent; font-size: 11px; font-weight: 800; }
+.workspace-view-switcher button.active, .ceremony-tabs button.active { color: var(--ink); background: var(--surface-raised); box-shadow: var(--shadow); }
+.team-workspace-controls > label { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; font-weight: 800; }
+.team-workspace-controls select { min-height: 36px; padding: 6px 30px 6px 9px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface-raised); }
+.team-workspace-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,340px),1fr)); gap: 16px; }
+.team-card-browser, .selected-work-card, .standup-assistant, .ceremony-preparation { min-width: 0; border: 1px solid var(--line); border-radius: 15px; background: var(--surface-raised); }
+.workspace-summary { padding: 12px 13px; color: var(--muted); border-bottom: 1px solid var(--line); font-size: 11px; line-height: 1.45; }
+.team-card-list { max-height: 550px; padding: 7px; display: grid; gap: 5px; overflow-y: auto; }
+.team-card-row { width: 100%; min-width: 0; padding: 10px; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 4px 9px; border: 1px solid transparent; border-radius: 10px; color: var(--ink); background: transparent; text-align: left; }
+.team-card-row:hover, .team-card-row[aria-pressed="true"] { border-color: color-mix(in srgb,var(--action) 30%,var(--line)); background: var(--tint); }
+.team-card-row strong { min-width: 0; align-self: center; font-size: 12px; overflow-wrap: anywhere; }
+.team-card-row small { grid-column: 2; color: var(--muted); font-size: 10px; }
+.card-status { align-self: start; padding: 3px 6px; border-radius: 999px; font-size: 8px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+.status-in-progress { color: var(--info); background: var(--info-bg); }
+.status-ready { color: #725300; background: var(--warning-bg); }
+.status-done { color: var(--success); background: var(--success-bg); }
+.selected-work-card { padding: 18px; }
+.selected-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.selected-card-header h3 { margin: 3px 0 0; font-size: 18px; overflow-wrap: anywhere; }
+.selected-card-meta { margin: 15px 0; display: grid; grid-template-columns: max-content minmax(0,1fr); gap: 5px 10px; font-size: 11px; }
+.selected-card-meta dt { color: var(--muted); font-weight: 800; }
+.selected-card-meta dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+.selected-work-card h4 { margin: 14px 0 8px; font-size: 12px; }
+.criteria-checker { display: grid; gap: 7px; }
+.criterion-row { padding: 9px; display: grid; grid-template-columns: 22px minmax(0,1fr); gap: 5px 8px; border: 1px solid var(--line); border-radius: 9px; }
+.criterion-number { width: 22px; height: 22px; display: grid; place-items: center; color: var(--info); background: var(--info-bg); border-radius: 50%; font-size: 10px; font-weight: 900; }
+.criterion-text { padding-top: 2px; font-size: 11px; line-height: 1.45; }
+.criterion-row textarea { grid-column: 2; width: 100%; min-height: 50px; resize: vertical; padding: 7px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: var(--surface); font: inherit; font-size: 11px; }
+.evidence-result { margin: 9px 0; color: var(--muted); font-size: 11px; }
+.evidence-result.draft-ready-for-review { color: var(--success); }
+.selected-card-actions, .workspace-form-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.selected-card-actions button, .workspace-form-actions button { min-height: 36px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--info); background: var(--surface); font-size: 10px; font-weight: 800; }
+.selected-card-actions button:hover, .workspace-form-actions button:hover { border-color: var(--info); background: var(--info-bg); }
+.workspace-draft-output { margin-top: 10px; padding: 12px; border-radius: 9px; background: var(--tint); font-size: 11px; line-height: 1.5; }
+.workspace-draft-output ol { margin: 6px 0 0; padding-left: 19px; }
+.workspace-draft-output pre { margin: 0; white-space: pre-wrap; font: inherit; }
+.workspace-preparation-grid { margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,300px),1fr)); gap: 16px; }
+.standup-assistant, .ceremony-preparation { padding: 17px; }
+.workspace-panel-heading { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.workspace-panel-heading h3 { margin: 2px 0 0; font-size: 17px; }
+.source-chip { max-width: 100%; padding: 4px 7px; border-radius: 999px; color: var(--muted); background: var(--tint); font-size: 9px; font-weight: 800; white-space: normal; }
+.standup-assistant > p { margin: 10px 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.standup-assistant form, #ceremony-prompts { display: grid; gap: 9px; }
+.standup-assistant label, .ceremony-prompt { display: grid; gap: 5px; color: var(--ink); font-size: 11px; font-weight: 800; }
+.standup-assistant textarea, .ceremony-prompt textarea { width: 100%; resize: vertical; padding: 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); font: inherit; font-size: 12px; }
+.ceremony-tabs { max-width: 100%; margin: 12px 0; flex-wrap: wrap; }
+.workspace-form-status { margin: 10px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.empty-workspace-state { padding: 14px; color: var(--muted); font-size: 11px; }
+@media (max-width: 980px) {
+  .team-workspace-grid, .workspace-preparation-grid { grid-template-columns: 1fr; }
+  .team-card-list { max-height: 360px; }
+}
+@media (max-width: 600px) {
+  .team-workspace { padding: 16px 12px; border-radius: 17px; }
+  .team-workspace-controls { align-items: stretch; flex-direction: column; }
+  .workspace-view-switcher { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .team-workspace-controls > label { justify-content: space-between; }
+  .selected-card-header, .workspace-panel-heading { align-items: flex-start; flex-direction: column; }
+  .criterion-row { grid-template-columns: 22px minmax(0,1fr); }
+  .selected-card-actions button, .workspace-form-actions button { flex: 1 1 45%; }
+}
 @media (max-width: 760px) {
   .mira-dashboard-page .primary-rail { flex-direction: row; align-items: stretch; }
 }

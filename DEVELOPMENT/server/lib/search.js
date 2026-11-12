@@ -27,9 +27,12 @@ const SYNONYMS = new Map([
 // Fuzzy correction is deliberately limited to reviewed Capstone terms. It is
 // never applied to arbitrary words, identifiers, names, dates, or numbers.
 const DOMAIN_VOCABULARY = Object.freeze([
-  "acceptance", "assignment", "blocked", "calendar", "criteria", "evidence",
-  "meeting", "owner", "product", "retrospective", "review", "standup",
-  "submit", "verification", "verify"
+  "acceptance", "anchor", "assignment", "attendance", "blocked", "board",
+  "calendar", "criteria", "deadline", "deadlines", "done", "evidence", "extension", "grade",
+  "grading", "help", "inbox", "instructor", "leader", "meeting", "meetings", "minutes",
+  "owner", "product", "resources", "retrospective", "review", "rhythm",
+  "showcase", "standing", "standup", "submission", "submit", "team",
+  "templates", "term", "today", "tutorial", "verification", "verify", "work"
 ]);
 
 function damerauLevenshtein(left, right) {
@@ -46,7 +49,7 @@ function damerauLevenshtein(left, right) {
 }
 
 function correctDomainToken(token) {
-  if (!/^[a-z]{5,18}$/.test(token)) return token;
+  if (!/^[a-z]{4,18}$/.test(token)) return token;
   let best=token,distance=2;
   for(const candidate of DOMAIN_VOCABULARY){
     const next=damerauLevenshtein(token,candidate);
@@ -67,6 +70,8 @@ function normalize(value) {
 function canonicalizeQuestion(value) {
   let text=normalize(value);
   text=text
+    .replace(/\bwhats\b/g,"what is")
+    .replace(/\bcurrent[- ]term projects?\b/g,"projects this term")
     .replace(/\b(?:turn|hand) in\b/g,"submit")
     .replace(/\bupload(?:ing|ed|s)?\b/g,"submit")
     .replace(/\bsubmissions?\b/g,"submit")
@@ -192,6 +197,24 @@ function portalMatches(entries, question, contextId) {
     entry.navigationPatterns.some(pattern=>new RegExp(pattern).test(text)) ||
     text === normalize("open " + entry.portalSection) || text === normalize("go to " + entry.portalSection));
   if (matches.length) return matches.filter(entry=>!(entry.id === "portal-team" && matches.some(e=>e.id === "portal-team-contacts")));
+  const shortcutFamilies = [
+    ["portal-overview", /\b(?:dashboard|overview|today)\b/],
+    ["portal-meetings", /\b(?:meetings?|ceremon(?:y|ies)|team calls?|find a time)\b/],
+    ["portal-rhythm", /\b(?:rhythm|routine)\b/],
+    ["portal-resources", /\b(?:resources?|reference section)\b/],
+    ["portal-tutorials", /\b(?:tutorials?|how to videos?)\b/],
+    ["portal-board", /\b(?:board|cards?)\b/],
+    ["portal-grade", /\b(?:my grade|my grades|my score)\b/],
+    ["portal-ai-anchors", /\b(?:ai anchors?|ai helper)\b/]
+  ];
+  if (/\b(?:open|show|take|where|go|view|check)\b/.test(text)) {
+    for (const [id, pattern] of shortcutFamilies) {
+      if (pattern.test(text)) {
+        const target=navigation.find(entry=>entry.id===id);
+        if(target)return[target];
+      }
+    }
+  }
   if (/^(?:open it|open that|take me there|where do i click|how do i open it|check again|any updates|anything new|any new ones|read them|tell me more)$/.test(text)) return navigation.filter(entry=>entry.id === contextId);
   return [];
 }
@@ -201,15 +224,17 @@ function courseMatches(entries, question, contextId) {
   const byId = id => entries.find(entry => entry.id === id);
   const topics = { attendance:"syllabus-attendance", syllabus:"syllabus-overview", deadlines:"syllabus-deadlines", grades:"syllabus-grading", grading:"syllabus-grading", "grade scale":"syllabus-grade-scale", "late work":"syllabus-late-work", "my dashboard":"dashboard-personal", "my project":"dashboard-personal" };
   if (topics[text] && byId(topics[text])) return [byId(topics[text])];
-  if (/\bwho (?:is|are) (?:my|our) (?:product owner|team|teammates)\b|\b(?:what are|show|check) my (?:deadlines|assignments)\b|^what should i do next$/.test(text) && byId("dashboard-personal")) return [byId("dashboard-personal")];
-  if (/\b(?:grade|grades|grading)\b/.test(text) && /\b(?:calculated|calculation|weight|weights|policy)\b/.test(text) && byId("syllabus-grading")) return [byId("syllabus-grading")];
-  const personal = /\b(?:my|our) (?:current |actual |recorded |personal )?(?:grade|grades|attendance|progress|tasks|task list|project status|assigned project|completion|team members)\b|\b(?:what is|show|check) (?:on )?my (?:dashboard|project)\b|\bwho is on my team\b|\bwhat is due for me\b|\bhow (?:am i|is my team) doing\b|\bhow many .* (?:have i|did i) (?:miss|missed|attend|attended|complete|completed)\b/;
-  if (personal.test(text) && byId("dashboard-personal")) return [byId("dashboard-personal")];
+  // Exact reviewed intents, numbered sprints, personal records and contextual
+  // follow-ups are more specific than the broad policy families below.
   const exact = entries.filter(entry => entry.sourceKind && entry.intents?.some(intent => normalize(intent) === text));
   if (exact.length) return exact;
   const numbers = [...text.matchAll(/\bsprint\s+([1-5])\b/g)].map(match => match[1]);
   const numbered = [...new Set(numbers)].map(n => byId("syllabus-sprint-"+n)).filter(Boolean);
   if (numbered.length) return numbered;
+  if (/\b(?:grade|grades|grading)\b/.test(text) && /\b(?:calculated|calculation|weight|weights|policy)\b/.test(text) && byId("syllabus-grading")) return [byId("syllabus-grading")];
+  if (/\bwho (?:is|are) (?:my|our) (?:product owner|team|teammates)\b|\b(?:what are|show|check) my (?:deadlines|assignments)\b|^what should i do next$/.test(text) && byId("dashboard-personal")) return [byId("dashboard-personal")];
+  const personal = /\b(?:my|our) (?:current |actual |recorded |personal )?(?:grade|grades|attendance|progress|tasks|task list|project status|assigned project|completion|team members)\b|\b(?:what is|show|check) (?:on )?my (?:dashboard|project)\b|\bwho is on my team\b|\bwhat is due for me\b|\bhow (?:am i|is my team) doing\b|\bhow many .* (?:have i|did i) (?:miss|missed|attend|attended|complete|completed)\b/;
+  if (personal.test(text) && byId("dashboard-personal")) return [byId("dashboard-personal")];
   if (/^(?:and |also )?(?:what about )?(?:the )?next (?:one|sprint)?$/.test(text)) {
     const current=/^syllabus-sprint-([1-5])$/.exec(String(contextId||""));
     const next=current&&Number(current[1])<5?byId("syllabus-sprint-"+(Number(current[1])+1)):null;
@@ -219,6 +244,13 @@ function courseMatches(entries, question, contextId) {
     const context = byId(contextId);
     if (context && context.sourceKind !== "portal-navigation") return [context];
   }
+  if ((/\b(?:attendance|attend|absence|absent)\b/.test(text) && /\b(?:policy|rule|requirement|miss|class|session|in person)\b/.test(text) || /\bhow many classes? can i miss\b|\bwhat happens if i miss class\b/.test(text)) && byId("syllabus-attendance")) return [byId("syllabus-attendance")];
+  if (/\b(?:grade|graded|grading|score|scored|points?)\b/.test(text) && /\b(?:how|policy|calculated|calculation|weight|weights|work|sprints?)\b/.test(text) && byId("syllabus-grading")) return [byId("syllabus-grading")];
+  if (!/^(?:when is (?:it|that|this) due|when is the deadline|what is the deadline)$/.test(text) && /\b(?:deadline|deadlines|due|schedule)\b/.test(text) && /\b(?:course|term|assignment|work|what|when|show)\b/.test(text) && byId("syllabus-deadlines")) return [byId("syllabus-deadlines")];
+  if (/\b(?:extra time|more time|extension|late)\b/.test(text) && byId("syllabus-late-work")) return [byId("syllabus-late-work")];
+  if (/\b(?:team leader|team lead|lead)\b/.test(text) && /\b(?:contact|ask|help|blocker|coordination)\b/.test(text) && byId("contact-help")) return [byId("contact-help")];
+  if (/\b(?:real person|human|escalate|escalation|still need help)\b/.test(text) && byId("contact-help")) return [byId("contact-help")];
+  if (/\b(?:who|where|how)\b.*\b(?:ask|contact|reach)\b.*\b(?:course|professor|instructor|teacher)\b/.test(text) && byId("contact-help")) return [byId("contact-help")];
   if (contextId && /^(?:and |also )?(?:where (?:do i |should i )?(?:submit|post|upload)(?: (?:it|that|this))?|how (?:is it|is that|am i) graded)$/.test(text)) {
     const target = byId(/graded/.test(text) ? "syllabus-grading" : "canvas-assignments");
     if (target) return [target];
