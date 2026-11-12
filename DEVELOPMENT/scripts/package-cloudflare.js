@@ -2,6 +2,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createHash } = require("node:crypto");
 const { createOcelotPackage } = require("./package-ocelot");
+const { loadReleaseIndex } = require("./release-index");
 
 async function walk(directory, base = directory) {
   const values = [];
@@ -50,13 +51,20 @@ async function buildCloudflarePackage({ root = path.resolve(__dirname, ".."), ou
   const stagingRoot = await fs.mkdtemp(path.join(outputRoot, ".staging-"));
   try {
     const config = supabaseConfig || await loadSupabaseConfig(root);
-    const built = await createOcelotPackage({ root, outputRoot: stagingRoot, transport: "supabase", supabaseConfig: config });
+    const siteIndex = await loadReleaseIndex(root);
+    if (!siteIndex) throw new Error("Cloudflare release requires the reviewed public website index. Refusing to silently omit indexed knowledge from a clean checkout.");
+    const built = await createOcelotPackage({ root, outputRoot: stagingRoot, transport: "supabase", supabaseConfig: config, siteIndex });
     const supabaseOrigin = new URL(config.url).origin;
     const notFound = '<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Page not found | MIRA</title></head><body><main><h1>Page not found</h1><p>The requested MIRA page does not exist.</p><p><a href="/">Return to MIRA</a></p></main></body></html>\n';
     await fs.writeFile(path.join(built.uploadDirectory, "404.html"), notFound, { flag: "wx" });
     const headers = `/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  Permissions-Policy: camera=(), microphone=(), geolocation=()\n  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' ${supabaseOrigin}; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'\n\n/pages/recover.html\n  Cache-Control: no-store\n`;
-    await fs.writeFile(path.join(built.uploadDirectory, "_headers"), headers, { flag: "wx" });
+    await fs.writeFile(path.join(built.uploadDirectory, "_headers"), headers + "\n/pages/recover\n  Cache-Control: no-store\n", { flag: "wx" });
     const files = await assertPublicPackage(built.uploadDirectory);
+    for (const file of files.filter(name => /\.(?:html|js|css|svg|txt|json)$/i.test(name))) {
+      const target = path.join(built.uploadDirectory, file);
+      const text = await fs.readFile(target, 'utf8');
+      await fs.writeFile(target, text.replace(/\r\n/g, '\n'));
+    }
     const manifest = await manifestFor(built.uploadDirectory);
     if (!publish) return { directory: built.uploadDirectory, manifest, files, stagingRoot };
     const stable = path.join(outputRoot, "MIRA");
