@@ -9,7 +9,8 @@ The existing repository remains the source. Configure a future Pages project onl
 | Setting | Proposed value |
 | --- | --- |
 | Repository | `afeliz305/Capstone-AI` |
-| Proposed Pages project | `mira-capstone` |
+| Pages project | `mira` |
+| Assigned Pages hostname | `mira-9gg.pages.dev` |
 | Production branch | `main` (automatic production deployment stays disabled until approval) |
 | Root directory | `DEVELOPMENT` |
 | Build command | `npm ci && npm run package:cloudflare` |
@@ -18,7 +19,7 @@ The existing repository remains the source. Configure a future Pages project onl
 
 The checked-in `wrangler.jsonc` keeps the AI provider in mock mode. Wrangler is pinned as a development dependency. The `/functions/api/ai.js` route contains a disabled-by-default OpenAI adapter; the checked-in configuration makes no external provider call.
 
-The Cloudflare account was verified as active and compatible with Pages, with no existing projects. `mira-capstone.pages.dev` did not resolve during the readiness check. That is a positive availability signal, not a reservation; Cloudflare confirms the name only at project creation. The dashboard's next step is GitHub authorization, so stop there for owner approval and repository selection.
+The Cloudflare account was verified as active and compatible with Pages. Cloudflare accepted the project name `mira` and proposed `mira-9gg.pages.dev` during configuration. Treat that hostname as provisional until the first deployment completes.
 
 ## Build inputs
 
@@ -48,7 +49,7 @@ The packager reuses the reviewed public Supabase allowlist, bundles public searc
 Do not apply these until Cloudflare accepts the project name and the exact preview origin passes acceptance:
 
 - Site URL: retain the current Ocelot value during preview.
-- Additional redirect candidate: `https://mira-capstone.pages.dev/pages/recover.html`
+- Additional redirect candidate: `https://mira-9gg.pages.dev/pages/recover.html`
 
 Do not use a wildcard. Do not change the current Site URL for this preview-readiness phase.
 

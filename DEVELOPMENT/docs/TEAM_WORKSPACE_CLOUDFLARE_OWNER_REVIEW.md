@@ -40,7 +40,7 @@ All records are labeled with source/state at the workspace or record level. Curr
 - Ocelot rollback: unchanged.
 - Stable `dist/cloudflare/MIRA` release: intentionally not generated. The exact reviewed Cloudflare Pages origin is still required as `MIRA_PUBLIC_ORIGIN`.
 - Cloudflare account: active and Pages-compatible; no existing projects.
-- Proposed project: `mira-capstone`. Its `pages.dev` hostname did not resolve, but final availability is confirmed only when Cloudflare accepts project creation.
+- Cloudflare accepted project name `mira` and proposed `mira-9gg.pages.dev`; final availability requires a successful deployment.
 - Cloudflare project/deployment: not created or changed. GitHub authorization is the next owner-controlled action.
 
 Proposed Supabase changes, not applied:
@@ -79,7 +79,7 @@ General responsive review screenshots remain under `dist/staging/branding-ui/` a
 ## Owner decisions still required
 
 1. Approve the audited Sprint 5 snapshot as the demo workspace seed or provide a newer reviewed snapshot.
-2. Authorize Cloudflare's GitHub integration, select only `afeliz305/Capstone-AI`, and confirm `mira-capstone` is accepted before project creation.
+2. Verify the first `mira` deployment at the assigned `mira-9gg.pages.dev` hostname.
 3. Decide how the completed, uncommitted workspace changes will reach a controlled preview branch; remote `main` does not yet contain them.
 4. Approve preview-only Supabase redirect entries only after the exact preview origin is live and verified.
 5. Keep the first preview in mock mode unless owner-only mock evaluation is desired.
