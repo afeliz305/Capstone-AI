@@ -180,6 +180,11 @@
             <a href="https://capstone.cs.fiu.edu/board" target="_blank" rel="noreferrer">Open current board <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#external"></use></svg></a>
           </div>
           <div class="workspace-state-banner" role="note"><strong>Snapshot, not live portal state.</strong> MIRA can explain, check, and draft here. Only the signed-in Capstone portal can confirm current status or submit changes.</div>
+          <section class="workspace-live-context" aria-labelledby="workspace-live-context-title">
+            <div><p class="eyebrow">AUTHORIZED CURRENT CONTEXT</p><h3 id="workspace-live-context-title">Refresh from your local portal connection</h3><p id="workspace-live-context-status" role="status" aria-live="polite">Not connected. The historical workspace remains labeled with its November 12 timestamp.</p></div>
+            <button type="button" data-refresh-workspace-context disabled>Refresh current context</button>
+            <div id="workspace-live-context-result" hidden></div>
+          </section>
           <div class="team-workspace-controls">
             <div class="workspace-view-switcher" role="group" aria-label="Workspace view"><button type="button" class="active" data-workspace-view="team" aria-pressed="true">Team work</button><button type="button" data-workspace-view="mine" aria-pressed="false">My work</button></div>
             <label>Filter cards <select id="workspace-status-filter"><option value="active">Active work</option><option value="all">All cards</option><option value="ready">Ready</option><option value="in-progress">In progress</option><option value="done">Done</option></select></label>

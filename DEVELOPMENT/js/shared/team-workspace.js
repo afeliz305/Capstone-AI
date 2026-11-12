@@ -10,7 +10,16 @@
     verifiedAt: "2026-11-12T12:00:00-05:00",
     state: "snapshot",
     permission: "read-only",
-    current: false
+    current: false,
+    dataOwner: "Capstone portal",
+    authorizationScope: "reviewed team workspace snapshot"
+  });
+
+  const publicGuidanceSource = Object.freeze({
+    id: "faro.acceptance-evidence",
+    title: "Reviewed acceptance criteria and evidence guidance",
+    url: "/index.html#ask-mira",
+    excerpt: "Acceptance criteria describe testable outcomes. Evidence must show the outcome, verification remains separate, and only an authorized human can accept the work."
   });
 
   const criteria = {
@@ -22,13 +31,30 @@
   };
 
   const cards = Object.freeze([
-    { id: "CAP-1315", title: "Harden communication decision guidance", owner: "Christopher Hernandez", status: "in-progress", size: "M", type: "Hardening", area: "Communication", dependency: "Team verification", completed: 0, evidence: [], criteria: criteria["CAP-1315"] },
-    { id: "CAP-1316", title: "Prepare human-decision support handoffs", owner: "Anthony Feliz", status: "in-progress", size: "M", type: "Hardening", area: "Operations", dependency: "Reviewed privacy/contact fields", completed: 0, evidence: [], criteria: criteria["CAP-1316"] },
-    { id: "CAP-1317", title: "Standardize the handoff experience", owner: "Romelin Charnel", status: "in-progress", size: "S", type: "Change", area: "Design", dependency: "Teammate design review", completed: 0, evidence: [], criteria: criteria["CAP-1317"] },
-    { id: "CAP-1318", title: "Create repeatable authority checks", owner: "Zavier Richardson", status: "ready", size: "M", type: "Hardening", area: "Data", dependency: "Independent teammate run", completed: 0, evidence: [], criteria: criteria["CAP-1318"] },
-    { id: "CAP-1319", title: "Document the source runbook", owner: "Michael Alvarez", status: "in-progress", size: "M", type: "Runbook", area: "Data", dependency: "Source-owner verification", completed: 3, evidence: [], criteria: criteria["CAP-1319"] },
-    ...[1108, 1109, 1110, 1111, 1112].map((number, index) => ({ id: `CAP-${number}`, title: ["Define grounded-answer boundaries", "Build the team workspace baseline", "Review navigation sources", "Test human-decision guidance", "Record sprint evidence"][index], owner: ["Christopher Hernandez", "Anthony Feliz", "Romelin Charnel", "Zavier Richardson", "Michael Alvarez"][index], status: "done", size: "S", type: "Completed", area: "Sprint 5", dependency: "None recorded", completed: 5, evidence: [{ label: "Portal evidence record", state: "verified" }], criteria: Array.from({ length: 5 }, (_, item) => `Accepted criterion ${item + 1} (see portal for the authoritative wording).`) }))
-  ].map((card) => Object.freeze({ ...card, source })));
+    { id: "CAP-1315", title: "Harden communication decision guidance", owner: "Christopher Hernandez", status: "in-progress", size: "M", type: "Hardening", area: "Communication", dependency: "Team verification", blocker: "No blocker verified; teammate verification remains required.", reviewRequirement: "A teammate independently verifies the behavior.", completed: 0, evidence: [], criteria: criteria["CAP-1315"] },
+    { id: "CAP-1316", title: "Prepare human-decision support handoffs", owner: "Anthony Feliz", status: "in-progress", size: "M", type: "Hardening", area: "Operations", dependency: "Reviewed privacy/contact fields", blocker: "No blocker verified; privacy and contact fields still need review.", reviewRequirement: "A teammate completes the handoff flow end to end.", completed: 0, evidence: [], criteria: criteria["CAP-1316"] },
+    { id: "CAP-1317", title: "Standardize the handoff experience", owner: "Romelin Charnel", status: "in-progress", size: "S", type: "Change", area: "Design", dependency: "Teammate design review", blocker: "No blocker verified; design review is pending.", reviewRequirement: "A teammate reviews the experience.", completed: 0, evidence: [], criteria: criteria["CAP-1317"] },
+    { id: "CAP-1318", title: "Create repeatable authority checks", owner: "Zavier Richardson", status: "ready", size: "M", type: "Hardening", area: "Data", dependency: "Independent teammate run", blocker: "No blocker verified; independent execution is pending.", reviewRequirement: "A teammate runs the checks independently.", completed: 0, evidence: [], criteria: criteria["CAP-1318"] },
+    { id: "CAP-1319", title: "Document the source runbook", owner: "Michael Alvarez", status: "in-progress", size: "M", type: "Runbook", area: "Data", dependency: "Source-owner verification", blocker: "No blocker verified; source-owner verification is pending.", reviewRequirement: "A teammate verifies a source independently.", completed: 3, evidence: [], criteria: criteria["CAP-1319"] },
+    ...[1108, 1109, 1110, 1111, 1112].map((number, index) => ({ id: `CAP-${number}`, title: ["Define grounded-answer boundaries", "Build the team workspace baseline", "Review navigation sources", "Test human-decision guidance", "Record sprint evidence"][index], owner: ["Christopher Hernandez", "Anthony Feliz", "Romelin Charnel", "Zavier Richardson", "Michael Alvarez"][index], status: "done", size: "S", type: "Completed", area: "Sprint 5", dependency: "None recorded", blocker: "None recorded in the reviewed snapshot.", reviewRequirement: "See the authoritative portal record for the completed human review.", completed: 5, evidence: [{ label: "Portal evidence record", state: "verified" }], criteria: Array.from({ length: 5 }, (_, item) => `Accepted criterion ${item + 1} (see portal for the authoritative wording).`) }))
+  ].map((card) => {
+    const historicalDone = card.status === "done";
+    return Object.freeze({
+      ...card,
+      sprint: "Sprint 5",
+      description: `${card.type} work in ${card.area}. Confirm the current card wording and assignment in the signed-in portal before acting.`,
+      availableSources: ["Reviewed November 12 portal audit", "Current signed-in portal when the local connector is authorized", "Reviewed FARO acceptance/evidence guidance"],
+      progress: Object.freeze({
+        workCompleted: historicalDone,
+        evidencePrepared: historicalDone && card.evidence.length > 0,
+        evidenceSubmitted: historicalDone && card.evidence.length > 0,
+        verified: historicalDone,
+        accepted: historicalDone,
+        done: historicalDone
+      }),
+      source
+    });
+  }));
 
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
   function snapshot() {
@@ -72,10 +98,48 @@
     if (!card) return "Select a card first.";
     return `${card.id} · ${card.title}\nOwner: ${card.owner}\nCurrent snapshot status: ${card.status}\nDependency: ${card.dependency}\nRequested handoff: review the criteria and verify the supplied evidence. This is a draft; confirm current portal state first.`;
   }
+  function readiness(card, supplied) {
+    const assessment = assessEvidence(card, supplied);
+    if (!card) return { state: "unavailable", recommendation: "Select a permitted card first.", officialDecision: false, assessment };
+    const portalStatusCurrent = card.source.current === true;
+    const ready = portalStatusCurrent && assessment.state === "draft-ready-for-review";
+    return {
+      state: ready ? "recommend-review" : "not-ready",
+      recommendation: ready
+        ? "The available draft evidence supports asking an authorized reviewer. This is not approval."
+        : "Do not move or approve this card from MIRA. Confirm the current portal status and complete missing evidence first.",
+      officialDecision: false,
+      assessment
+    };
+  }
+  function assistanceRequest(card, action, supplied) {
+    if (!card) return null;
+    const assessment = assessEvidence(card, supplied);
+    const taskByAction = {
+      explain: "explain-criteria",
+      steps: "next-steps",
+      progress: "review-evidence",
+      missing: "what-is-missing",
+      evidence: "prepare-evidence",
+      handoff: "prepare-handoff",
+      readiness: "ready-for-review"
+    };
+    const task = taskByAction[action];
+    if (!task) return null;
+    const missing = assessment.results.filter((item) => item.state === "missing").map((item) => item.criterion);
+    return {
+      task,
+      prompt: `${action} for ${card.id}`,
+      context: `${card.id}: ${card.title}. Snapshot status: ${card.status}. Owner: ${card.owner}. Dependency: ${card.dependency}. Draft evidence: ${assessment.supported}/${assessment.total}. Missing criteria: ${missing.join(" | ") || "none in the current draft"}.`,
+      sources: [publicGuidanceSource],
+      privatePortalData: false,
+      externalEligible: false
+    };
+  }
   function ceremonyPrompts(kind, selectedCard) {
     if (kind === "retro") return ["Keep: What helped the team deliver?", "Change: What slowed or confused the team?", "One thing about the team: What specific experiment should happen next sprint?"];
     const context = selectedCard ? ` for ${selectedCard.id}` : "";
     return [`What did the team demonstrate${context}?`, "Which acceptance criteria have reviewed evidence?", "What remains unfinished or needs a human decision?", "Who will verify the result before the portal submission?"];
   }
-  return Object.freeze({ snapshot, getCard, actionSteps, assessEvidence, standupDraft, handoffDraft, ceremonyPrompts });
+  return Object.freeze({ snapshot, getCard, actionSteps, assessEvidence, readiness, assistanceRequest, standupDraft, handoffDraft, ceremonyPrompts });
 });

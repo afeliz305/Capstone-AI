@@ -1,6 +1,23 @@
 # MIRA unified team workspace
 
-Status: local owner-review candidate, November 12, 2026. No portal, Supabase, Ocelot, Git, or external AI change was made.
+Status: expanded local owner-review candidate, November 12, 2026. No portal, Supabase, Ocelot, Git, or external AI change was made.
+
+## Unified architecture
+
+```mermaid
+flowchart LR
+  S[Student] --> M[MIRA workspace]
+  M --> R[Reviewed course/FARO retrieval]
+  M --> P[Optional local read-only portal context]
+  R --> A[Mock/deterministic AI synthesis]
+  P --> L[Local-only guidance; external AI blocked]
+  A --> E[Answer with evidence and citations]
+  L --> E
+  E --> D[Draft or recommended action]
+  D --> H[Human review and any separately authorized portal action]
+```
+
+In plain language: the student asks MIRA; MIRA retrieves reviewed sources and, only in the local connector, the user's freshly authorized portal context; it then returns sourced guidance or a draft. Official verification, acceptance, status changes, and submission stay with the human and portal.
 
 ## What is implemented
 
@@ -8,7 +25,7 @@ The existing MIRA dashboard now contains one integrated Sprint Workspace. It is 
 
 The workspace deliberately uses the verified November 12 portal audit as a **snapshot**. It never claims the snapshot is current. The live portal board remains authoritative for ownership, status, evidence, submission, verification, and acceptance.
 
-Every workspace object has a source/state boundary:
+Every workspace object has a source/state boundary. The local connector may refresh an explicitly requested current-context answer, but it does not rewrite the audited snapshot or public index:
 
 | Information | Source | State shown | Permission |
 | --- | --- | --- | --- |
@@ -18,10 +35,13 @@ Every workspace object has a source/state boundary:
 | Stand-up text | MIRA/student | Draft, not submitted | Browser page only |
 | Review/retro text | MIRA/student | Draft, not submitted | Browser page only |
 | Portal submission/status movement | Capstone portal | Unavailable in MIRA | No write permission |
+| Local connector result | User-selected current portal section | Temporary, expires | Read-only; external AI ineligible |
+
+Cards distinguish work completed, evidence prepared, evidence submitted, verified, accepted, and done. Missing values remain unknown rather than becoming false or zero. Review readiness is only a recommendation and never an approval.
 
 ## Card preparation
 
-Selecting a card supports seven preparation activities without changing the portal:
+Selecting a card supports seven explicit assistance actions without changing the portal:
 
 1. Read the audited details and acceptance criteria.
 2. Ask the existing grounded MIRA assistant to explain the requirements.
@@ -29,7 +49,9 @@ Selecting a card supports seven preparation activities without changing the port
 4. Draft evidence for each criterion.
 5. Count which criteria have a draft evidence statement; this never marks them verified or accepted.
 6. Draft a teammate handoff with owner, snapshot status, dependency, and requested review.
-7. Review remaining missing evidence before a human verification/approval step.
+7. Check whether the supplied evidence appears ready for human review, without approving it.
+
+Each result cites only the reviewed source supplied with the card. Portal-derived context is marked ineligible for external processing, and the browser gateway short-circuits without a network call. See [AI and portal-context testing](MIRA_AI_PORTAL_TESTING.md).
 
 ## Stand-up Assistant
 

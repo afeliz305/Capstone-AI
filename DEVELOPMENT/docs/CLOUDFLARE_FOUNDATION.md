@@ -1,6 +1,6 @@
 # Cloudflare Pages foundation
 
-Status: preview candidate prepared locally. No Cloudflare project, preview deployment, production deployment, GitHub push, Supabase redirect, DNS record, OpenAI request, or paid AI provider was activated.
+Status: existing preview foundation plus a new local owner-review candidate. This update did not deploy, push, change Supabase/DNS, call OpenAI, or activate a paid provider.
 
 ## Proposed Pages configuration
 
@@ -19,7 +19,7 @@ The existing repository remains the source. Configure a future Pages project onl
 
 The `/functions/api/ai.js` route contains a disabled-by-default OpenAI adapter: live calls require both provider gates to be explicitly enabled, so missing variables remain mock-only. Wrangler is pinned as a development dependency. This Pages account did not inject its dashboard runtime variables into the Git build, so `wrangler.jsonc` carries only the browser-public Pages origin, Supabase URL, Supabase publishable key, and the explicit mock gates. No service-role key or other private credential belongs in that file.
 
-The Cloudflare account was verified as active and compatible with Pages. Cloudflare accepted the project name `mira` and proposed `mira-9gg.pages.dev` during configuration. Treat that hostname as provisional until the first deployment completes.
+The Cloudflare account and existing Pages project `mira` are verified. The current preview hostname is `mira-9gg.pages.dev`; this local candidate does not replace or modify that deployment.
 
 ## Build inputs
 
@@ -32,6 +32,11 @@ Set these in the controlled build environment. Names are documented without secr
 - `MIRA_AI_LIVE_ENABLED` — set to `false` in the preview project; both activation gates must opt in.
 - `MIRA_OPENAI_MODEL` — owner-approved model ID after access and price review.
 - `OPENAI_API_KEY` — Cloudflare encrypted secret only; never a build variable or repository value.
+- `MIRA_AI_MAX_REQUESTS_PER_MINUTE` — bounded per-isolate throttle; default 12.
+- `MIRA_AI_MAX_OUTPUT_TOKENS` — bounded response ceiling; default 700.
+- `MIRA_AI_TIMEOUT_MS` — bounded provider timeout; default 15000.
+- `MIRA_AI_INPUT_USD_PER_MILLION` — owner-reviewed current input-token rate; zero means no estimate is configured.
+- `MIRA_AI_OUTPUT_USD_PER_MILLION` — owner-reviewed current output-token rate; zero means no estimate is configured.
 
 Never supply a Supabase service-role key or OpenAI secret to the static build. Local development may use ignored `server/supabase.local.json`; the packager refuses to build without an explicit public origin.
 
@@ -64,7 +69,11 @@ MIRA browser
   -> deterministic MIRA response on provider failure
 ```
 
-The browser contains no AI key. The function accepts only reviewed drafting tasks, caps request/source/output sizes, validates source links, rejects private-portal payloads, sets `store: false`, and returns only citations from the reviewed request. Output remains draft-only and must distinguish verified facts, recommendations, missing evidence, unconfirmed actions, and official approval decisions. No live posting or card modification is implemented.
+The browser contains no AI key. The function accepts only reviewed drafting tasks, caps request/source/output sizes, validates source links, rejects private-portal payloads, sets `store: false`, and returns only citations from the reviewed request. Browser requests explicitly marked externally ineligible are resolved locally without a gateway request. Output remains draft-only and must distinguish verified facts, recommendations, missing evidence, unconfirmed actions, and official approval decisions. No live posting or card modification is implemented.
+
+The in-memory request limiter is best-effort per Cloudflare isolate; it is not a global hard cap and must not be presented as guaranteed cost containment. Live activation additionally requires provider-side project budgets/usage restrictions and either Cloudflare rate limiting or durable centralized accounting, plus alerts and owner review.
+
+When a live provider eventually returns token usage, the server can calculate a per-request estimate from the two owner-configured rate variables. It reports whether an estimate was actually configured and never guesses current model pricing. This estimate is informational, not billing authority or an enforceable budget.
 
 Do not use a classmate's personal key for a deployed workload. Use a MIRA-owned OpenAI project service account after owner authorization. Before live activation, confirm credential authorization, project ownership, model access using that exact project credential, available credits, organization/project usage limits, a hard monthly spend limit, data retention/training terms, FERPA handling, logging/redaction, rate limits, abuse controls, incident response, and key rotation.
 

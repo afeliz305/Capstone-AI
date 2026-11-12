@@ -28,6 +28,7 @@ October 8 retrieval, context, current-portal-selector, visual-density, and suppo
 ## Feature reference
 
 - [Unified team workspace](UNIFIED_TEAM_WORKSPACE.md) - sourced Sprint 5 snapshot, card/criteria/evidence preparation, stand-up drafts, ceremony preparation, permission boundaries, and future explicit-approval submission design.
+- [AI and portal-context testing](MIRA_AI_PORTAL_TESTING.md) - local acceptance steps, privacy boundary, external-AI block, workspace actions, failure fallback, and cost-control limitations.
 - [Cloudflare Pages foundation](CLOUDFLARE_FOUNDATION.md) - deterministic public packaging, safe preview, proposed redirects, mock AI Function, provider decisions, privacy gate, and Ocelot rollback.
 - [Team workspace + Cloudflare owner review](TEAM_WORKSPACE_CLOUDFLARE_OWNER_REVIEW.md) - completed local status, permission matrix, exact regression/browser results, screenshots, unchanged systems, and remaining owner decisions.
 - [Portal context audit and adapters](PORTAL_CONTEXT_AUDIT.md) - October 9 route/selector map, privacy classifications, My work/My rhythm/Inbox boundaries, source routing, and session-only personal-context model.

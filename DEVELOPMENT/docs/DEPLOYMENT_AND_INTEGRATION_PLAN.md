@@ -1,8 +1,10 @@
 # MIRA — shared testing, site integration, and future go-live
 
+November 12, 2026 local follow-on: the Unified Team Workspace, local read-only context refresh, and disabled-by-default AI gateway have an owner-review candidate. It is not deployed. Ocelot, the existing Cloudflare preview, Supabase, portal data, and Git remain unchanged. A future live-AI release requires a MIRA-owned provider project, approved privacy review, provider-side budgets, enforceable abuse controls, monitoring, and a separately approved preview deployment.
+
 ## Cloudflare Pages owner-review plan (November 12, 2026)
 
-**Status: local foundation implemented; owner review required.** The source now includes deterministic Cloudflare packaging, hash verification, a loopback preview, security headers, an exact build-time recovery origin, and a mock-only Pages Function for the future AI gateway. No Cloudflare project, DNS record, Supabase setting, deployment, commit, or push was changed. The actual Pages origin is still required before a stable preview package can be prepared. See [Cloudflare foundation](CLOUDFLARE_FOUNDATION.md).
+**Status: controlled preview exists; this follow-on candidate remains local.** The existing Cloudflare Pages project is `mira` at `https://mira-9gg.pages.dev/`. The source includes deterministic Cloudflare packaging, hash verification, a loopback preview, security headers, the exact build-time origin, and a mock-only Pages Function. This follow-on work did not change the Cloudflare project, DNS, Supabase, the deployed preview, Git history, or GitHub. See [Cloudflare foundation](CLOUDFLARE_FOUNDATION.md).
 
 ### Proposed project configuration
 

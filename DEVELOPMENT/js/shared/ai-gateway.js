@@ -4,7 +4,7 @@
   root.MiraAiGateway = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
-  const allowedTasks = new Set(["explain-criteria", "summarize-work", "prepare-standup", "review-evidence", "draft-review", "draft-retro", "next-steps", "prepare-handoff"]);
+  const allowedTasks = new Set(["explain-criteria", "summarize-work", "prepare-standup", "review-evidence", "what-is-missing", "prepare-evidence", "ready-for-review", "draft-review", "draft-retro", "next-steps", "prepare-handoff"]);
   const allowedProviders = new Set(["mock", "openai", "deterministic"]);
   function clean(value, limit = 4000) { return String(value || "").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, limit); }
   function safeSourceUrl(value) {
@@ -24,7 +24,7 @@
   function validate(request) {
     if (!request || !allowedTasks.has(request.task)) throw new Error("Unsupported MIRA assistance task.");
     if (request.privatePortalData || request.source === "private-portal") throw new Error("Private portal content requires a separate data-handling review and explicit authorization.");
-    return { task: request.task, prompt: clean(request.prompt, 1200), context: clean(request.context), sources: sources(request.sources) };
+    return { task: request.task, prompt: clean(request.prompt, 1200), context: clean(request.context), sources: sources(request.sources), externalEligible: request.externalEligible !== false };
   }
   function deterministic(request) {
     const value = validate(request);
@@ -33,6 +33,9 @@
       "summarize-work": "Separate completed work from planned work and unresolved dependencies.",
       "prepare-standup": "Use What I did, What I will do, and What's blocking me; verify each statement before posting.",
       "review-evidence": "Map one concrete artifact or observation to each acceptance criterion.",
+      "what-is-missing": "List criteria that still lack reviewed evidence and separate missing evidence from unconfirmed work.",
+      "prepare-evidence": "Draft an evidence checklist for human review without claiming that evidence was submitted or accepted.",
+      "ready-for-review": "Recommend review only when the supplied evidence supports every criterion; never treat the recommendation as approval.",
       "draft-review": "Describe what was demonstrated, the evidence, and what remains unfinished.",
       "draft-retro": "Prepare one Keep, one Change, and one specific team experiment.",
       "next-steps": "Confirm current ownership, complete the smallest verifiable step, collect evidence, and request teammate review.",
@@ -55,6 +58,7 @@
   async function request(requestValue, options = {}) {
     const value = validate(requestValue);
     if (options.mode !== "gateway") return mock(value);
+    if (!value.externalEligible) return { ...deterministic(value), fallback: true, blockedExternal: true };
     try {
       const response = await fetch(options.endpoint || "/api/ai", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(value) });
       if (!response.ok) throw new Error("Gateway unavailable");

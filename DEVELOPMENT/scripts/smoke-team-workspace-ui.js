@@ -28,12 +28,14 @@ async function main() {
     assert.match(await page.locator("#selected-work-card").textContent(), /Anthony Feliz/);
     assert.equal(await page.locator("#selected-work-card textarea").count(), 5);
     await page.locator("#selected-work-card textarea").first().fill("Fictional test output reviewed by a teammate.");
-    await workspace.getByRole("button", { name: "Check draft evidence" }).click();
+    await workspace.getByRole("button", { name: "Check my progress" }).click();
     assert.match(await page.locator(".evidence-result").textContent(), /1 of 5/);
-    await workspace.getByRole("button", { name: "Show actionable steps" }).click();
-    assert.equal(await page.locator(".workspace-draft-output li").count(), 5);
-    await workspace.getByRole("button", { name: "Draft teammate handoff" }).click();
-    assert.match(await page.locator(".workspace-draft-output").textContent(), /confirm current portal state first/i);
+    await workspace.getByRole("button", { name: "What should I do?" }).click();
+    assert.match(await page.locator(".workspace-draft-output").textContent(), /Mock AI|Deterministic fallback/);
+    await workspace.getByRole("button", { name: "Ask a teammate" }).click();
+    assert.match(await page.locator(".workspace-draft-output").textContent(), /official approval decisions/i);
+    assert.match(await page.locator("#selected-work-card").textContent(), /Work completed: not confirmed/);
+    assert.equal(await workspace.getByRole("button", { name: "Refresh current context" }).isDisabled(), true);
     await workspace.getByRole("button", { name: "Prepare from selected card" }).click();
     assert.match(await page.locator("#standup-draft-status").textContent(), /Duplicate warning/);
     assert.match(await page.locator("#standup-draft-form textarea").first().inputValue(), /CAP-1316/);
@@ -49,7 +51,7 @@ async function main() {
     assert.equal(contained, true);
     await workspace.screenshot({ path: path.join(qa, "workspace-mobile-390.png") });
     assert.deepEqual(errors, []);
-    console.log("PASS: sourced team cards, evidence drafts, actionable steps, handoff draft, duplicate-aware stand-up, retrospective prompts, and 390px containment.");
+    console.log("PASS: sourced team cards, explicit progress states, mock AI assistance, disabled hosted refresh, duplicate-aware stand-up, retrospective prompts, and 390px containment.");
     console.log("Screenshots: " + qa);
   } finally {
     await browser?.close();
