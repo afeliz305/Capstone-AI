@@ -17,7 +17,7 @@ The existing repository remains the source. Configure a future Pages project onl
 | Build output | `dist/cloudflare/MIRA` |
 | Functions directory | `DEVELOPMENT/functions` |
 
-The checked-in `wrangler.jsonc` keeps the AI provider in mock mode. Wrangler is pinned as a development dependency. The `/functions/api/ai.js` route contains a disabled-by-default OpenAI adapter; the checked-in configuration makes no external provider call.
+The `/functions/api/ai.js` route contains a disabled-by-default OpenAI adapter: live calls require both provider gates to be explicitly enabled, so missing variables remain mock-only. Wrangler is pinned as a development dependency. For Git-connected Pages builds, configure the public build values and the explicit mock gates in the Cloudflare project dashboard; do not add a `vars` block to `wrangler.jsonc`, because Wrangler configuration variables override the dashboard build-variable set.
 
 The Cloudflare account was verified as active and compatible with Pages. Cloudflare accepted the project name `mira` and proposed `mira-9gg.pages.dev` during configuration. Treat that hostname as provisional until the first deployment completes.
 
@@ -28,8 +28,8 @@ Set these in the controlled build environment. Names are documented without secr
 - `MIRA_PUBLIC_ORIGIN` — exact reviewed HTTPS Pages origin.
 - `MIRA_SUPABASE_URL` — public Supabase project origin.
 - `MIRA_SUPABASE_PUBLISHABLE_KEY` — `sb_publishable_` browser key only.
-- `MIRA_AI_PROVIDER` — checked in as `mock`; use `openai` only after approval.
-- `MIRA_AI_LIVE_ENABLED` — checked in as `false`; both activation gates must opt in.
+- `MIRA_AI_PROVIDER` — set to `mock` in the preview project; use `openai` only after approval.
+- `MIRA_AI_LIVE_ENABLED` — set to `false` in the preview project; both activation gates must opt in.
 - `MIRA_OPENAI_MODEL` — owner-approved model ID after access and price review.
 - `OPENAI_API_KEY` — Cloudflare encrypted secret only; never a build variable or repository value.
 
