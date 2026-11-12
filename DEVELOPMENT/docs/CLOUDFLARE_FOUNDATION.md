@@ -17,7 +17,7 @@ The existing repository remains the source. Configure a future Pages project onl
 | Build output | `dist/cloudflare/MIRA` |
 | Functions directory | `DEVELOPMENT/functions` |
 
-The `/functions/api/ai.js` route contains a disabled-by-default OpenAI adapter: live calls require both provider gates to be explicitly enabled, so missing variables remain mock-only. Wrangler is pinned as a development dependency. For Git-connected Pages builds, configure the public build values and the explicit mock gates in the Cloudflare project dashboard; do not add a `vars` block to `wrangler.jsonc`, because Wrangler configuration variables override the dashboard build-variable set.
+The `/functions/api/ai.js` route contains a disabled-by-default OpenAI adapter: live calls require both provider gates to be explicitly enabled, so missing variables remain mock-only. Wrangler is pinned as a development dependency. This Pages account did not inject its dashboard runtime variables into the Git build, so `wrangler.jsonc` carries only the browser-public Pages origin, Supabase URL, Supabase publishable key, and the explicit mock gates. No service-role key or other private credential belongs in that file.
 
 The Cloudflare account was verified as active and compatible with Pages. Cloudflare accepted the project name `mira` and proposed `mira-9gg.pages.dev` during configuration. Treat that hostname as provisional until the first deployment completes.
 
