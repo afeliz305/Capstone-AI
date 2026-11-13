@@ -1000,6 +1000,7 @@
   };
   dashboardProfileTrigger?.addEventListener("click",()=>{
     const open=dashboardProfileMenu.hidden;
+    if(open && !chatPanel.hidden)minimizeChat();
     dashboardProfileMenu.hidden=!open;
     dashboardProfileTrigger.setAttribute("aria-expanded",String(open));
     if(open)dashboardProfileMenu.querySelector("a,button")?.focus({preventScroll:true});

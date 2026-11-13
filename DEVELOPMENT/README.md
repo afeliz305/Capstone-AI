@@ -1,3 +1,5 @@
+> Current classroom release: see [final product polish and verification](docs/PRODUCT_POLISH_RELEASE.md). MIRA product copy, accurate data-provider disclosure and the completed authenticated acceptance supersede dated checkpoints below. Restricted live AI remains disabled by default.
+
 # Current classroom release
 
 MIRA is the Messaging, Information & Resolution Assistant. Use the controlled Cloudflare preview at https://mira-9gg.pages.dev/. Public assistance is deterministic/mock; live paid AI and portal submissions are disabled. Historical portal snapshots are labeled. The prior controlled Sol test is recorded evidence, not a public live feature.

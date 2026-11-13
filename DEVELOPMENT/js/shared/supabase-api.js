@@ -5,7 +5,7 @@ const { searchKnowledge } = require("../../server/lib/search");
 
 const fail = (message, statusCode = 400, classification) => Object.assign(new Error(message), { statusCode, ...(classification ? { classification } : {}) });
 const reply = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
-const setupError = "Supabase database setup is not complete. Ask the project owner to follow SUPABASE_SETUP.md. No save was confirmed.";
+const setupError = "MIRA support requests are temporarily unavailable. Contact the project owner. No save was confirmed.";
 const MIRA_RECOVERY_URL = typeof CAPSTONE_RECOVERY_URL === "string" ? CAPSTONE_RECOVERY_URL : "https://ocelot.aul.fiu.edu/~afeli016/MIRA/pages/recover.html";
 const RESET_CONFIRMATION = "If an eligible staff account exists for that email, a password reset message has been sent.";
 function serviceError(error) {
@@ -13,7 +13,7 @@ function serviceError(error) {
   if (["PGRST202", "PGRST205", "42P01", "42883"].includes(error.code)) throw fail(setupError, 503);
   if (/^PT\d{3}$/.test(error.code || "")) throw fail(error.message, Number(error.code.slice(2)));
   if (["42501", "PGRST301", "PGRST303"].includes(error.code)) throw fail("Unauthorized access. Sign in with your provisioned staff account.", 403);
-  throw fail("Supabase could not complete the operation. Check your connection and account setup. No success was confirmed; keep your draft and retry without changing it.", 503);
+  throw fail("MIRA could not complete the request. Check your connection and try again. No success was confirmed; keep your draft and retry without changing it.", 503);
 }
 
 async function filesFor(input) {
@@ -85,7 +85,7 @@ function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, siteI
       let result = await guestClient.auth.getSession(); serviceError(result.error);
       if (!result.data.session) {
         result = await guestClient.auth.signInAnonymously();
-        if (result.error) throw fail("Requester sign-in is unavailable. The owner must enable Supabase Anonymous Sign-Ins for this test project. No ticket was confirmed.", 503);
+        if (result.error) throw fail("Support requests are temporarily unavailable. Contact the project owner. No ticket was confirmed.", 503);
       }
       return result.data.session;
     })().finally(() => { guestStart = null; });
@@ -277,7 +277,7 @@ function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, siteI
         catch { result={ error:true }; }
         finally { staffSessions?.clear(); pending.clear(); }
         if (!staffSessions) serviceError(result.error);
-        return reply({ ok:true, ...(result.error ? { warning:"Signed out on this browser. Supabase could not confirm server-side sign-out; reconnect before using a shared computer." } : {}) });
+        return reply({ ok:true, ...(result.error ? { warning:"Signed out on this browser. MIRA could not confirm server-side sign-out; reconnect before using a shared computer." } : {}) });
       }
       if (method === "GET" && pathname === "/api/staff/session") return reply(await staffSession());
       if (method === "POST" && pathname === "/api/staff/password") return reply(await changePassword(input));
@@ -297,7 +297,7 @@ function createSupabaseApi({ baseUrl, staffClient, guestClient, knowledge, siteI
       if (method === "GET" && (!match[2] || match[2] === "requester-preview")) return reply(await rpc(staffClient,match[2] ? "capstone_requester_preview" : "capstone_get",{ ticket_id:match[1] }));
       throw fail("Unsupported operation.",405);
     } catch(error) {
-      return reply({ error:error.statusCode ? error.message : "Supabase request failed. No success was confirmed; keep your draft and check the queue before retrying.",loginMode:"password",
+      return reply({ error:error.statusCode ? error.message : "MIRA could not complete the request. No success was confirmed; keep your draft and check the queue before retrying.",loginMode:"password",
         ...(error.classification ? { classification:error.classification } : {}) },error.statusCode||503);
     }
   }

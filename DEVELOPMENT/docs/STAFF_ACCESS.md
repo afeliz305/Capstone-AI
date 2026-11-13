@@ -1,3 +1,5 @@
+> Current classroom release: see [final product polish and verification](PRODUCT_POLISH_RELEASE.md). MIRA product copy, accurate data-provider disclosure and the completed authenticated acceptance supersede dated checkpoints below. Restricted live AI remains disabled by default.
+
 # Staff sign-in and assignments
 
 User-facing product name: **MIRA (Messaging, Information & Resolution Assistant)**. Earlier dated implementation notes may use the former project name; the existing technical URL and internal identifiers remain unchanged.

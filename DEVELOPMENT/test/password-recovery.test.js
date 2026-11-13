@@ -29,7 +29,7 @@ async function mount({storageMode="supabase",statusResponse={ok:true,status:200,
 
 test("recovery landing requires a verified Supabase recovery session",async()=>{
   const unsupported=await mount({storageMode:"browser"});
-  assert.match(unsupported.elements.get("#recovery-status").textContent,/only from the hosted Supabase/);
+  assert.match(unsupported.elements.get("#recovery-status").textContent,/only from the hosted MIRA/);
   assert.equal(unsupported.elements.get("#recovery-form").hidden,true);
   const expired=await mount({statusResponse:{ok:false,status:401,data:{error:"This recovery link is invalid or has expired."}}});
   assert.match(expired.elements.get("#recovery-status").textContent,/invalid or has expired/);

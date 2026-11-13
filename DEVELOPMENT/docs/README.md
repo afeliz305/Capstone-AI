@@ -1,3 +1,5 @@
+> Current classroom release: see [final product polish and verification](PRODUCT_POLISH_RELEASE.md). MIRA product copy, accurate data-provider disclosure and the completed authenticated acceptance supersede dated checkpoints below. Restricted live AI remains disabled by default.
+
 ## Classroom handoff
 
 - [Class presentation, demo script, fallback, architecture and operator guide](CLASS_DEMO_GUIDE.md)

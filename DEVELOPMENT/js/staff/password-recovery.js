@@ -31,7 +31,7 @@
 
   async function initialize() {
     if (api.storageMode !== "supabase") {
-      status.textContent = "Password recovery is available only from the hosted Supabase MIRA Staff Queue.";
+      status.textContent = "Password recovery is available only from the hosted MIRA Staff Queue.";
       return;
     }
     try {

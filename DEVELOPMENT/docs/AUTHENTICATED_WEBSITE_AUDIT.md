@@ -39,3 +39,19 @@ Only the chat stylesheet, browser regression and relevant audit/presentation gui
 After publication, exact commit, immutable deployment, manifest identity and hosted retest evidence are recorded in ignored `dist/presentation/AUTHENTICATED_RELEASE.json`. A Git push alone is not deployment verification.
 
 Class readiness: ready for the deterministic/mock demonstration once the repair's hosted hash and browser checks pass. Staff presentation requires the presenter to sign in personally again after this audit's successful logout.
+
+
+## Final authenticated classroom gate ? November 13, 2026
+
+Release: `6160dee0841889a0f88b09e2c6968db5dbe2413a`, https://mira-9gg.pages.dev/. **PASS: the previously outstanding authenticated Staff Queue gate is closed for the approved restricted classroom demonstration.** This does not expand the four-prompt live-AI scope or authorize public paid AI.
+
+- Existing authorized Chrome session loaded the queue; browser refresh retained access and the eight-record count. Only clearly fictional CAP-1002 was opened for detail inspection.
+- CAP-1002 retained Attendance, In review, Anthony Feliz assignment, two requester-visible comments and the internal staff note. No Save control was used.
+- The staff-only requester preview displayed both public comments and omitted the internal note. It is a filtered staff preview, not an independently authenticated requester portal or a delivered message.
+- Existing TXT attachment downloaded successfully: 140 bytes; SHA-256 `9a75cded1915fb95d002fdf32ddf4a382fdecac91461dda8b9114e99dc228bd1`, matching the previous local acceptance download. No attachment changed.
+- Anonymous requests to staff session, ticket list, CAP-1002 detail, requester preview, ticket table and attachment metadata table all returned HTTP 401. No private response bodies were retained.
+- Profile showed the verified staff identity; Settings contained Change password. Profile ? Sign out cleared the private queue and profile; refresh remained signed out. Remember me remained unchecked and the password field was empty.
+- Current hosted integrity recheck: 32/32 downloadable assets matched the approved manifest; recovery no-store, protected-path 404, mock provider and private-context rejection passed.
+- No new defect reproduced. No application code, deployment, ticket, user, password, recovery email, database configuration or portal record changed. No paid OpenAI calls were made. Only the authorized session was signed out and the harmless attachment was downloaded.
+
+The prior write/persistence/concurrency and live-AI acceptance evidence remains historical; this focused check did not repeat writes, force session expiry, inspect tokens or prove immediate revocation of a previously issued JWT. Presenter must sign in personally again before the staff demonstration. Live AI remains disabled by default and portal submissions remain disabled.

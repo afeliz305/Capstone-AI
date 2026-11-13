@@ -47,7 +47,10 @@ test("Supabase package has a bundled SDK, correct labels, and no private files o
   const built=await createOcelotPackage({root,outputRoot:out,transport:"supabase",supabaseConfig:{url:"https://abcdefghijklmnopqrst.supabase.co",publishableKey:"sb_publishable_fixture"}});
   for(const page of ["index.html","pages/staff.html","pages/recover.html"]) {
     const html=await fs.readFile(path.join(built.uploadDirectory,page),"utf8");
-    assert.match(html,/data-api-transport="supabase"/);assert.match(html,/Supabase shared test queue/);assert.match(html,/supabase.bundle.js/);
+    assert.match(html,/data-api-transport="supabase"/);assert.match(html,/MIRA classroom demo/);assert.match(html,/supabase.bundle.js/);
+    assert.match(html,/About MIRA data and accounts/);
+    assert.match(html,/uses Supabase for account authentication/);
+    assert.doesNotMatch(html,/Supabase shared test queue|provisioned Supabase|Supabase may require|SUPABASE_SETUP/);
     if(page==='index.html')assert.doesNotMatch(html,/js\/hosted\/portal-client\.bundle\.js/);
     if(page.includes("staff")){
       assert.match(html,/<label id="staff-password-label" for="staff-password" hidden>Password<\/label>/);
@@ -267,4 +270,14 @@ test("pinned Supabase SDK sends current_password and new password only to its au
   const updates=requests.filter(request=>request.path==="/auth/v1/user");
   assert.equal(updates.length,1);
   assert.deepEqual(updates[0].body,{password:passwordInput.newPassword,current_password:passwordInput.currentPassword,code_challenge:null,code_challenge_method:null});
+});
+
+
+test("MIRA service errors hide provider details without claiming a save",async()=>{
+ for(const code of ["PGRST202","NETWORK","42501"]){
+  const f=fixture();f.client.rpc=async()=>({error:{code,message:"PRIVATE_PROVIDER_DIAGNOSTIC"}});
+  const response=await f.api.fetch("/api/tickets");const body=await response.json();
+  assert.ok(response.status>=400);assert.doesNotMatch(body.error,/PRIVATE_PROVIDER_DIAGNOSTIC|Supabase|SUPABASE_SETUP/);
+  assert.match(body.error,code==="42501"?/not currently authorized/:/No (save|success) was confirmed/);
+ }
 });

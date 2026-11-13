@@ -74,7 +74,7 @@ test("portal-aligned navigation and presence controls stay verified and privacy 
   assert.doesNotMatch(html.match(/id="secondary-navigation"[\s\S]*?<main/)[0], /Alumni directory|Opportunities|Classmates/);
   assert.match(html, /id="dashboard-presence-trigger"[^>]+aria-controls="dashboard-presence-drawer"/);
   assert.match(html, /Live presence is not connected/);
-  assert.match(html, /Standalone MIRA does not invent a count or availability/);
+  assert.match(html, /Team availability is shown only in the official portal/);
   assert.doesNotMatch(html.match(/id="dashboard-presence-drawer"[\s\S]*?<section class="next-step-hero"/)[0], /@fiu\.edu|Sign out/);
   assert.match(script, /mira-portal-presence/);
   assert.match(script, /event\.detail\?\.authorized!==true/);

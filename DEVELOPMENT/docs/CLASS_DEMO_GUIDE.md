@@ -1,3 +1,5 @@
+> Current classroom release: see [final product polish and verification](PRODUCT_POLISH_RELEASE.md). MIRA product copy, accurate data-provider disclosure and the completed authenticated acceptance supersede dated checkpoints below. Restricted live AI remains disabled by default.
+
 # MIRA class demonstration and handoff
 
 Prepared November 12, 2026. MIRA means Messaging, Information & Resolution Assistant. Current preview: https://mira-9gg.pages.dev/. This guide supersedes older candidate-status paragraphs for classroom operation; historical release records remain evidence of their dates.
@@ -62,7 +64,7 @@ Publish only reviewed source to preview/mira-cloudflare. Cloudflare builds DEVEL
 | Personal information | Portal navigation or explicitly shared temporary context; no automatic hosted private reads |
 | Staff Queue | Supabase Auth plus active staff binding, protected tickets and attachments; existing owner session, fictional ticket read/download and logout verified November 12-13 |
 | Recovery | Signed-out UI and no-store page; no reset email in this acceptance run |
-| AI gateway | Mock provider now; one previously verified controlled Sol test, persistent financial controls preserved |
+| AI gateway | Mock by default; four live scenarios verified through five controlled requests, persistent financial controls preserved |
 
 ## Student and teammate quick start
 
@@ -76,7 +78,7 @@ Build environment names (values deliberately omitted): MIRA_PUBLIC_ORIGIN, MIRA_
 
 Before class: verify site and local fallback, rehearse the script, keep PDF available, use a clean browser window, confirm no real student data on screen, and sign into Staff Queue personally only if that optional segment is desired. No password or token belongs in slides, screenshots or logs.
 
-During class: keep mock mode and the persistent kill switch. Do not issue tester credentials, recover the ledger or send paid requests. The last verified ledger is $0.003915 spent, $0 reserved, $24.996085 available. It limits MIRA-controlled usage, not unrelated spending in the classmate's API project.
+Default classroom mode is deterministic/mock with the persistent kill switch active. For the separately approved restricted live demonstration, use only the secure start/stop workflow and current capacity/pricing checks in INTEGRATED_AI_DEMO.md. Last verified ledger: $0.029625 spent, $0 reserved, $24.970375 available. It limits MIRA-controlled usage, not unrelated spending in the classmate's API project. This polish task makes no paid requests.
 
 After class: sign out, clear fictional drafts, close the local server when finished. Do not delete shared tickets without separate approval. Preserve unresolved reservations if a future authorized provider test has an uncertain outcome. Use the documented operator-only audited procedure, never manual ledger edits.
 
@@ -84,7 +86,7 @@ After class: sign out, clear fictional drafts, close the local server when finis
 
 - Current hosted portal snapshot is historical. Automatic private dashboard access and portal-native integration require portal-owner-approved identity, read scopes and adapters.
 - Fresh email-code login may lose the requested destination; use the shortcut again after login.
-- Public AI remains mock/deterministic. A future live demonstration needs a new bounded request approval and all financial/privacy gates.
+- Public AI remains deterministic and workspace assistance mock. The approved restricted live demonstration supports only four reviewed prompts with expiring tester access and all financial/privacy gates.
 - Existing owner-session Staff Queue access, fictional ticket read/download, requester-preview filtering and logout passed. Sign in personally before class; a new password login was not tested. See AUTHENTICATED_WEBSITE_AUDIT.md.
 - Native Chrome 200% zoom exposed a short-height conversation defect; the layout repair and minimum answer-area regression passed locally. Recheck on the classroom display.
 - Optional PHP runtime parity is not part of this Cloudflare release's live verification.
@@ -113,3 +115,19 @@ See [INTEGRATED_AI_DEMO.md](INTEGRATED_AI_DEMO.md) for the two-minute sourced co
 ## Restricted integrated classroom session - November 13, 2026
 
 An expiring operator-controlled browser session supports four reviewed public-course questions, including a Done/evidence follow-up, through the shared embedded/floating controller. Default public chat stays deterministic; workspace AI stays mock. The persistent $1 integration campaign ceiling is additional to the $25 lifetime ledger and cannot reset on session restart. See [Integrated AI demo](INTEGRATED_AI_DEMO.md) for start/stop commands, evidence and the six-minute script. Earlier fixed-fixture-only activation instructions are historical and superseded by this session workflow. Supabase and portal integration are unchanged.
+
+
+## Final authenticated classroom gate ? November 13, 2026
+
+Release: `6160dee0841889a0f88b09e2c6968db5dbe2413a`, https://mira-9gg.pages.dev/. **PASS: the previously outstanding authenticated Staff Queue gate is closed for the approved restricted classroom demonstration.** This does not expand the four-prompt live-AI scope or authorize public paid AI.
+
+- Existing authorized Chrome session loaded the queue; browser refresh retained access and the eight-record count. Only clearly fictional CAP-1002 was opened for detail inspection.
+- CAP-1002 retained Attendance, In review, Anthony Feliz assignment, two requester-visible comments and the internal staff note. No Save control was used.
+- The staff-only requester preview displayed both public comments and omitted the internal note. It is a filtered staff preview, not an independently authenticated requester portal or a delivered message.
+- Existing TXT attachment downloaded successfully: 140 bytes; SHA-256 `9a75cded1915fb95d002fdf32ddf4a382fdecac91461dda8b9114e99dc228bd1`, matching the previous local acceptance download. No attachment changed.
+- Anonymous requests to staff session, ticket list, CAP-1002 detail, requester preview, ticket table and attachment metadata table all returned HTTP 401. No private response bodies were retained.
+- Profile showed the verified staff identity; Settings contained Change password. Profile ? Sign out cleared the private queue and profile; refresh remained signed out. Remember me remained unchecked and the password field was empty.
+- Current hosted integrity recheck: 32/32 downloadable assets matched the approved manifest; recovery no-store, protected-path 404, mock provider and private-context rejection passed.
+- No new defect reproduced. No application code, deployment, ticket, user, password, recovery email, database configuration or portal record changed. No paid OpenAI calls were made. Only the authorized session was signed out and the harmless attachment was downloaded.
+
+The prior write/persistence/concurrency and live-AI acceptance evidence remains historical; this focused check did not repeat writes, force session expiry, inspect tokens or prove immediate revocation of a previously issued JWT. Presenter must sign in personally again before the staff demonstration. Live AI remains disabled by default and portal submissions remain disabled.

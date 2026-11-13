@@ -44,12 +44,13 @@ async function createOcelotPackage({ root = path.resolve(__dirname, ".."), outpu
       } else if (transport === "supabase") {
         const prefix = file.startsWith("pages/") ? "../" : "";
         html = html.replace(/(<script src="(?:\.\.\/)?js\/shared\/api-client\.js")/, '<script src="' + prefix + 'js/shared/supabase.bundle.js" defer></script>\n    $1');
-        html = html.replace(/(<body[^>]*>)/, '$1\n    <p class="hosting-test-notice" role="note"><strong>Supabase shared test queue.</strong> Tickets and documents are saved online after confirmation. Fictional data only. Staff require a provisioned Supabase account. No professor email is sent. Shared storage is not a separate backup.</p>');
-        html = html.replace('>Local prototype<', '>Supabase test prototype<');
-        html = html.replaceAll("on this app's server", "in the shared Supabase test project");
+        html = html.replace(/(<body[^>]*>)/, '$1\n    <p class="hosting-test-notice" role="note"><strong>MIRA classroom demo.</strong> Use fictional information only. Support requests and documents are saved online after confirmation. An authorized MIRA staff account is required to manage requests. No professor email is sent.</p>');
+        html = html.replace('>Local prototype<', '>MIRA classroom demo<');
+        html = html.replace('</body>', '<details class="hosting-test-notice"><summary>About MIRA data and accounts</summary><p>This shared demo uses Supabase for account authentication, support requests, and attachment storage. Saved records are available to authorized staff. Shared storage is not a separate backup. Use fictional information only. Support records are not sent to OpenAI.</p></details>\n  </body>');
+        html = html.replaceAll("on this app's server", "in MIRA shared storage");
         html = html.replace('hidden>Prototype password</label>', 'hidden>Password</label>');
         html = html.replace(/(<p class="staff-setup-note" id="staff-password-setup" hidden>)[\s\S]*?<\/p>/,
-          '$1Use the separate password for your provisioned Supabase staff account, not your FIU password. Ask the project owner if your account has not been set up. The old demo password does not create an account.</p>');
+          '$1Use your MIRA staff password, not your FIU password. Contact the project owner if you need staff access.</p>');
       } else {
       if (siteIndex) {
         const prefix = file.startsWith("pages/") ? "../" : "";

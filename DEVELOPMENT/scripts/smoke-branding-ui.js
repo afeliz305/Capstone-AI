@@ -100,10 +100,18 @@ async function main() {
         assert.equal(await page.locator("#secondary-navigation").isVisible(),false);
         assert.equal(await page.locator("#secondary-nav-trigger").evaluate(button=>button===document.activeElement),true);
 
+        // Opening Profile must not leave its controls underneath a restored chat.
+        await page.getByRole('button',{name:'Open MIRA chat',exact:true}).click();
+        const savedMessages=await page.locator('.assistant-message').count();
+        await profileTrigger.click();
+        assert.equal(await page.locator('#assistant').isVisible(),false);
+        await page.locator('[data-theme-choice="light"]').click();
+        assert.equal(await page.locator('.assistant-message').count(),savedMessages);
+
         const presenceTrigger=page.locator("#dashboard-presence-trigger");
         await presenceTrigger.click();
         await page.locator("#dashboard-presence-drawer").waitFor({state:"visible"});
-        assert.match(await page.locator("#presence-capability").textContent(),/does not invent a count/i);
+        assert.match(await page.locator("#presence-capability").textContent(),/Team availability is shown only in the official portal/i);
         assert.doesNotMatch(await page.locator("#dashboard-presence-drawer").textContent(),/@fiu\.edu/i);
         await page.locator("#presence-tab-team").click();
         assert.equal(await page.locator("#presence-panel-team").isVisible(),true);

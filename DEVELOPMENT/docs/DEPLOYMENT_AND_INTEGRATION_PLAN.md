@@ -1,3 +1,5 @@
+> Current classroom release: see [final product polish and verification](PRODUCT_POLISH_RELEASE.md). MIRA product copy, accurate data-provider disclosure and the completed authenticated acceptance supersede dated checkpoints below. Restricted live AI remains disabled by default.
+
 ## Classroom readiness correction — November 12, 2026
 
 See [PRESENTATION_READINESS.md](PRESENTATION_READINESS.md) and [CLASS_DEMO_GUIDE.md](CLASS_DEMO_GUIDE.md). This preview-branch release repairs reviewed-question routing and the local mock demo handler. Public knowledge sources and remote identity/storage settings are preserved. Cloudflare is the classroom preview; Ocelot is retained unchanged as rollback. No portal integration, paid activation, operator recovery, database mutation or main merge is part of this release.
