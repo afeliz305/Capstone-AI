@@ -15,7 +15,7 @@ test('classroom gateway uses exact server evidence, secure cookies, expiry and r
  const original=global.fetch;t.after(()=>global.fetch=original);
  global.fetch=async(url,init)=>{calls++;assert.equal(url,'https://api.openai.com/v1/responses');payload=JSON.parse(init.body);
   if(mode==='network')throw Error('network');if(mode==='401')return Response.json({}, {status:401});
-  return Response.json({status:'completed',output_text:mode==='citation'?'Unsupported [99]':mode==='empty'?'':'Draft recommendation: collect a test run and request review [1].',usage:{input_tokens:100,output_tokens:100,output_tokens_details:{reasoning_tokens:20}}});};
+  return Response.json({status:'completed',output_text:mode==='citation'?'Unsupported [99]':mode==='range'?'Unsupported [1-99] and [1]':mode==='empty'?'':'Verified facts\n\nDraft recommendation: collect a test run and request review [1].',usage:{input_tokens:100,output_tokens:100,output_tokens_details:{reasoning_tokens:20}}});};
  const run=(body,headers={})=>gateway.onRequestPost({env,request:new Request('https://mira.test/api/demo',{method:'POST',headers:{origin:'https://mira.test',...headers},body:JSON.stringify(body)})});
  assert.equal((await run({action:'login'})).status,403);
  const login=await run({action:'login'},{authorization:'Bearer '+token});assert.equal(login.status,200);
@@ -25,12 +25,12 @@ test('classroom gateway uses exact server evidence, secure cookies, expiry and r
  assert.equal((await run({...base,privatePortalData:'private'},headers)).status,400);
  assert.equal((await run({...base,question:'My private grade is 95'},headers)).status,200);assert.equal(calls,0);
  assert.equal((await run(base,{...headers,origin:'https://evil.test'})).status,403);
- const answer=await (await run(base,headers)).json();assert.equal(answer.provider,'openai');assert.equal(calls,1);assert.equal(settled.length,1);assert.equal(settled[0].costMicroUsd,1500);assert.equal(payload.model,'gpt-6.1-sol');assert.equal(payload.store,false);assert.match(payload.input,/Product Owner/);assert.equal(payload.max_output_tokens,512);
+ const answer=await (await run(base,headers)).json();assert.equal(answer.provider,'openai');assert.match(answer.text,/facts\n\nDraft/);assert.equal(calls,1);assert.equal(settled.length,1);assert.equal(settled[0].costMicroUsd,1500);assert.equal(payload.model,'gpt-6.1-sol');assert.equal(payload.store,false);assert.match(payload.input,/Product Owner/);assert.equal(payload.max_output_tokens,512);
  await run(base,headers);assert.equal(calls,1,'duplicate submission cannot invoke provider twice');
  const follow={...base,question:'What evidence should I prepare for that?',requestId:crypto.randomUUID()};
  await run(follow,headers);assert.equal(calls,1);
  await run({...follow,previous:'done'},headers);assert.equal(calls,2);assert.match(payload.input,/Follow-up to/);
- for(const fault of ['citation','empty','401','network']){ mode=fault;const before=settled.length;const value=await(await run({...base,requestId:crypto.randomUUID()},headers)).json();assert.notEqual(value.provider,'openai');assert.equal(settled.length,before+(['citation','empty'].includes(fault)?1:0)); }
+ for(const fault of ['citation','range','empty','401','network']){ mode=fault;const before=settled.length;const value=await(await run({...base,requestId:crypto.randomUUID()},headers)).json();assert.notEqual(value.provider,'openai');assert.equal(settled.length,before+(['citation','range','empty'].includes(fault)?1:0)); }
  active=false; const before=calls;assert.equal((await run({...base,requestId:crypto.randomUUID()},headers)).status,403);assert.equal(calls,before);
  const logout=await run({action:'logout'},headers);assert.match(logout.headers.get('set-cookie'),/Max-Age=0/);
 });

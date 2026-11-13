@@ -30,7 +30,8 @@ async function main(){
   assert.equal(await page.locator('#mira-demo-code').inputValue(),'');record.browserAuthorized=true;
   console.log('Restricted browser session connected. Close this browser to stop; expiration also blocks new requests.');
   if(acceptance){
-   const questions=['What do I need to complete before a sprint card is considered Done?','What evidence should I prepare for that?','Help me draft a stand-up for a fictional card where I finished the UI but still need testing.','How do I prepare both Sprint Review and Retrospective?'];
+   const allQuestions=['What do I need to complete before a sprint card is considered Done?','What evidence should I prepare for that?','Help me draft a stand-up for a fictional card where I finished the UI but still need testing.','How do I prepare both Sprint Review and Retrospective?'];
+   const questions=process.argv.includes('--review-only')?[allQuestions[3]]:allQuestions;
    for(let i=0;i<questions.length;i++){
     if(i===2)await sleep(61000); // shared 2/minute limit; no retry
     const response=page.waitForResponse(r=>r.url()===origin+'/api/demo'&&r.request().method()==='POST');
@@ -41,7 +42,7 @@ async function main(){
     if(value.provider!=='openai')throw Error('Live request did not pass; stopping without retry');
     await page.waitForFunction(()=>!document.querySelector('#chat-input').disabled);
     const last=page.locator('.assistant-message').last();assert.match(await last.textContent(),/Live GPT-6.1 Sol/);assert.ok(await last.locator('a').count());
-    fs.mkdirSync('dist/presentation/live-demo',{recursive:true});await page.screenshot({path:`dist/presentation/live-demo/turn-${i+1}.png`});
+    fs.mkdirSync('dist/presentation/live-demo',{recursive:true});await page.screenshot({path:`dist/presentation/live-demo/${process.argv.includes('--review-only')?'review-retest':'turn-'+(i+1)}.png`});
    }
    record.browserLive='PASS';
   }else await Promise.race([new Promise(resolve=>browser.on('disconnected',resolve)),sleep(Math.max(1,session.expires-Date.now()))]);
@@ -49,7 +50,7 @@ async function main(){
  finally{
   if(activated){try{await ledger('/demo-stop');record.after=await ledger('/status');assert.equal(record.after.halted,true);record.newCostMicroUsd=record.after.spentMicroUsd-record.before.spentMicroUsd;assert.ok(record.newCostMicroUsd+record.after.heldMicroUsd<=1000000);console.log('Session revoked; persistent halt active.');}catch(error){record.shutdownError=error.message;process.exitCode=1;console.log('URGENT: operator shutdown verification failed.');}}
   if(browser)await browser.close().catch(()=>{});
-  fs.mkdirSync('dist/presentation',{recursive:true});fs.writeFileSync('dist/presentation/CLASSROOM_LIVE_ACCEPTANCE.json',JSON.stringify(record,null,2));
+  fs.mkdirSync('dist/presentation',{recursive:true});const evidencePath='dist/presentation/CLASSROOM_LIVE_ACCEPTANCE.json';if(fs.existsSync(evidencePath))fs.copyFileSync(evidencePath,evidencePath.replace('.json','-'+Date.now()+'.json'));fs.writeFileSync(evidencePath,JSON.stringify(record,null,2));
   console.log(JSON.stringify({liveRequests:record.liveRequests,result:record.browserLive||'NOT VERIFIED',newCostMicroUsd:record.newCostMicroUsd,ledger:record.after}));
  }
 }

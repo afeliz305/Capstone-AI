@@ -875,8 +875,16 @@
           if(sequence!==searchSequence)return{status:"cancelled",matches:[],links:[]};
           if(demoExpires > Date.now() && live.provider==="openai" && live.citations?.length && live.citations.every(source=>isCapstoneUrl(source.url))) {
             loading.remove(); demoTopic=live.topic;
-            const message=addAssistantText(live.text,"Live GPT-6.1 Sol · reviewed course evidence · draft guidance, not approval");
-            live.citations.forEach(source=>addSourceCard(message,source)); scrollToLatest(message);
+            const message=addAssistantText("","Live GPT-6.1 Sol · reviewed course evidence · draft guidance, not approval");
+            const content=createElement("div","live-answer-text");
+            // Plain-text DOM only: never interpret provider HTML or Markdown links.
+            String(live.text).split(/\n+/).filter(line=>line.trim()).forEach(line=>{
+              if(/^\s*\|?[\s:|-]+\|\s*$/.test(line))return;
+              const heading=/^#{1,6}\s/.test(line);
+              content.append(createElement(heading?"h3":"p","",line.replace(/^#{1,6}\s*/,"").replace(/\*\*/g,"").replace(/\|/g," · ")));
+            });
+            message.querySelector("p").replaceWith(content);
+            live.citations.forEach((source,index)=>addSourceCard(message,{...source,title:`[${index+1}] ${source.title}`})); scrollToLatest(message);
             return{status:"matched",matches:live.citations,links:[],provider:"openai"};
           }
           if(demoStatus)demoStatus.textContent="Live answer unavailable or outside the reviewed demo. Showing course search instead; no automatic retry.";
