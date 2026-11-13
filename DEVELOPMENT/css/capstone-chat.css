@@ -259,3 +259,28 @@
   .mira-dashboard-page .chat-composer button { width: 44px; }
   .mira-dashboard-page .chat-composer p { font-size: 10px; overflow-wrap: anywhere; }
 }
+
+/* Browser zoom and landscape keyboards reduce height as well as width.
+   Give the conversation the viewport instead of reserving the bottom nav. */
+@media (max-height: 600px) {
+  .mira-dashboard-page .chat-panel { inset: 4px max(4px,env(safe-area-inset-right)) 4px auto; width: min(468px,calc(100% - 8px)); height: calc(100dvh - 8px); max-height: none; }
+  .mira-dashboard-page .chat-header { padding: 4px 8px; gap: 4px; }
+  .mira-dashboard-page .chat-header p { display: none; }
+  .mira-dashboard-page .mira-status-panel { position: relative; z-index: 6; }
+  .mira-dashboard-page .shared-information-bar { position: absolute; top: 100%; left: 0; right: 0; max-height: 35dvh; overflow-y: auto; box-shadow: var(--shadow-lift); }
+  .mira-dashboard-page .mira-status-panel > summary { min-height: 32px; padding: 4px 8px; }
+  .mira-dashboard-page .mira-context-actions { padding: 4px 8px; gap: 4px; overflow: visible; }
+  .mira-dashboard-page .context-action, .mira-dashboard-page .mira-tools-menu > summary { min-height: 44px; padding-block: 4px; }
+  .mira-dashboard-page .context-action small { display: none; }
+  .mira-dashboard-page .response-style-control { grid-template-columns: auto minmax(0,1fr); gap: 6px; }
+  .mira-dashboard-page .tool-menu-panel { max-height: 45dvh; overflow-y: auto; }
+  .mira-dashboard-page .chat-log { padding: 10px; }
+  .mira-dashboard-page .chat-composer { padding: 6px 8px; gap: 4px; }
+  .mira-dashboard-page .chat-composer textarea { height: 50px; max-height: 70px; }
+  .mira-dashboard-page .chat-composer p { font-size: 10px; line-height: 1.2; }
+}
+@media (min-width: 600px) and (max-height: 400px) {
+  .mira-dashboard-page .chat-panel { width: min(720px,calc(100% - 8px)); }
+  .mira-dashboard-page .mira-context-actions { grid-template-columns: minmax(0,1fr) 180px; align-items: center; }
+  .mira-dashboard-page .response-style-control { grid-template-columns: 1fr; gap: 0; }
+}

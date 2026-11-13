@@ -600,3 +600,8 @@ Before sharing a new version:
 This is a version-controlled document. It does not update itself while no one is working on the project; maintain it alongside future changes.
 
 Budget administrators only: see [operator recovery and controlled AI testing](AI_CONTROLLED_BUDGET.md). Ordinary teammates must not set operator credentials or unhalt spending; the public preview remains mock-only until controlled acceptance succeeds.
+
+
+## November 12-13 authenticated audit update
+
+See [AUTHENTICATED_WEBSITE_AUDIT.md](AUTHENTICATED_WEBSITE_AUDIT.md) for the current native Chrome acceptance record. It supersedes earlier owner-session-blocked and native-zoom-pending statements: authorized queue access, fictional CAP-1002 read/download, requester-preview filtering and logout passed. A short-height chat layout defect was repaired, with minimum readable answer-area regression checks. Full suite: 403 passed, 0 failed, 1 optional skip. No ticket, account, Supabase, Ocelot or portal mutations. Public AI remains mock. Fresh password login, real hosted expiry and assistive-technology conformance are not claimed.

@@ -60,7 +60,7 @@ Publish only reviewed source to preview/mira-cloudflare. Cloudflare builds DEVEL
 | Evidence assessment | Draft evidence count; does not assert verification or acceptance |
 | Stand-up / ceremonies | Draft fields, duplicate warning, Sprint Review and Retro prompts |
 | Personal information | Portal navigation or explicitly shared temporary context; no automatic hosted private reads |
-| Staff Queue | Supabase Auth plus active staff binding, protected tickets and attachments; fresh owner-session check pending |
+| Staff Queue | Supabase Auth plus active staff binding, protected tickets and attachments; existing owner session, fictional ticket read/download and logout verified November 12-13 |
 | Recovery | Signed-out UI and no-store page; no reset email in this acceptance run |
 | AI gateway | Mock provider now; one previously verified controlled Sol test, persistent financial controls preserved |
 
@@ -85,8 +85,8 @@ After class: sign out, clear fictional drafts, close the local server when finis
 - Current hosted portal snapshot is historical. Automatic private dashboard access and portal-native integration require portal-owner-approved identity, read scopes and adapters.
 - Fresh email-code login may lose the requested destination; use the shortcut again after login.
 - Public AI remains mock/deterministic. A future live demonstration needs a new bounded request approval and all financial/privacy gates.
-- The optional authenticated Staff Queue walkthrough needs an accessible owner session. Local Auth/RLS regression tests are not fresh hosted login evidence.
-- 200% automated coverage uses CSS zoom/reflow; presenter should also check native browser zoom on the classroom display.
+- Existing owner-session Staff Queue access, fictional ticket read/download, requester-preview filtering and logout passed. Sign in personally before class; a new password login was not tested. See AUTHENTICATED_WEBSITE_AUDIT.md.
+- Native Chrome 200% zoom exposed a short-height conversation defect; the layout repair and minimum answer-area regression passed locally. Recheck on the classroom display.
 - Optional PHP runtime parity is not part of this Cloudflare release's live verification.
 - Team roster: Anthony Feliz, Christopher Hernandez, Michael Alvarez, Romelin Charnel and Zavier Richardson, based on the approved staff roster. Individual contributions and presenter assignments remain unverified; confirm them with the team before assigning credit. Raul is not an active team member in this record.
 

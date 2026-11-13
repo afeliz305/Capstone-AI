@@ -45,3 +45,7 @@ Both the immutable implementation deployment and https://mira-9gg.pages.dev/ pas
 An additional 720x500 CSS-pixel viewport at device scale 2 passed full chat containment as a 200% reflow equivalent for a 1440x1000 display. Native classroom-browser zoom remains a manual display check; CSS zoom alone is not proof of that behavior.
 
 Presentation status: **ready for the public/mock classroom demonstration**, with the fresh authenticated staff segment explicitly optional and blocked on owner-session access. No critical defect remains in the verified scope. The latest documentation-only follow-up does not change the 33-file candidate or its manifest.
+
+## November 12-13 authenticated audit update
+
+See [AUTHENTICATED_WEBSITE_AUDIT.md](AUTHENTICATED_WEBSITE_AUDIT.md) for the current native Chrome acceptance record. It supersedes earlier owner-session-blocked and native-zoom-pending statements: authorized queue access, fictional CAP-1002 read/download, requester-preview filtering and logout passed. A short-height chat layout defect was repaired, with minimum readable answer-area regression checks. Full suite: 403 passed, 0 failed, 1 optional skip. No ticket, account, Supabase, Ocelot or portal mutations. Public AI remains mock. Fresh password login, real hosted expiry and assistive-technology conformance are not claimed.

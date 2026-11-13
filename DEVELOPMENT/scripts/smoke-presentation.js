@@ -38,7 +38,19 @@ async function main(){
  await page.locator('#dashboard-profile-trigger').click();await page.locator('[data-theme-choice="light"]').click();
  for(const width of [1440,768,390,320]){await page.setViewportSize({width,height:900});await page.reload();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);if(!await page.locator('#assistant').isVisible())await page.getByRole('button',{name:'Open MIRA chat',exact:true}).click();const r=await page.locator('#assistant').boundingBox();assert.ok(r.x>=-1&&r.x+r.width<=width+1);await page.screenshot({path:path.join(out,`mobile-${width}.png`)});results.viewports.push({width,pass:true});}
  await page.setViewportSize({width:1440,height:1000});await page.goto(origin+'/');await page.evaluate(()=>document.documentElement.style.zoom='2');if(!await page.locator('#assistant').isVisible())await page.getByRole('button',{name:'Open MIRA chat',exact:true}).click();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth),true);results.zoom='200% CSS zoom and containment (not OS browser zoom)';await page.screenshot({path:path.join(out,'zoom-200.png')});
- await page.goto(origin+'/pages/staff.html');assert.equal(await page.getByRole('button',{name:'Forgot password?'}).isVisible(),true);await page.screenshot({path:path.join(out,'staff-signed-out.png')});
+ // Equivalent CSS viewport dimensions of native 200% browser zoom and landscape.
+ // Horizontal containment alone missed an almost-zero-height conversation.
+ results.shortViewports=[];
+ for(const size of [{width:563,height:455},{width:320,height:450},{width:740,height:360}]){
+  await page.setViewportSize(size);await page.goto(origin+'/');if(!await page.locator('#assistant').isVisible())await page.getByRole('button',{name:'Open MIRA chat',exact:true}).click();
+  const log=await page.locator('.chat-log').boundingBox(),composer=await page.locator('.chat-composer').boundingBox();
+  assert.ok(log.height>=120,`Readable answer area at ${size.width}x${size.height}: ${log.height}`);
+  assert.ok(composer.y+composer.height<=size.height+1,'Composer stays reachable');
+  await page.locator('.mira-tools-menu > summary').click();await page.locator('#load-sample-information').click();
+  assert.match(await page.locator('#shared-mode-status').textContent(),/fictional|sample/i);
+  results.shortViewports.push({...size,answerHeight:log.height,pass:true});
+ }
+ await page.setViewportSize({width:1440,height:1000});await page.goto(origin+'/pages/staff.html');assert.equal(await page.getByRole('button',{name:'Forgot password?'}).isVisible(),true);await page.screenshot({path:path.join(out,'staff-signed-out.png')});
  await page.goto(origin+'/pages/recover.html');assert.match(await page.locator('body').textContent(),/Reset your MIRA staff password/);results.recovery='Signed-out page rendered; no email sent';
  assert.deepEqual(errors,[]);assert.deepEqual(failed,[]);results.pageErrors=errors;results.failedRequests=failed;results.pass=true;
  }finally{await fs.writeFile(path.join(out,'acceptance.json'),JSON.stringify(results,null,2));await browser.close();}
