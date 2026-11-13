@@ -292,3 +292,8 @@ Controlled AI recovery now requires separate operator authorization, exact ledge
 ## November 12-13 authenticated audit update
 
 See [AUTHENTICATED_WEBSITE_AUDIT.md](AUTHENTICATED_WEBSITE_AUDIT.md) for the current native Chrome acceptance record. It supersedes earlier owner-session-blocked and native-zoom-pending statements: authorized queue access, fictional CAP-1002 read/download, requester-preview filtering and logout passed. A short-height chat layout defect was repaired, with minimum readable answer-area regression checks. Full suite: 403 passed, 0 failed, 1 optional skip. No ticket, account, Supabase, Ocelot or portal mutations. Public AI remains mock. Fresh password login, real hosted expiry and assistive-technology conformance are not claimed.
+
+
+## Integrated AI classroom checkpoint
+
+See [INTEGRATED_AI_DEMO.md](INTEGRATED_AI_DEMO.md) for the two-minute sourced conversation demonstration, verified follow-ups, timeout/citation repairs, historical Sol acceptance and exact restricted activation/shutdown gates. Public chat remains deterministic, workspace AI is mock, and no new paid request or financial recovery is authorized by this update.

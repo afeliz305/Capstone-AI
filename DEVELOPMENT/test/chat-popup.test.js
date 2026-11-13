@@ -344,6 +344,17 @@ test("unsupported questions retain escalation without inventing keyword links", 
   assert.ok(descendants(ui.log).some(node => node.textContent === "Create support request"));
 });
 
+test("shorter stand-up follow-up retains only reviewed topic IDs through the shared chat handler",async()=>{
+  const {searchKnowledge}=require('../server/lib/search');
+  const knowledge=require('../server/lib/knowledge').reviewedKnowledge(require('../data/capstone-knowledge.json'));
+  const requests=[];
+  const ui=mount(async url=>{const parsed=new URL(url,'https://example.test');requests.push(parsed);return {ok:true,json:async()=>searchKnowledge(knowledge,parsed.searchParams.get('q'),parsed.searchParams.get('context'))};});
+  ui.topic.dataset.question='How do I prepare a standup?';await ui.topic.emit('click');
+  ui.input.value='Make that shorter';ui.document.querySelector('#chat-form').emit('submit');await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(requests.at(-1).searchParams.get('context'),'daily-scrum,minutes-usage-guide');
+  assert.match(ui.log.children.at(-1).children[1].textContent,/Draft only/);
+});
+
 test("syllabus answers link to a safe nested-folder reference and support contextual follow-ups",async()=>{
   const {searchKnowledge}=require("../server/lib/search");
   const knowledge=require("../server/lib/knowledge").mergeKnowledge(require("../data/capstone-knowledge.json"),require("../js/shared/syllabus-data").entries);

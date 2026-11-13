@@ -55,7 +55,7 @@ test("Cloudflare OpenAI adapter is server-only, gated, non-storing, and preserve
 test("browser accepts only reviewed gateway citations and falls back safely", async (t) => {
   const originalFetch = global.fetch;
   t.after(() => { global.fetch = originalFetch; });
-  global.fetch = async () => ({ ok: true, json: async () => ({ provider: "openai", model: "gpt-6-luna", text: "Draft recommendation [1]", citations: [{ id: "faro.criteria" }, { id: "invented" }] }) });
+  global.fetch = async () => ({ ok: true, json: async () => ({ provider: "openai", model: "gpt-6.1-sol", text: "Draft recommendation [1]", citations: [{ id: "faro.criteria" }] }) });
   const request = { task: "prepare-handoff", sources: [{ id: "faro.criteria", title: "FARO criteria guide", url: "/docs/faro.html", excerpt: "Reviewed evidence." }] };
   const result = await gateway.request(request, { mode: "gateway" });
   assert.equal(result.provider, "openai");
@@ -65,6 +65,18 @@ test("browser accepts only reviewed gateway citations and falls back safely", as
   const fallback = await gateway.request(request, { mode: "gateway" });
   assert.equal(fallback.provider, "deterministic");
   assert.equal(fallback.fallback, true);
+});
+
+test("gateway rejects invented citations and bounds stalled fetch/body reads without retry", async t => {
+  const original=global.fetch;t.after(()=>{global.fetch=original;});
+  const request={task:"next-steps",sources:[{id:"reviewed",title:"Reviewed source",url:"https://capstone.cs.fiu.edu/",excerpt:"Reviewed public evidence."}]};
+  global.fetch=async()=>({ok:true,json:async()=>({provider:"openai",text:"Unverified answer",citations:[{id:"invented"}]})});
+  assert.equal((await gateway.request(request,{mode:"gateway"})).provider,"deterministic");
+  for(const bodyStalls of [false,true]){
+    let calls=0,signal;global.fetch=async(_,options)=>{calls++;signal=options.signal;return bodyStalls?{ok:true,json:()=>new Promise(()=>{})}:new Promise(()=>{});};
+    const result=await gateway.request(request,{mode:"gateway",timeoutMs:100});
+    assert.equal(result.fallback,true);assert.equal(result.provider,"deterministic");assert.equal(calls,1);assert.equal(signal.aborted,true);
+  }
 });
 
 test("gateway never sends context explicitly marked ineligible for external processing", async (t) => {

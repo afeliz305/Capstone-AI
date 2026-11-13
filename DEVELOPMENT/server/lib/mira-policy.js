@@ -136,6 +136,11 @@ function routeMira(entries, question, contextId, toPublic) {
     answer:entry=>"MIRA will not save personal portal context permanently or reuse it for future users. "+entry.answer
   });
   const context=find(entries,String(contextId||""));
+  const standupContext=String(contextId||"").split(",").includes("daily-scrum");
+  if ((standupContext && /^(?:please )?(?:make (?:it|that|the draft) shorter|shorter(?: draft)?|shorten (?:it|that|the draft))$/.test(text)) || /^(?:please )?(?:draft|prepare) (?:a |my )?standup(?: draft)?$/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:["daily-scrum","minutes-usage-guide"],accessScope:"authenticated-linked-documents",
+    answer:()=>"Draft only — fill in verified facts; nothing is submitted.\nTeam: [team]; Sprint: [sprint]; Date/time: [date, start/end]; Attendees: [attendees].\nEach member: Hours [hours]; Worked on [verified work]; Next [planned work]; Blockers [confirmed blockers].\nTeam summary: [completed work], [next work], [blockers].\nKeep the official template labels. Confirm posting frequency with the instructor because the template and usage guide disagree."
+  });
   if(context?.provenance==="FARO_CURATED" && /^(?:tell me more|what does that mean|how do i use that)$/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:[context.id],accessScope:"authenticated-portal-guidance"
   });
@@ -169,7 +174,8 @@ function routeMira(entries, question, contextId, toPublic) {
     answer:entry=>entry.answer+" MIRA cannot grant, promise, or send an extension request. Use the verified instructor contact route if the documented grace period is not enough."
   });
   if(/acceptance criteria/.test(text) && /\b(?:evidence|proof)\b/.test(text)) return result(entries,toPublic,{
-    status:"answered",ids:["faro-board-acceptance-criteria","faro-board-evidence"],accessScope:"authenticated-portal-guidance"
+    status:"answered",ids:["faro-board-acceptance-criteria","faro-board-evidence"],accessScope:"authenticated-portal-guidance",
+    answer:entry=>entry.answer+"\n\n"+(find(entries,"faro-board-evidence")?.answer||"")
   });
   if(/\bverify\b/.test(text) && /\bdone\b/.test(text) && /difference|versus|\bvs\b|compare/.test(text)) return result(entries,toPublic,{
     status:"partial",ids:["faro-board-verify","faro-board-review-decision"],accessScope:"authenticated-portal-guidance",

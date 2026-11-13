@@ -59,13 +59,20 @@
     const value = validate(requestValue);
     if (options.mode !== "gateway") return mock(value);
     if (!value.externalEligible) return { ...deterministic(value), fallback: true, blockedExternal: true };
+    const controller = new AbortController();
+    const timeoutMs = Math.min(20000, Math.max(100, Number(options.timeoutMs) || 10000));
+    let timer;
     try {
-      const response = await fetch(options.endpoint || "/api/ai", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(value) });
+      const body = await Promise.race([(async () => {
+      const response = await fetch(options.endpoint || "/api/ai", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(value), signal: controller.signal });
       if (!response.ok) throw new Error("Gateway unavailable");
-      const body = await response.json();
+      return response.json();
+      })(), new Promise((_, reject) => { timer = setTimeout(() => { controller.abort(); reject(new Error("Gateway timeout")); }, timeoutMs); })]);
       if (!body || !allowedProviders.has(body.provider) || typeof body.text !== "string") throw new Error("Unexpected gateway response");
+      if (body.provider === "openai" && (!value.sources.length || !Array.isArray(body.citations) || !body.citations.length || body.citations.some(item => !value.sources.some(source => source.id === item?.id)))) throw new Error("Unverified provider citations");
       return { provider: body.provider, model: clean(body.model, 80) || undefined, state: "draft", fallback: body.fallback === true, text: clean(body.text, 6000), citations: safeCitations(body.citations, value.sources), sourced: value.sources.length > 0 };
     } catch (_) { return { ...deterministic(value), fallback: true }; }
+    finally { clearTimeout(timer); }
   }
   return Object.freeze({ allowedTasks, validate, deterministic, mock, request });
 });

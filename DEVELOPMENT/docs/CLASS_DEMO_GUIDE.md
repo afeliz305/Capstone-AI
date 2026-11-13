@@ -103,3 +103,8 @@ Future work: portal-native integration, approved current-context synchronization
 - [ ] Close with the proposed integration phase, not a claim of official FIU deployment.
 
 Suggested closing: “The pre-integration proof of concept supports grounded course guidance, navigation, draft preparation and a protected support workflow. No professor-portal modification was required. Automatic personal-dashboard access remains a proposed integration phase.”
+
+
+## Integrated AI classroom checkpoint
+
+See [INTEGRATED_AI_DEMO.md](INTEGRATED_AI_DEMO.md) for the two-minute sourced conversation demonstration, verified follow-ups, timeout/citation repairs, historical Sol acceptance and exact restricted activation/shutdown gates. Public chat remains deterministic, workspace AI is mock, and no new paid request or financial recovery is authorized by this update.

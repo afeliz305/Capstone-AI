@@ -861,6 +861,7 @@
 
   function contextForQuestion(question) {
     const text=String(question||"").trim().toLowerCase();
+    if (/^(?:please )?(?:make (?:it|that|the draft) shorter|shorter(?: draft)?|shorten (?:it|that|the draft)|who decides (?:that|whether it is accepted)|who approves (?:that|it)|does (?:that|it) mean (?:the card is )?done)[.!?]*$/.test(text)) return lastTopic;
     if(/^(?:and |also )?(?:what about )?(?:the )?next (?:one|sprint)?[.!?]*$|^(?:where do i get it|where can i get it|where does it say that|take me there|open it|open that|show me that section|when is (?:it|that|this) due|when is the deadline|what is the deadline|how many points(?: is (?:it|that|this))?|what is (?:it|that) worth|tell me more|what does that mean|what should i do|what do i need to do|guide me through this|just tell me the next step|where (?:do i |should i )?(?:submit|post|upload)(?: (?:it|that|this))?|how (?:is it|is that|am i) graded)[.!?]*$/.test(text))return lastTopic;
     return "";
   }

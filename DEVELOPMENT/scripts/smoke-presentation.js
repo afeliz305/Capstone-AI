@@ -19,6 +19,11 @@ async function main(){
   assert.ok(text.length>30);results.questions.push({q,text,links});
  }
  await page.screenshot({path:path.join(out,'grounded-answer.png')});await page.locator('#minimize-chat').click();
+ // Start from the embedded composer, then continue in the same floating chat.
+ await page.locator('#dashboard-mira-input').fill('How do I prepare a standup?');await page.locator('#dashboard-mira-form').getByRole('button',{name:'Ask MIRA'}).click();await page.waitForFunction(()=>!document.querySelector('#chat-input').disabled);
+ await page.locator('#chat-input').fill('Make that shorter');await page.locator('#chat-input').press('Enter');await page.waitForFunction(()=>!document.querySelector('#chat-input').disabled);
+ assert.match(await page.locator('.assistant-message').last().textContent(),/Draft only/);assert.match(await page.locator('.assistant-message').last().textContent(),/disagree/);
+ assert.ok(await page.locator('.assistant-message').last().locator('a').count()>0);results.multiTurn='PASS embedded stand-up to floating shorter draft with citations';await page.locator('#minimize-chat').click();
  await page.locator('#dashboard-mira-input').fill('What counts as evidence?');await page.locator('#dashboard-mira-form').getByRole('button',{name:'Ask MIRA'}).click();await page.waitForFunction(()=>!document.querySelector('#chat-input').disabled);await page.locator('#minimize-chat').click();
  const w=page.locator('#team-workspace');await w.scrollIntoViewIfNeeded();assert.match(await w.textContent(),/Snapshot, not live portal state/);await w.getByRole('button',{name:/CAP-1316/}).click();await page.locator('#selected-work-card textarea').first().fill('Fictional presentation evidence: test output prepared, not submitted or accepted.');
  for(const name of ['Explain this card','What should I do?','Check my progress',"What's missing?",'Prepare evidence','Ask a teammate','Ready for Review?']){
