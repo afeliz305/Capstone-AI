@@ -878,7 +878,7 @@
           if(sequence!==searchSequence)return{status:"cancelled",matches:[],links:[]};
           if(demoExpires > Date.now() && live.provider==="openai" && live.citations?.length && live.citations.every(source=>isCapstoneUrl(source.url))) {
             loading.remove(); demoTopic=live.topic;
-            const message=addAssistantText("","Live GPT-6.1 Sol · reviewed course evidence · draft guidance, not approval");
+            const message=addAssistantText(live.text,"Live GPT-6.1 Sol · reviewed course evidence · draft guidance, not approval");
             const content=createElement("div","live-answer-text");
             // Plain-text DOM only: never interpret provider HTML or Markdown links.
             String(live.text).split(/\n+/).filter(line=>line.trim()).forEach(line=>{
