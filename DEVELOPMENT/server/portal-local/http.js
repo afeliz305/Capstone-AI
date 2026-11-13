@@ -118,7 +118,7 @@ function createPortalServer({root,sourceRoot,service,extensionBridge=null,pairin
   });
   server.requestTimeout=15000;server.headersTimeout=10000;
   const sweep=setInterval(()=>{for(const [id,s] of sessions)if(s.expires<=now()){sessions.delete(id);void service.disconnect(id);}for(const [id,entry] of bootstrapTokens)if(entry.expires<=now())bootstrapTokens.delete(id);if(service.owner)service.status(service.owner);},5000);sweep.unref();
-  server.on('close',()=>{clearInterval(sweep);sessions.clear();bootstrapTokens.clear();extensionBridge?.revoke('helper-stopped');if(service.owner)void service.disconnect(service.owner);});
+  server.on('close',()=>{clearInterval(sweep);sessions.clear();bootstrapTokens.clear();if(!extensionBridge?.trustStore)extensionBridge?.revoke('helper-stopped');if(service.owner)void service.disconnect(service.owner);});
   return {server,pairingCode,pairingExpiresAt,origin,extensionPairingCode:extensionBridge?.pairingCode||null,extensionPairingExpiresAt:extensionBridge?.pairingExpiresAt||null};
 }
 module.exports={createPortalServer};

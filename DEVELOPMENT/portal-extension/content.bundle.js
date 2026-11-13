@@ -221,8 +221,54 @@
     }
   });
 
+  // server/portal-local/frame-identity.js
+  var require_frame_identity = __commonJS({
+    "server/portal-local/frame-identity.js"(exports, module) {
+      function frameIdentity(doc) {
+        const matches = [];
+        for (const script of doc.querySelectorAll("script:not([src])")) {
+          const text = script.textContent || "";
+          const start = /\bwindow\.__FRAME__\s*=\s*(\{)/.exec(text);
+          if (!start) continue;
+          let depth = 0, quoted = false, escaped = false, end = -1;
+          const offset = start.index + start[0].length - 1;
+          for (let i = offset; i < text.length; i++) {
+            const c = text[i];
+            if (quoted) {
+              if (escaped) escaped = false;
+              else if (c === "\\") escaped = true;
+              else if (c === '"') quoted = false;
+              continue;
+            }
+            if (c === '"') quoted = true;
+            else if (c === "{") depth++;
+            else if (c === "}" && --depth === 0) {
+              end = i + 1;
+              break;
+            }
+          }
+          if (end < 0) return null;
+          try {
+            const frame = JSON.parse(text.slice(offset, end)), me = frame.me;
+            if (frame.kind !== "cap2" || !Number.isSafeInteger(me?.id) || me.id <= 0 || typeof me.name !== "string" || !me.name.trim() || me.name.length > 120) return null;
+            matches.push({ portalAccountId: String(me.id), name: me.name.trim() });
+          } catch {
+            return null;
+          }
+        }
+        return matches.length === 1 ? matches[0] : null;
+      }
+      function matchingFrameIdentity2(fresh, loaded) {
+        const a = frameIdentity(fresh), b = frameIdentity(loaded);
+        return a && b && a.portalAccountId === b.portalAccountId && a.name === b.name ? a : null;
+      }
+      module.exports = { frameIdentity, matchingFrameIdentity: matchingFrameIdentity2 };
+    }
+  });
+
   // portal-extension/content-entry.js
   var { SECTION_ROUTES, canonicalSection, readPortalGuard, readPortalCapabilities, navigatePortalSection, readPortalSection } = require_dom_reader();
+  var { matchingFrameIdentity } = require_frame_identity();
   var PORTAL_PATHS = /* @__PURE__ */ new Set(["/portal", "/today", "/inbox", "/board", "/meetings", "/my-work", "/this-term", "/people", "/me/rhythm", "/recognition", "/me/privacy"]);
   var documentId = crypto.randomUUID();
   var exactPortal = () => location.origin === "https://capstone.cs.fiu.edu" && PORTAL_PATHS.has(location.pathname) && !location.search;
@@ -240,8 +286,9 @@
     }
     if (!response.ok || response.url !== page || !text) return { state: "sign-in-required" };
     const parsed = new DOMParser().parseFromString(text, "text/html"), name = parsed.querySelector("#pubavdrop .avdname")?.textContent?.trim(), email = parsed.querySelector("#pubavdrop .avdemail")?.textContent?.trim(), logout = parsed.querySelector('#pubavdrop form[action="/logout"][method="post"]');
-    if (!name || !logout || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || "")) return { state: "sign-in-required" };
-    return { state: "verified", identity: { name: name.slice(0, 120), email: email.toLowerCase().slice(0, 254) }, active: readPortalGuard().active, documentId, proof: { network: true, status: response.status, checkedAt: (/* @__PURE__ */ new Date()).toISOString(), bytes: text.length } };
+    const identity = name && logout && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || "") ? { name: name.slice(0, 120), email: email.toLowerCase().slice(0, 254) } : matchingFrameIdentity(parsed, document);
+    if (!identity) return { state: "sign-in-required" };
+    return { state: "verified", identity, active: readPortalGuard().active, documentId, proof: { network: true, status: response.status, checkedAt: (/* @__PURE__ */ new Date()).toISOString(), bytes: text.length } };
   }
   async function combinedSection(payload, activeOnly = false) {
     const identity = await freshIdentity();

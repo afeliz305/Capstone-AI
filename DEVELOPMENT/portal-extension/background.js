@@ -1,16 +1,20 @@
 const HELPER='http://127.0.0.1:3005',PORTAL_PATTERN='https://capstone.cs.fiu.edu/*',SCRIPT_ID='mira-portal-content',ALARM='mira-portal-wake';
 const PORTAL_PATHS=new Set(['/portal','/today','/inbox','/board','/meetings','/my-work','/this-term','/people','/me/rhythm','/recognition','/me/privacy']);
 const STANDALONE={Today:'/today',Inbox:'/inbox',Board:'/board',Meetings:'/meetings','My work':'/my-work','Projects this term':'/this-term',People:'/people','My rhythm':'/me/rhythm',Recognition:'/recognition','Profile and privacy':'/me/privacy'};
-let pollPromise=null,timer=null;
+let pollPromise=null,timer=null,registrationPromise=null;
 const local={get:keys=>chrome.storage.local.get(keys),set:value=>chrome.storage.local.set(value),remove:keys=>chrome.storage.local.remove(keys)};
 
 async function restrictStorage(){try{await chrome.storage.local.setAccessLevel({accessLevel:'TRUSTED_CONTEXTS'});}catch{}}
 async function permission(){return chrome.permissions.contains({origins:[PORTAL_PATTERN]});}
 async function register(){
-  if(!(await permission()))return false;
-  const existing=await chrome.scripting.getRegisteredContentScripts();
-  if(!existing.some(item=>item.id===SCRIPT_ID))await chrome.scripting.registerContentScripts([{id:SCRIPT_ID,matches:[PORTAL_PATTERN],js:['content.bundle.js'],runAt:'document_idle',persistAcrossSessions:true}]);
-  return true;
+  if(registrationPromise)return registrationPromise;
+  registrationPromise=(async()=>{
+    if(!(await permission()))return false;
+    const existing=await chrome.scripting.getRegisteredContentScripts();
+    if(!existing.some(item=>item.id===SCRIPT_ID))await chrome.scripting.registerContentScripts([{id:SCRIPT_ID,matches:[PORTAL_PATTERN],js:['content.bundle.js'],runAt:'document_idle',persistAcrossSessions:true}]);
+    return true;
+  })();
+  try{return await registrationPromise;}finally{registrationPromise=null;}
 }
 async function nextSeq(){const state=await local.get(['seq']);const seq=Number.isSafeInteger(state.seq)?state.seq+1:1;await local.set({seq});return seq;}
 async function helper(path,data,authenticated=true){

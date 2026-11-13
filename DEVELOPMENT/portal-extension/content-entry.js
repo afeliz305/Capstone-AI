@@ -1,4 +1,5 @@
 const {SECTION_ROUTES,canonicalSection,readPortalGuard,readPortalCapabilities,navigatePortalSection,readPortalSection}=require('../server/portal-local/dom-reader');
+const {matchingFrameIdentity}=require('../server/portal-local/frame-identity');
 
 const PORTAL='https://capstone.cs.fiu.edu/portal';
 const PORTAL_PATHS=new Set(['/portal','/today','/inbox','/board','/meetings','/my-work','/this-term','/people','/me/rhythm','/recognition','/me/privacy']);
@@ -14,8 +15,9 @@ async function freshIdentity(){
   try{response=await fetch(page,{method:'GET',credentials:'same-origin',cache:'no-store',redirect:'follow',headers:{Accept:'text/html'}});text=await response.text();}catch{return{state:'sign-in-required'};}
   if(!response.ok||response.url!==page||!text)return{state:'sign-in-required'};
   const parsed=new DOMParser().parseFromString(text,'text/html'),name=parsed.querySelector('#pubavdrop .avdname')?.textContent?.trim(),email=parsed.querySelector('#pubavdrop .avdemail')?.textContent?.trim(),logout=parsed.querySelector('#pubavdrop form[action="/logout"][method="post"]');
-  if(!name||!logout||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email||''))return{state:'sign-in-required'};
-  return{state:'verified',identity:{name:name.slice(0,120),email:email.toLowerCase().slice(0,254)},active:readPortalGuard().active,documentId,proof:{network:true,status:response.status,checkedAt:new Date().toISOString(),bytes:text.length}};
+  const identity=name&&logout&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email||'')?{name:name.slice(0,120),email:email.toLowerCase().slice(0,254)}:matchingFrameIdentity(parsed,document);
+  if(!identity)return{state:'sign-in-required'};
+  return{state:'verified',identity,active:readPortalGuard().active,documentId,proof:{network:true,status:response.status,checkedAt:new Date().toISOString(),bytes:text.length}};
 }
 
 async function combinedSection(payload,activeOnly=false){

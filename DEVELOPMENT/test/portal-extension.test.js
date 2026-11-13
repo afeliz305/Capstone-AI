@@ -87,3 +87,22 @@ test('explicit bridge revocation clears pending work and blocks silent reconnect
   await assert.rejects(pending,/disconnected|Pair/i);
   assert.throws(()=>state.bridge.next(origin,{token:state.credentials.token,seq:1}),/Pair|trust/i);
 });
+
+
+test('concurrent startup and popup registration shares one Chrome registration and retries failures',async()=>{
+ const vm=require('node:vm');const source=fs.readFileSync(path.join(root,'portal-extension/background.js'),'utf8').split('async function nextSeq')[0];let registrations=0,present=false,fail=false;
+ const chrome={storage:{local:{}},permissions:{contains:async()=>true},scripting:{getRegisteredContentScripts:async()=>{await new Promise(r=>setImmediate(r));return present?[{id:'mira-portal-content'}]:[];},registerContentScripts:async()=>{registrations++;if(fail)throw Error('fictional registration failure');if(present)throw Error('duplicate');present=true;}}};
+ const context={chrome};vm.createContext(context);vm.runInContext(source,context);
+ assert.deepEqual(await Promise.all(Array.from({length:12},()=>context.register())),Array(12).fill(true));assert.equal(registrations,1);await context.register();assert.equal(registrations,1);
+ present=false;fail=true;await assert.rejects(context.register(),/fictional/);fail=false;assert.equal(await context.register(),true);assert.equal(registrations,3);
+});
+
+test('section navigation preserves tab/account binding across documents but rejects identity races',async()=>{
+ let account='42',documentId='first';
+ const bridge={request:async(name)=>({state:'verified',active:'Today',section:'Today',documentId:name==='identity'?'first':documentId,identity:{portalAccountId:name==='identity'?'42':account,name:'Fictional Tester'},proof:{network:true,status:200},records:[]})};
+ const adapter=new ExtensionAdapter(bridge);
+ const initial=await adapter.verify(7);documentId='second';const section=await adapter.inspectSection(7,'Board');
+ assert.equal(initial.contextBinding,section.contextBinding);assert.equal(section.documentId,'second');
+ assert.notEqual((await adapter.identity(8)).contextBinding,initial.contextBinding);
+ account='43';await assert.rejects(adapter.verify(7),/account changed/);
+});

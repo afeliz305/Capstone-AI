@@ -5,6 +5,7 @@ const {probePreview}=require('./start-demo');
 const {BrowserAdapter}=require('../server/portal-local/browser-adapter');
 const {ExtensionAdapter}=require('../server/portal-local/extension-adapter');
 const {ExtensionBridge}=require('../server/portal-local/extension-bridge');
+const {createTrustStore,defaultTrustDirectory}=require('../server/portal-local/trust-store');
 const {PortalService}=require('../server/portal-local/service');
 const {createPortalServer}=require('../server/portal-local/http');
 const {loadPublicIndex}=require('../server/website-index/store');
@@ -18,7 +19,7 @@ async function start() {
   // disabled by the local client; existing hosting modes remain unchanged.
   const result=await createOcelotPackage({root,outputRoot:path.join(root,'dist/staging'),transport:'browser'});
   const useMcp=process.argv.includes('--mcp');if(!useMcp)await buildPortalExtension();
-  const bridge=useMcp?null:new ExtensionBridge();
+  const bridge=useMcp?null:new ExtensionBridge({trustStore:createTrustStore(defaultTrustDirectory())});
   const knowledge=reviewedKnowledge(JSON.parse(await fs.readFile(path.join(root,'data/capstone-knowledge.json'),'utf8')));
   const service=new PortalService({adapter:useMcp?new BrowserAdapter():new ExtensionAdapter(bridge),publicSearch:async(q,c)=>searchKnowledge(knowledge,q,c,await loadPublicIndex(root))});
   const {server,pairingCode,pairingExpiresAt,origin,extensionPairingCode,extensionPairingExpiresAt}=createPortalServer({root:result.uploadDirectory,sourceRoot:root,service,extensionBridge:bridge,port});
@@ -27,6 +28,7 @@ async function start() {
   console.log('Open the local page directly, then choose Connect my portal. Manual app code entry is normally unnecessary.');
   console.log('Advanced setup fallback code (single use; expires '+new Date(pairingExpiresAt).toLocaleTimeString()+'; do not share): '+pairingCode);
   if(useMcp)console.log('MCP development fallback selected. Enable Chrome remote debugging yourself and approve Chrome when prompted.');
+  else if(bridge.validClient())console.log('Existing extension trust restored. Open the extension, then Connect my portal and verify the selected account. No new pairing code is needed.');
   else console.log('Extension pairing code (single use; expires '+new Date(extensionPairingExpiresAt).toLocaleTimeString()+'; enter only in the locally installed extension): '+extensionPairingCode);
   console.log('Keep this terminal open. No public tunnel or debugging port is opened. Public Ocelot/GitHub/upload folders are unchanged. Ctrl+C disconnects.');
   let stopping=false;

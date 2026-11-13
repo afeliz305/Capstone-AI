@@ -1,5 +1,9 @@
 # Private portal connector
 
+November 13, 2026 local repair: extension registration now serializes overlapping startup/popup requests, avoiding Chrome's `Duplicate script ID` error. The current portal's server-rendered `window.__FRAME__` account contract is parsed as JSON without evaluating page code. A fresh same-origin HTTP 200 document and the loaded document must agree on the stable numeric account ID and name. The account ID is used only for the session's private binding; no email is invented. Legacy email markup remains supported. Missing/mismatched identity fails closed. Grade exclusions are unchanged.
+
+Reload the extension and portal page after rebuilding the content bundle. The repaired parser passed a read-only fresh/loaded identity comparison on the owner's signed-in page; complete team/card/rhythm/meeting/deadline acceptance remains pending pairing and application-level verification. Never send pairing codes in chat or save them in diagnostics.
+
 Updated October 9, 2026. The connector recognizes the portal's standalone `/today`, `/board`, `/meetings`, `/inbox`, `/my-work`, `/this-term`, `/people`, `/me/rhythm`, `/recognition`, and `/me/privacy` routes while preserving verified legacy sections. Current selectors and privacy decisions are recorded in [PORTAL_CONTEXT_AUDIT.md](PORTAL_CONTEXT_AUDIT.md). Today, the signed-in user's Board cards, My work, safe Meetings metadata, Inbox metadata, People role relationships, My rhythm, Team, and Standing can be read on demand. Projects this term, Recognition, Profile/privacy, Grade, Classmates, and Alumni remain navigation-only. A selector or route failure is reported as unavailable, not as "no tasks" or "no messages." This connector remains local development tooling and is never included in the Ocelot upload package.
 
 Updated September 26, 2026. This Chrome extension is local development tooling only. It does not connect the hosted Ocelot page and it is excluded from the Ocelot upload package. The preferred zero-install design moves personal MIRA into the authenticated portal; see [the portal-owner handoff](PORTAL_OWNER_HANDOFF.md).
@@ -29,7 +33,11 @@ Start and install:
 8. Ask a personal question. MIRA retrieves only the relevant supported section on demand. It does not crawl the entire dashboard for each question.
 9. Use **Disconnect and clear private data** when finished. To revoke browser site access too, remove the portal permission in Chrome's extension settings or remove the extension.
 
-The extension can remain installed between sessions. A helper restart creates a new in-memory trust authority, so the extension must be paired again; this is intentional. A Chrome restart can reuse unexpired extension/helper trust if the same helper process is still running. A computer or helper restart requires re-pairing.
+The normal helper now persists only the irreversible token digest, approved extension origin, replay counter and fixed expiry in `%LOCALAPPDATA%\MIRA\portal-connector\trust.json`. On Windows the directory allows only the current user's SID; unsafe links, corrupt records and storage failures fail closed. No bearer token, pairing code or portal content is written there. The extension retains its bearer credential in Chrome's trusted-extension-context storage, protected by the local Chrome profile's OS access controls.
+
+After the first pairing with this version, ordinary helper/browser restarts reuse unexpired trust for up to seven days without extending that expiry. Replay counters are durably saved before accepting each request. Restarting clears all app sessions, selected tabs and private records: reopen MIRA and explicitly verify the portal again. Pairing trust never substitutes for portal authentication. Tests cover disk-backed helper recreation, replay/foreign-origin rejection, expiry, storage failure and revocation; attended browser reconnection remains pending.
+
+Use the extension's **Disconnect** control to revoke trust on disk and in memory. To rotate, disconnect, restart the helper, and pair with its new code. Expiry also requires fresh pairing. Do not delete or edit trust files to bypass errors. A helper launched without a trust store (isolated tests) remains memory-only. There is no public tunnel or hosted portal connection.
 
 ## Permissions and why they are needed
 

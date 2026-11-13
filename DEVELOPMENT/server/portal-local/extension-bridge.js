@@ -10,22 +10,29 @@ const digest=value=>createHash('sha256').update(String(value)).digest();
 const equal=(a,b)=>{if(typeof a!=='string'||typeof b!=='string')return false;const x=digest(a),y=digest(b);return timingSafeEqual(x,y);};
 
 class ExtensionBridge{
-  constructor({now=Date.now,pairingCode=token(),pairingTtl=PAIRING_TTL,trustTtl=TRUST_TTL,requestTimeout=REQUEST_TIMEOUT}={}){
+  constructor({now=Date.now,pairingCode=token(),pairingTtl=PAIRING_TTL,trustTtl=TRUST_TTL,requestTimeout=REQUEST_TIMEOUT,trustStore=null}={}){
     this.now=now;this.pairingCode=pairingCode;this.pairingExpiresAt=now()+pairingTtl;this.trustTtl=trustTtl;this.requestTimeout=requestTimeout;
     this.pairingUsed=false;this.client=null;this.queue=[];this.pending=new Map();this.lastDiagnostic={stage:'extension-pairing-required',at:new Date(now()).toISOString(),errorType:null};
+    this.trustStore=trustStore;
+    const saved=trustStore?.load();
+    if(saved){
+      if(saved.version!==1||!EXTENSION_ORIGIN.test(saved.origin)||!/^[a-f0-9]{64}$/.test(saved.secretHash)||!Number.isSafeInteger(saved.lastSeq)||saved.lastSeq<0||!Number.isSafeInteger(saved.expires)||saved.expires>now()+TRUST_TTL||typeof saved.clientVersion!=='string')throw new Error('Stored extension trust is invalid.');
+      if(saved.expires>now()){this.client={origin:saved.origin,secretHash:Buffer.from(saved.secretHash,'hex'),lastSeq:saved.lastSeq,expires:saved.expires,version:saved.clientVersion,lastSeen:0};this.pairingUsed=true;this.stage('extension-reconnect-pending');}
+    }
   }
+  persist(client){this.trustStore?.save(client?{version:1,origin:client.origin,secretHash:client.secretHash.toString('hex'),expires:client.expires,lastSeq:client.lastSeq,clientVersion:client.version}:null);}
   diagnostics(){return{mode:'extension',...this.lastDiagnostic,paired:!!this.validClient()};}
   stage(stage,errorType=null){this.lastDiagnostic={stage,at:new Date(this.now()).toISOString(),errorType};}
   validClient(){if(!this.client)return null;if(this.client.expires<=this.now()){this.revoke('extension-trust-expired');return null;}return this.client;}
   pair(origin,data){
     if(!EXTENSION_ORIGIN.test(origin||'')||this.pairingUsed||this.now()>this.pairingExpiresAt||!data||!equal(data.code,this.pairingCode)||typeof data.clientNonce!=='string'||!/^[A-Za-z0-9_-]{20,120}$/.test(data.clientNonce)||typeof data.version!=='string'||data.version.length>40)throw new PortalError('extension-pairing-required','Extension pairing was not accepted. Use the current single-use code from the local terminal.');
-    const secret=token();this.client={origin,secretHash:digest(secret),expires:this.now()+this.trustTtl,lastSeq:0,lastSeen:this.now(),version:data.version};this.pairingUsed=true;this.stage('extension-paired');
+    const secret=token(),client={origin,secretHash:digest(secret),expires:this.now()+this.trustTtl,lastSeq:0,lastSeen:this.now(),version:data.version};this.persist(client);this.client=client;this.pairingUsed=true;this.stage('extension-paired');
     return{token:secret,trustExpiresAt:new Date(this.client.expires).toISOString(),helper:'MIRA local helper'};
   }
   authenticate(origin,data){
     const client=this.validClient();
     if(!client||origin!==client.origin||!data||typeof data.token!=='string'||!timingSafeEqual(digest(data.token),client.secretHash)||!Number.isSafeInteger(data.seq)||data.seq<=client.lastSeq)throw new PortalError('extension-pairing-required','The extension-to-local-app trust is unavailable or expired. Pair the extension again.');
-    client.lastSeq=data.seq;client.lastSeen=this.now();return client;
+    this.persist({...client,lastSeq:data.seq});client.lastSeq=data.seq;client.lastSeen=this.now();return client;
   }
   next(origin,data){
     this.authenticate(origin,data);const command=this.queue.shift();
@@ -49,8 +56,10 @@ class ExtensionBridge{
     });
   }
   revoke(reason='extension-disconnected'){
+    let failure;try{this.persist(null);}catch(error){failure=error;}
     for(const item of this.pending.values()){clearTimeout(item.timer);item.reject(new PortalError('extension-pairing-required','The portal extension disconnected. Pair it again before requesting personal information.'));}
     this.pending.clear();this.queue=[];this.client=null;this.stage(reason);
+    if(failure)throw failure;
   }
 }
 

@@ -1,5 +1,7 @@
 > Current classroom release: see [final product polish and verification](PRODUCT_POLISH_RELEASE.md). MIRA product copy, accurate data-provider disclosure and the completed authenticated acceptance supersede dated checkpoints below. Restricted live AI remains disabled by default.
 
+Local connector repair (November 13): see [connector setup](LOCAL_PORTAL_CONNECTOR.md) for the current server-rendered account identity check, serialized extension registration and durable pairing. After initial pairing with this version, unexpired extension trust survives ordinary helper restarts; fresh application-session and portal identity verification are still required. Pairing alone does not establish successful personal-data retrieval. Grades and portal writes remain disabled; see [grade-specific approval contract](GRADE_INTEGRATION_APPROVAL.md).
+
 Current read-only retrieval update: [Live information capabilities and limits](LIVE_INFORMATION.md). Cloudflare public resources/tutorials/privacy can return timestamped excerpts in chat. Personal information still requires the approved local connector; hosted personal access is not enabled.
 
 ## Current classroom workflow — November 12, 2026

@@ -4,6 +4,8 @@ Current read-only retrieval update: [Live information capabilities and limits](L
 
 ## Classroom handoff
 
+- [Grade-specific portal approval request and narrow integration contract](GRADE_INTEGRATION_APPROVAL.md)
+
 - [Class presentation, demo script, fallback, architecture and operator guide](CLASS_DEMO_GUIDE.md)
 - [Presentation readiness and test register](PRESENTATION_READINESS.md)
 

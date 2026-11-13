@@ -60,13 +60,18 @@ class PortalService{
   }
   async connect(owner,id){if(owner!==this.owner||!this.choices.some(page=>page.id===id))throw new PortalError('tab-selection-required','Choose a listed portal tab.');this.tab=id;const result=await this.verify(owner,true);if(result.state==='connected'&&this.adapter.capabilities)try{const map=await this.adapter.capabilities(id);if(map?.state==='present'&&Array.isArray(map.sources)){const loaded=new Set(this.loadedSections());this.sourceCapabilities=map.sources.slice(0,40).map(source=>loaded.has(source.section)?{...source,inspected:true,currentlyLoaded:true,searchable:source.extractionSupported&&this.records.some(record=>record.section===source.section)}:source);}}catch{}return this.status(owner);}
   configure(owner,{messageContent}){if(owner!==this.owner||typeof messageContent!=='boolean')throw new PortalError('not-connected','A connected local application session is required.');this.messageContent=messageContent;if(!messageContent)this.records=this.records.filter(record=>record.kind!=='message-content');return this.status(owner);}
-  bindingFor(owner,loaded){return createHmac('sha256',this.salt).update(owner+'\0'+loaded.contextBinding+'\0'+loaded.identity.email.toLowerCase()).digest('hex');}
+  identityKey(loaded){
+    if(typeof loaded.identity?.email==='string'&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loaded.identity.email))return loaded.identity.email.toLowerCase();
+    if(this.adapter.mode==='extension'&&loaded.proof?.network===true&&loaded.proof.status===200&&/^[1-9][0-9]{0,15}$/.test(loaded.identity?.portalAccountId||''))return 'portal-account:'+loaded.identity.portalAccountId;
+    throw new PortalError('identity-verification-failed','The current portal account could not be verified. No personal data was retained.');
+  }
+  bindingFor(owner,loaded){return createHmac('sha256',this.salt).update(owner+'\0'+loaded.contextBinding+'\0'+this.identityKey(loaded)).digest('hex');}
   normalizeRecords(owner,loaded,binding,verifiedAt){
     const retrievedAt=this.now(),section=loaded.section||'Today';
     return(loaded.records||[]).slice(0,240).filter(record=>allowedKinds.has(record.kind)&&privateSourceUrl(record.url)&&record.section===section&&typeof record.text==='string'&&!injected(record.text)).map((record,index)=>({id:'private-'+createHash('sha256').update(binding+'|'+this.generation+'|'+section+'|'+record.subview+'|'+record.kind+'|'+record.heading+'|'+index).digest('hex').slice(0,24),owner,contextBinding:loaded.contextBinding,binding,generation:this.generation,kind:record.kind,heading:String(record.heading).slice(0,180),text:record.text.slice(0,6000),url:privateSourceUrl(record.url),section,subview:String(record.subview||section).slice(0,120),retrievedAt:new Date(retrievedAt).toISOString(),sourceTimestamp:record.sourceTimestamp||null,expiresAt:verifiedAt+PRIVATE_TTL,coverage:record.coverage||loaded.coverage||'Only the approved visible '+section+' section.'}));
   }
   adoptInitial(owner,loaded,previousBinding=null,verifiedAt=this.now()){
-    if(loaded.state!=='verified'||!loaded.identity?.email||!loaded.identity?.name||!loaded.contextBinding)throw new PortalError('identity-verification-failed','The current portal account could not be verified. No personal data was retained.');
+    if(loaded.state!=='verified'||!loaded.identity?.name||!loaded.contextBinding)throw new PortalError('identity-verification-failed','The current portal account could not be verified. No personal data was retained.');
     const binding=this.bindingFor(owner,loaded);if(previousBinding&&binding!==previousBinding)throw new PortalError('account-changed','The portal account changed. Old private data was removed. Select the tab again to verify the current account.');
     const section=allowedSections.has(loaded.section)?loaded.section:'Today';this.binding=binding;this.identity={name:loaded.identity.name.slice(0,120)};this.lastVerified=verifiedAt;this.lastRetrieved=this.now();this.activeSection=section;
     const profile={kind:'profile',heading:'Signed-in portal profile',text:'Verified account name: '+this.identity.name,url:PORTAL,section,subview:'Account identity',sourceTimestamp:null};
