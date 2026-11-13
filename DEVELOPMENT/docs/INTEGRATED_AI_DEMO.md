@@ -1,3 +1,5 @@
+> November 13 public AI update: owner approved anonymous visitor traffic within the existing $25 cumulative ceiling. See [public AI behavior, privacy and operator controls](PUBLIC_AI_OPERATIONS.md). Live mode requires the expiring durable activation gate; Course Knowledge remains the fallback. Earlier tester-only restrictions describe prior releases.
+
 > Current owner decision: students use [browser-only MIRA](BROWSER_ONLY_MIRA.md) directly on Cloudflare. No connector, extension, pairing or local helper is required. Public answers appear in chat; personal records remain in the official portal pending approved integration. Controlled Sol access is preserved; public paid AI and portal writes remain disabled. Earlier connector setup sections are internal development history only.
 
 ﻿# Integrated MIRA classroom AI

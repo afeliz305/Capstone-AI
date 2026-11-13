@@ -106,7 +106,7 @@
     if(active) demoExpiryTimer=setTimeout(()=>demoState(false,0,"Live demo expired. Course search remains available."),Math.max(0,expires-Date.now()));
     if (!active) demoTopic = "";
     if (demoStatus) demoStatus.textContent = message || (active ? "Restricted GPT-6.1 Sol session connected. Only listed classroom prompts use live AI." : "Live AI off. Course search is available.");
-    document.querySelectorAll("[data-ai-mode]").forEach(label=>{label.textContent=active?"GPT-6.1 Sol · restricted demo":"Course sources · live AI off";});
+    document.querySelectorAll("[data-ai-mode]").forEach(label=>{label.textContent=active?"GPT-6.1 Sol · restricted demo":"MIRA \u2014 Course Knowledge";});
   }
   async function demoRequest(body, token) {
     const controller = new AbortController();
@@ -851,6 +851,7 @@
 
   async function search(question, contextId) {
     if (demoExpires && demoExpires <= Date.now()) demoState(false,0,"Live demo expired. Course search remains available.");
+    document.querySelectorAll("[data-ai-mode]").forEach(label=>label.textContent="MIRA \u2014 Course Knowledge");
     const sequence = ++searchSequence;
     const sharedState=refreshSharedUi();
     const localSharedMode=Boolean(sharedState?.activeMode)||sharedRoutingLock;
@@ -930,6 +931,24 @@
       const result = await api.readJson(response);
       if (sequence !== searchSequence) return { status:"cancelled", matches:[], links:[] };
       if (!response.ok) throw new Error(result.error || "Search is unavailable.");
+      // Public live synthesis gets reviewed IDs only, never raw questions/history.
+      if (!window.CapstonePortal && document.documentElement?.getAttribute?.("data-public-information") === "enabled" && !result.personal && ["matched","choices"].includes(result.status)) {
+        const sourceIds=(result.matches||[]).filter(m=>m.id && !m.id.startsWith("portal-") && m.id!=="dashboard-personal").slice(0,3).map(m=>m.id);
+        if(sourceIds.length){
+          try{
+            const response=await fetch('/api/public-ai',{method:'POST',credentials:'omit',headers:{'content-type':'application/json'},body:JSON.stringify({action:'ask',sourceIds,requestId:window.crypto.randomUUID()}),signal:AbortSignal.timeout(32000)});
+            const live=response.ok?await response.json():null;
+            if(sequence!==searchSequence)return{status:'cancelled',matches:[]};
+            if(live?.provider==='openai' && typeof live.text==='string' && live.citations?.length && live.citations.every(c=>sourceIds.includes(c.id)&&sourceHref(c))){
+              loading.remove();rememberTopic(sourceIds.join(","));const message=addAssistantText(live.text,'MIRA \u2014 Live AI \u00b7 reviewed course sources \u00b7 guidance, not official approval');
+              live.citations.forEach(c=>addSourceCard(message,c));scrollToLatest(message);
+              document.querySelectorAll('[data-ai-mode]').forEach(label=>label.textContent='MIRA \u2014 Live AI');
+              return {...result,provider:'openai'};
+            }
+          }catch{ /* One attempt only. Deterministic rendering below remains available. */ }
+        }
+      }
+      document.querySelectorAll('[data-ai-mode]').forEach(label=>label.textContent='MIRA \u2014 Course Knowledge');
       loading.remove();
       if (result.personal) renderPersonal(result,question);
       else if (result.indexed) renderIndexed(result, question);

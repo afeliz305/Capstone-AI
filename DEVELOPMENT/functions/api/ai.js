@@ -139,7 +139,7 @@ export async function openAiDraft(env, task, prompt, contextText, sources, limit
       !Number.isFinite(inputRate) || inputRate <= 0 || !Number.isFinite(outputRate) || outputRate <= 0 || inputCeiling > 4096 ||
       Math.ceil(inputCeiling * inputRate + outputCeiling * outputRate) > 250000) throw new Error('Pricing/access review required.');
   const id = env.MIRA_DEMO_REQUEST_ID || crypto.randomUUID();
-  const reserved = await budgetCall(env, '/reserve', { id, ...(env.MIRA_DEMO_HASH ? { demoHash: env.MIRA_DEMO_HASH } : {}) });
+  const reserved = await budgetCall(env, '/reserve', { id, ...(env.MIRA_PUBLIC_VISITOR_HASH ? { publicRequest: true, visitorHash: env.MIRA_PUBLIC_VISITOR_HASH } : {}), ...(env.MIRA_DEMO_HASH ? { demoHash: env.MIRA_DEMO_HASH } : {}) });
   if (reserved.reserved !== true || reserved.reservationMicroUsd !== 250000) throw new Error('Budget unavailable.');
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), limits.timeoutMs);
@@ -162,7 +162,11 @@ export async function openAiDraft(env, task, prompt, contextText, sources, limit
     });
     metadata.providerStatus = result.status;
     if (!result.ok) return rejected('provider-rejected');
-    const body = await result.json();
+    const reader = result.body.getReader(); let size = 0; const chunks = [];
+    try { for (;;) { const {done,value} = await reader.read(); if (done) break; size += value.length; if (size > 65536) throw Error('Provider response too large'); chunks.push(value); } }
+    finally { await reader.cancel().catch(()=>{}); }
+    const bytes = new Uint8Array(size); let offset = 0; for (const chunk of chunks) { bytes.set(chunk,offset); offset += chunk.length; }
+    const body = JSON.parse(new TextDecoder().decode(bytes));
     metadata.responseStatus = ['completed','incomplete','failed','cancelled','queued','in_progress'].includes(body.status) ? body.status : null;
     const usage = body.usage;
     if (!usage || !Number.isSafeInteger(usage.input_tokens) || usage.input_tokens < 0 ||

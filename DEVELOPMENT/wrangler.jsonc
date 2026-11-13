@@ -9,6 +9,8 @@
     "MIRA_PUBLIC_ORIGIN": "https://mira-9gg.pages.dev/",
     "MIRA_SUPABASE_URL": "https://uoccyfcsalnancmdhnur.supabase.co",
     "MIRA_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_PnXUz6h13Vxqs0fHoSSzew_GjupnFMe",
+    "MIRA_PUBLIC_AI_ENABLED": "true",
+    "MIRA_PUBLIC_BILLING_APPROVED": "true",
     "MIRA_AI_PROVIDER": "mock",
     "MIRA_AI_LIVE_ENABLED": "false"
   }

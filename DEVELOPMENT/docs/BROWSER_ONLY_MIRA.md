@@ -1,3 +1,5 @@
+> November 13 public AI update: owner approved anonymous visitor traffic within the existing $25 cumulative ceiling. See [public AI behavior, privacy and operator controls](PUBLIC_AI_OPERATIONS.md). Live mode requires the expiring durable activation gate; Course Knowledge remains the fallback. Earlier tester-only restrictions describe prior releases.
+
 # MIRA browser-only experience
 
 ## Student guide
