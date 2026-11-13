@@ -89,6 +89,48 @@
   const topicHistory = [];
   const HISTORY_KEY = "miraPublicState";
   const LAUNCHER_HINT_KEY = "miraLauncherHintDismissed";
+  let demoExpires = 0, demoTopic = "";
+  const demoStatus = document.querySelector("#mira-demo-status");
+  const demoLogin = document.querySelector("#mira-demo-login");
+  const demoCode = document.querySelector("#mira-demo-code");
+  const demoPrompts = new Set([
+    "what do i need to complete before a sprint card is considered done",
+    "what evidence should i prepare for that",
+    "help me draft a stand-up for a fictional card where i finished the ui but still need testing",
+    "how do i prepare both sprint review and retrospective"
+  ]);
+  function demoState(active, expires, message) {
+    demoExpires = active ? expires : 0;
+    if (!active) demoTopic = "";
+    if (demoStatus) demoStatus.textContent = message || (active ? "Restricted GPT-6.1 Sol session connected. Only listed classroom prompts use live AI." : "Live AI off. Course search is available.");
+    document.querySelectorAll("[data-ai-mode]").forEach(label=>{label.textContent=active?"GPT-6.1 Sol · restricted demo":"Course sources · live AI off";});
+  }
+  async function demoRequest(body, token) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 35000);
+    try {
+      const response = await fetch(new URL("api/demo", document.baseURI), {method:"POST", credentials:"same-origin", signal:controller.signal,
+        headers:{"content-type":"application/json", ...(token ? {authorization:"Bearer "+token} : {})}, body:JSON.stringify(body)});
+      const value = await response.json();
+      if (!response.ok) { if (response.status === 403) demoState(false,0,value.error); throw new Error("Live demo unavailable"); }
+      return value;
+    } finally { clearTimeout(timer); }
+  }
+  demoLogin?.addEventListener("submit",async event=>{
+    event.preventDefault(); const button=demoLogin.querySelector("button"); button.disabled=true;
+    let token=demoCode.value; demoCode.value="";
+    try { const value=await demoRequest({action:"login"},token); demoState(value.active,value.expires); }
+    catch { demoState(false,0,"Unable to connect. Check the operator-controlled session; course search remains available."); }
+    finally { token=""; button.disabled=false; }
+  });
+  document.querySelector("#mira-demo-resume")?.addEventListener("click",async()=>{
+    try { const value=await demoRequest({action:"status"}); demoState(value.active,value.expires); }
+    catch { demoState(false,0); }
+  });
+  document.querySelector("#mira-demo-logout")?.addEventListener("click",async()=>{
+    demoState(false,0);
+    try { await demoRequest({action:"logout"}); } catch { if(demoStatus)demoStatus.textContent="Disconnected locally. Ask the operator to stop the session if the network is unavailable."; }
+  });
 
   function currentDepth(){return guidance?.normalizeDepth(responseDepth?.value)||"quick";}
 
@@ -801,6 +843,7 @@
   }
 
   async function search(question, contextId) {
+    if (demoExpires && demoExpires <= Date.now()) demoState(false,0,"Live demo expired. Course search remains available.");
     const sequence = ++searchSequence;
     const sharedState=refreshSharedUi();
     const localSharedMode=Boolean(sharedState?.activeMode)||sharedRoutingLock;
@@ -825,6 +868,19 @@
         loading.remove();
         renderUnavailableCapstone();
         return{status:"personal-unavailable",matches:[],links:[]};
+      }
+      if (demoExpires > Date.now() && !window.CapstonePortal && demoPrompts.has(question.trim().toLowerCase().replace(/[?.!]$/,""))) {
+        try {
+          const live = await demoRequest({action:"ask",question,previous:demoTopic,requestId:window.crypto.randomUUID()});
+          if(sequence!==searchSequence)return{status:"cancelled",matches:[],links:[]};
+          if(demoExpires > Date.now() && live.provider==="openai" && live.citations?.length && live.citations.every(source=>isCapstoneUrl(source.url))) {
+            loading.remove(); demoTopic=live.topic;
+            const message=addAssistantText(live.text,"Live GPT-6.1 Sol · reviewed course evidence · draft guidance, not approval");
+            live.citations.forEach(source=>addSourceCard(message,source)); scrollToLatest(message);
+            return{status:"matched",matches:live.citations,links:[],provider:"openai"};
+          }
+          if(demoStatus)demoStatus.textContent="Live answer unavailable or outside the reviewed demo. Showing course search instead; no automatic retry.";
+        } catch { if(demoStatus)demoStatus.textContent="Live answer unavailable. Showing course search instead; no automatic retry."; }
       }
       const response = await api.fetch(`/api/search?q=${encodeURIComponent(question)}${contextId ? "&context=" + encodeURIComponent(contextId) : ""}&depth=${encodeURIComponent(currentDepth())}`);
       const result = await api.readJson(response);

@@ -119,7 +119,7 @@ function outputText(result) {
     .map((item) => item.text).join("\n");
 }
 
-async function openAiDraft(env, task, prompt, contextText, sources, limits) {
+export async function openAiDraft(env, task, prompt, contextText, sources, limits) {
   const model = clean(env.MIRA_OPENAI_MODEL, 80);
   const key = String(env.OPENAI_API_KEY || "");
   if (!allowedModels.has(model) || !key) throw new Error("OpenAI is not configured.");
@@ -138,8 +138,8 @@ async function openAiDraft(env, task, prompt, contextText, sources, limits) {
   if (model !== env.MIRA_AI_VERIFIED_MODEL || !Number.isFinite(reviewedUntil) || reviewedUntil <= Date.now() || reviewedUntil > Date.now() + 86400000 ||
       !Number.isFinite(inputRate) || inputRate <= 0 || !Number.isFinite(outputRate) || outputRate <= 0 || inputCeiling > 4096 ||
       Math.ceil(inputCeiling * inputRate + outputCeiling * outputRate) > 250000) throw new Error('Pricing/access review required.');
-  const id = crypto.randomUUID();
-  const reserved = await budgetCall(env, '/reserve', { id });
+  const id = env.MIRA_DEMO_REQUEST_ID || crypto.randomUUID();
+  const reserved = await budgetCall(env, '/reserve', { id, ...(env.MIRA_DEMO_HASH ? { demoHash: env.MIRA_DEMO_HASH } : {}) });
   if (reserved.reserved !== true || reserved.reservationMicroUsd !== 250000) throw new Error('Budget unavailable.');
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), limits.timeoutMs);
@@ -190,7 +190,7 @@ async function openAiDraft(env, task, prompt, contextText, sources, limits) {
   }
 }
 
-async function budgetCall(env, route, value) {
+export async function budgetCall(env, route, value) {
   // One fixed identity across all instances and deployments. Never vary by IP,
   // day, user, model or request. Changing/resetting this ledger needs owner review.
   if (!env.MIRA_AI_BUDGET) throw new Error('Budget binding unavailable.');

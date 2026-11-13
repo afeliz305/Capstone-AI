@@ -144,3 +144,8 @@ Reviewed proposed commit set (not staged/committed):
 - `docs/README.md`
 
 Do not enter `OPENAI_API_KEY` yet. Hosted concurrency/exhaustion/kill-switch tests must use isolated mock test state without altering or clearing any real lifetime reservations. Those hosted checks, initialization and the production Pages binding still require authenticated Cloudflare access. The API model-access probe is prepared as a plan only; no model is claimed verified and no billable test has run.
+
+
+## Restricted integrated classroom session - November 13, 2026
+
+An expiring operator-controlled browser session supports four reviewed public-course questions, including a Done/evidence follow-up, through the shared embedded/floating controller. Default public chat stays deterministic; workspace AI stays mock. The persistent $1 integration campaign ceiling is additional to the $25 lifetime ledger and cannot reset on session restart. See [Integrated AI demo](INTEGRATED_AI_DEMO.md) for start/stop commands, evidence and the six-minute script. Earlier fixed-fixture-only activation instructions are historical and superseded by this session workflow. Supabase and portal integration are unchanged.

@@ -24,6 +24,32 @@ async function fixture() {
   return { call, env, corrupt: () => { record.spent = -1; }, restart: () => { instance = new AiBudget({ storage }, env); } };
 }
 
+test('operator demo sessions expire, revoke and enforce a durable non-resetting $1 campaign', async t => {
+  const original=Date.now; let now=Date.UTC(2026,10,13,12); Date.now=()=>now; t.after(()=>Date.now=original);
+  const f=await fixture(); await f.call('/initialize');
+  const operator='a'.repeat(64), token='b'.repeat(64), digest=createHash('sha256').update(token).digest('hex');
+  f.env.MIRA_AI_OPERATOR_SHA256=createHash('sha256').update(operator).digest('hex');
+  const start={expectedRevision:0,hash:digest,durationMinutes:60,pricingUntil:now+3600000};
+  assert.equal((await f.call('/demo-start',start)).status,403);
+  assert.equal((await f.call('/demo-start',start,operator)).status,200);
+  assert.equal((await f.call('/demo-auth',{demoHash:'wrong'})).status,403);
+  assert.equal((await f.call('/demo-auth',{demoHash:digest})).status,200);
+  assert.equal((await f.call('/reserve',{id:randomUUID()})).status,403);
+  for(let i=0;i<4;i++) { now+=61000; const id=randomUUID(); assert.equal((await f.call('/reserve',{id,demoHash:digest})).status,200); await f.call('/settle',{id,costMicroUsd:250000}); }
+  f.restart(); now+=61000;
+  assert.equal((await f.call('/reserve',{id:randomUUID(),demoHash:digest})).status,429);
+  assert.equal((await f.call('/demo-stop',{},operator)).status,200);
+  assert.equal((await f.call('/demo-auth',{demoHash:digest})).status,403);
+  const status=await (await f.call('/status')).json();
+  await f.call('/recover',{id:randomUUID(),expectedRevision:status.revision,reason:'reviewed-controlled-test-complete',evidence:'MOCK_CAMPAIGN_TEST'},operator);
+  const revision=(await (await f.call('/status')).json()).revision;
+  const next=createHash('sha256').update('new').digest('hex');
+  assert.equal((await f.call('/demo-start',{...start,hash:next,expectedRevision:revision},operator)).status,200);
+  assert.equal((await f.call('/reserve',{id:randomUUID(),demoHash:next})).status,429);
+  now+=3600001;
+  assert.equal((await f.call('/demo-auth',{demoHash:next})).status,403);
+});
+
 test('budget is fail-closed, explicitly initialized, persistent, and cannot be reset', async () => {
   const f = await fixture();
   assert.equal((await f.call('/reserve', { id: randomUUID() })).status, 503);

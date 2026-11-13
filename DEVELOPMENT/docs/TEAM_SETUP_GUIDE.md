@@ -610,3 +610,8 @@ See [AUTHENTICATED_WEBSITE_AUDIT.md](AUTHENTICATED_WEBSITE_AUDIT.md) for the cur
 ## Integrated AI classroom checkpoint
 
 See [INTEGRATED_AI_DEMO.md](INTEGRATED_AI_DEMO.md) for the two-minute sourced conversation demonstration, verified follow-ups, timeout/citation repairs, historical Sol acceptance and exact restricted activation/shutdown gates. Public chat remains deterministic, workspace AI is mock, and no new paid request or financial recovery is authorized by this update.
+
+
+## Restricted integrated classroom session - November 13, 2026
+
+An expiring operator-controlled browser session supports four reviewed public-course questions, including a Done/evidence follow-up, through the shared embedded/floating controller. Default public chat stays deterministic; workspace AI stays mock. The persistent $1 integration campaign ceiling is additional to the $25 lifetime ledger and cannot reset on session restart. See [Integrated AI demo](INTEGRATED_AI_DEMO.md) for start/stop commands, evidence and the six-minute script. Earlier fixed-fixture-only activation instructions are historical and superseded by this session workflow. Supabase and portal integration are unchanged.

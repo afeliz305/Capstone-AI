@@ -24,6 +24,36 @@ async function main() {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(origin + basePath);
+    // Exercise the real shared chat controller with a fictional provider adapter.
+    // This route never reaches Cloudflare or OpenAI and uses no real credential.
+    let demoCalls=0, demoFault=false;
+    await context.route('**/api/demo',async route=>{
+      const b=route.request().postDataJSON();
+      if(b.action==='login'||b.action==='status')return route.fulfill({json:{active:true,expires:Date.now()+60000}});
+      if(b.action==='logout')return route.fulfill({json:{active:false}});
+      demoCalls++;
+      if(demoFault)return route.fulfill({status:503,json:{fallback:true}});
+      return route.fulfill({json:{provider:'openai',topic:'done',text:'Fictional mocked provider result: collect evidence [1].',citations:[{id:'faro-board-evidence',title:'Card evidence',url:'https://capstone.cs.fiu.edu/board'}]}});
+    });
+    await page.locator('.mira-demo-controls summary').click();
+    await page.locator('#mira-demo-code').fill('fictional-browser-test-not-a-credential');
+    await page.locator('#mira-demo-login button').click();
+    await page.waitForFunction(()=>document.querySelector('#mira-demo-status').textContent.includes('session connected'));
+    assert.equal(await page.locator('#mira-demo-code').inputValue(),'');
+    await page.locator('#dashboard-mira-input').fill('What do I need to complete before a sprint card is considered Done?');
+    await page.locator('#dashboard-mira-form button').click();
+    await page.waitForFunction(()=>!document.querySelector('#chat-input').disabled);
+    assert.match(await page.locator('.assistant-message').last().textContent(),/Live GPT-6.1 Sol/);
+    await page.locator('#chat-input').fill('What evidence should I prepare for that?');await page.locator('#chat-input').press('Enter');
+    await page.waitForFunction(()=>!document.querySelector('#chat-input').disabled);assert.equal(demoCalls,2);
+    assert.ok(await page.locator('.assistant-message').last().locator('a').count());
+    demoFault=true;
+    await page.locator('#chat-input').fill('What do I need to complete before a sprint card is considered Done?');await page.locator('#chat-input').press('Enter');
+    await page.waitForFunction(()=>!document.querySelector('#chat-input').disabled);assert.equal(demoCalls,3);
+    assert.doesNotMatch(await page.locator('.assistant-message').last().textContent(),/Live GPT-6.1 Sol/);
+    await page.locator('#minimize-chat').click();await page.locator('#mira-demo-logout').click();
+    await page.locator('.mira-demo-controls summary').click();
+    await context.unroute('**/api/demo');
     await page.locator("#dashboard-mira-input").fill("What counts as evidence?");
     await page.locator("#dashboard-mira-form").getByRole("button", { name: "Ask MIRA" }).click();
     await page.waitForFunction(() => !document.querySelector("#chat-input")?.disabled && document.querySelectorAll(".assistant-message").length > 0);

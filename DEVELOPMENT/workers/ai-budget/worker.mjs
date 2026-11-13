@@ -44,7 +44,7 @@ export class AiBudget {
     let body;
     try { body = await request.json(); } catch { return json({ error: 'Invalid input' }, 400); }
     const route = new URL(request.url).pathname;
-    if (['/recover', '/operator-audit'].includes(route) && !await operator(request, this.env)) return json({ error: 'Operator authorization required' }, 403);
+    if (['/recover', '/operator-audit', '/demo-start', '/demo-stop'].includes(route) && !await operator(request, this.env)) return json({ error: 'Operator authorization required' }, 403);
     try {
       return await this.storage.transaction(async tx => {
         let s = await tx.get('lifetime-v1');
@@ -72,6 +72,33 @@ export class AiBudget {
           return json({ initialized: true });
         }
         if (!valid(s)) return json({ error: 'Spending state unavailable' }, 503);
+        if (s.demo && (!integer(s.demo.baseline) || s.demo.baseline > s.spent || s.demo.cap !== 1000000 || !integer(s.demo.expires) || !integer(s.demo.pricingUntil) || !/^[a-f0-9]{64}$/.test(s.demo.hash))) return json({ error: 'Campaign state unavailable' }, 503);
+        if (route === '/demo-start') {
+          if (s.halted || s.held || body.expectedRevision !== (s.revision || 0) ||
+              !/^[a-f0-9]{64}$/.test(body.hash || '') || !integer(body.durationMinutes) || body.durationMinutes < 1 || body.durationMinutes > 60 ||
+              !integer(body.pricingUntil) || body.pricingUntil <= Date.now() || body.pricingUntil > Date.now() + 86400000)
+            return json({ error: 'Reviewed recovery, pricing and session configuration required' }, 409);
+          if (s.demo?.hash === body.hash) return json({ error: 'Do not reuse tester credentials' }, 409);
+          // This campaign ceiling and baseline NEVER reset when a session restarts.
+          s.demo = { baseline: s.demo?.baseline ?? s.spent, cap: 1000000, hash: body.hash,
+            expires: Math.min(Date.now() + body.durationMinutes * 60000, body.pricingUntil), pricingUntil: body.pricingUntil };
+          audit(s, 'demo-start', 'integrated-public-course-usd1'); await tx.put('lifetime-v1', s);
+          return json({ started: true, expires: s.demo.expires, campaignCapMicroUsd: s.demo.cap });
+        }
+        if (route === '/demo-stop') {
+          if (s.demo) s.demo.expires = 0;
+          s.halted = true;
+          if (!s.haltReason || ['manual','controlled-test-complete'].includes(s.haltReason)) s.haltReason = 'controlled-test-complete';
+          audit(s, 'demo-stop', 'session-revoked'); await tx.put('lifetime-v1', s);
+          return json({ stopped: true, halted: true });
+        }
+        const demoAuthorized = () => s.demo && !s.halted && s.demo.expires > Date.now() &&
+          s.demo.pricingUntil > Date.now() && body.demoHash === s.demo.hash;
+        if (route === '/demo-auth') {
+          if (!demoAuthorized()) return json({ error: 'Demo session unavailable or expired' }, 403);
+          return json({ authorized: true, expires: s.demo.expires, pricingUntil: s.demo.pricingUntil,
+            campaignSpentMicroUsd: s.spent - s.demo.baseline, heldMicroUsd: s.held });
+        }
         if (route === '/status') return json({ capMicroUsd: CAP, spentMicroUsd: s.spent, heldMicroUsd: s.held, attempts: s.attempts, halted: s.halted, revision: s.revision || 0, haltReason: s.haltReason || (s.halted ? 'legacy-unrecorded' : null) });
         if (route === '/operator-audit') return json({ revision: s.revision || 0, audit: s.audit || [], records: s.records, halted: s.halted, haltReason: s.haltReason || 'legacy-unrecorded' });
         if (route === '/recover') {
@@ -96,6 +123,8 @@ export class AiBudget {
         if (!/^[a-f0-9-]{36}$/.test(body?.id || '')) return json({ error: 'Invalid reservation' }, 400);
         if (route === '/reserve') {
           if (this.env.MIRA_AI_BUDGET_ENABLED !== 'true' || s.halted) return json({ error: 'Paid testing disabled' }, 403);
+          if ((body.demoHash || s.demo) && !demoAuthorized()) return json({ error: 'Demo session unavailable or expired' }, 403);
+          if (s.demo && s.spent - s.demo.baseline + s.held + RESERVE > s.demo.cap) return json({ error: 'Campaign limit reached' }, 429);
           // A duplicate reservation is never permission to repeat a provider request.
           if (s.records.some(r => r.id === body.id)) return json({ error: 'Duplicate request' }, 409);
           const now = Date.now(), minute = Math.floor(now / 60000), day = Math.floor(now / 86400000);
