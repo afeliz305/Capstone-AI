@@ -153,7 +153,7 @@ function routeMira(entries, question, contextId, toPublic) {
     missingEvidence:"MIRA cannot inspect enough private state to decide that a card is accepted or Done, and it cannot perform a Product Owner action.",
     answer:entry=>entry.answer+" Ask the Product Owner or course staff if an official decision is still needed."
   });
-  if(/(?:move|switch|transfer|change).*(?:another|different|new).*(?:team)|(?:another|different|new).*team/.test(text)) return result(entries,toPublic,{
+  if(/(?:move|switch|transfer|change).*(?:another|different|new).*(?:team)|(?:another|different|new).*team|\b(?:change|switch|transfer) (?:my |our )?teams?\b/.test(text)) return result(entries,toPublic,{
     status:"escalation",ids:["contact-help"],
     missingEvidence:"No reviewed source documents a team-change procedure or promises approval.",
     answer:entry=>"MIRA is read-only and cannot change team membership. I could not verify a published team-change procedure. "+entry.answer
@@ -167,6 +167,16 @@ function routeMira(entries, question, contextId, toPublic) {
     status:"partial",ids:["syllabus-late-work","contact-help"],
     missingEvidence:"Only the instructor can decide an individual request; MIRA cannot grant or submit one.",
     answer:entry=>entry.answer+" MIRA cannot grant, promise, or send an extension request. Use the verified instructor contact route if the documented grace period is not enough."
+  });
+  if(/acceptance criteria/.test(text) && /\b(?:evidence|proof)\b/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:["faro-board-acceptance-criteria","faro-board-evidence"],accessScope:"authenticated-portal-guidance"
+  });
+  if(/\bverify\b/.test(text) && /\bdone\b/.test(text) && /difference|versus|\bvs\b|compare/.test(text)) return result(entries,toPublic,{
+    status:"partial",ids:["faro-board-verify","faro-board-review-decision"],accessScope:"authenticated-portal-guidance",
+    missingEvidence:"The reviewed vocabulary does not define a complete official course Definition of Done."
+  });
+  if(/what does (?:the |a )?product owner do|product owner responsibilities/.test(text)) return result(entries,toPublic,{
+    status:"answered",ids:["faro-board-review-decision"],accessScope:"authenticated-portal-guidance"
   });
   if(/\b(?:evidence|proof|prove)\b/.test(text) && !/what still needs evidence/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["faro-board-evidence"],accessScope:"authenticated-portal-guidance"
@@ -207,7 +217,7 @@ function routeMira(entries, question, contextId, toPublic) {
   if(/what does blocked mean|what is a blocker|why is a card blocked/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["faro-board-blocked"],accessScope:"authenticated-portal-guidance"
   });
-  if(/what information.*standup|what.*(?:put|include|write|go(?:es)?|belong(?:s)?).*standup|standup (?:fields|template|content)/.test(text)) return result(entries,toPublic,{
+  if(/what information.*standup|what.*(?:put|include|write|go(?:es)?|belong(?:s)?).*standup|standup (?:fields|template|content)|how (?:do|can|should) i (?:post|write|prepare) (?:a )?standup/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["daily-scrum","minutes-usage-guide"],accessScope:"authenticated-linked-documents"
   });
   if(/how often.*(?:standup|status update)|(?:standup|status update).*frequency|finish.*standup/.test(text)) return result(entries,toPublic,{
@@ -229,7 +239,7 @@ function routeMira(entries, question, contextId, toPublic) {
   if(!/sprint (?:review|retrospective)/.test(text) && /\b(?:sprint|scrum|ceremony|meeting|team meeting)\b.*\b(?:minutes|records|notes|templates?)\b|\b(?:minutes|records|notes|templates?)\b.*\b(?:sprint|scrum|ceremony|meeting|team meeting)\b/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["minutes-overview"],accessScope:"public-linked-document"
   });
-  if(/sprint retrospective|\bretro\b|process improvement/.test(text)) return result(entries,toPublic,{
+  if(/\bretrospective\b|\bretro\b|process improvement/.test(text)) return result(entries,toPublic,{
     status:"answered",ids:["sprint-retrospective-template","syllabus-sprint-retrospective"],accessScope:"authenticated-linked-document"
   });
   if(/sprint review|review meeting|sprint demo|demo meeting/.test(text) && !/showcase/.test(text)) return result(entries,toPublic,{

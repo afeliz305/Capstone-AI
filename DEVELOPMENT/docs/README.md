@@ -1,3 +1,8 @@
+## Classroom handoff
+
+- [Class presentation, demo script, fallback, architecture and operator guide](CLASS_DEMO_GUIDE.md)
+- [Presentation readiness and test register](PRESENTATION_READINESS.md)
+
 # Project guides
 
 - [Controlled OpenAI budget and secret handoff](AI_CONTROLLED_BUDGET.md) — local $25 lifetime ledger, private fixed-case testing, Cloudflare provisioning, and account-owner checks; live calls remain disabled.

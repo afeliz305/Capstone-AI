@@ -1,3 +1,23 @@
+# Current classroom release
+
+MIRA is the Messaging, Information & Resolution Assistant. Use the controlled Cloudflare preview at https://mira-9gg.pages.dev/. Public assistance is deterministic/mock; live paid AI and portal submissions are disabled. Historical portal snapshots are labeled. The prior controlled Sol test is recorded evidence, not a public live feature.
+
+Start from `DEVELOPMENT` (this directory), with Node 22+:
+
+```powershell
+npm.cmd ci
+npm.cmd test
+npm.cmd start
+```
+
+Use the server's printed URL, not `file://` or a static Live Server for this development transport. For the prebuilt offline classroom demo: `npm.cmd run verify:cloudflare`, then `npm.cmd run preview:cloudflare` at http://127.0.0.1:3010/.
+
+Build environment names: `MIRA_PUBLIC_ORIGIN`, `MIRA_SUPABASE_URL`, `MIRA_SUPABASE_PUBLISHABLE_KEY`. Server-only secret: `OPENAI_API_KEY` (not required for mock demo). Runtime gates remain `MIRA_AI_PROVIDER=mock` and `MIRA_AI_LIVE_ENABLED=false`. Never put privileged keys in the frontend.
+
+See [class demo, architecture, inventory and operator guide](docs/CLASS_DEMO_GUIDE.md), [acceptance register](docs/PRESENTATION_READINESS.md), and [teammate setup](docs/TEAM_SETUP_GUIDE.md). Run `node scripts/smoke-presentation.js` for read-only public browser checks; it needs installed Edge. Run `node scripts/build-class-presentation.js` after that check to create portable slides and PDF under ignored `dist/presentation`. No credentials or generated evidence belong in Git.
+
+The dated records below describe earlier checkpoints; this current overview and the readiness register govern classroom use.
+
 # MIRA — development
 
 **October 13, 2026 local mobile-parity candidate:** the primary rail now uses one shared inactive/hover/active/badge/divider token system, with an FIU-gold active surface and high-contrast navy icon/label. Mobile is a true single-column layout: five intentional bottom-rail destinations remain visible and **More** opens the remaining verified destinations in a modal sheet with a backdrop, focus trap, Escape handling, and focus restoration. The actual overflow sources—a 420px hero decoration, a 170px embedded-assistant decoration, the 13-item fixed mobile rail, and overlapping desktop/mobile sizing assumptions—were corrected rather than hidden. Real-browser containment and click-through checks passed at 440, 390, 375, 360, and 320px in light and dark modes. The full suite passed **370/370 runnable tests**, with one optional PHP integration skipped. The refreshed local Supabase-mode `MIRA/` package contains **28 manifest-matched files (5,119,291 bytes)** with zero mismatches or extras. Nothing was uploaded, committed, pushed, or changed in Supabase, Ocelot, portal data, or FARO data.

@@ -1,3 +1,7 @@
+## Current classroom workflow — November 12, 2026
+
+Use [CLASS_DEMO_GUIDE.md](CLASS_DEMO_GUIDE.md) for the six-minute script, offline setup, feature boundaries and operator checklist. The Cloudflare local preview on port 3010 now uses the production Function's mock handler for all seven workspace actions. It deliberately receives no secrets or live flags. Run it only after packaging and hash verification. Source development still uses `npm.cmd start` from DEVELOPMENT; missing package.json means you are in the wrong folder. Tested here with Windows, Node 24.15.0 and Edge; other platforms are not newly verified.
+
 # MIRA Team Testing Checklist and setup guide
 
 November 12 controlled AI preparation: [AI budget and testing guide](AI_CONTROLLED_BUDGET.md) documents the new local persistent spending controls. Run `node --test test/ai-budget.test.js test/ai-function-runtime.test.js test/ai-gateway.test.js` for no-paid-call verification. The existing hosted site remains mock-only; do not enter an OpenAI key in MIRA or its source files. The classmate's authorized account remains owned by the classmate; teammates do not need that dashboard login.

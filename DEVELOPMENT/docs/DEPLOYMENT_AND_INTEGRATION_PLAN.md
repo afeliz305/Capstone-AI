@@ -1,3 +1,7 @@
+## Classroom readiness correction — November 12, 2026
+
+See [PRESENTATION_READINESS.md](PRESENTATION_READINESS.md) and [CLASS_DEMO_GUIDE.md](CLASS_DEMO_GUIDE.md). This preview-branch release repairs reviewed-question routing and the local mock demo handler. Public knowledge sources and remote identity/storage settings are preserved. Cloudflare is the classroom preview; Ocelot is retained unchanged as rollback. No portal integration, paid activation, operator recovery, database mutation or main merge is part of this release.
+
 # MIRA — shared testing, site integration, and future go-live
 
 November 12, 2026 local follow-on: the Unified Team Workspace, local read-only context refresh, and disabled-by-default AI gateway have an owner-review candidate. It is not deployed. Ocelot, the existing Cloudflare preview, Supabase, portal data, and Git remain unchanged. A future live-AI release requires a MIRA-owned provider project, approved privacy review, provider-side budgets, enforceable abuse controls, monitoring, and a separately approved preview deployment.

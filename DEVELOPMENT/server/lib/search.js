@@ -244,7 +244,7 @@ function courseMatches(entries, question, contextId) {
     const context = byId(contextId);
     if (context && context.sourceKind !== "portal-navigation") return [context];
   }
-  if ((/\b(?:attendance|attend|absence|absent)\b/.test(text) && /\b(?:policy|rule|requirement|miss|class|session|in person)\b/.test(text) || /\bhow many classes? can i miss\b|\bwhat happens if i miss class\b/.test(text)) && byId("syllabus-attendance")) return [byId("syllabus-attendance")];
+  if ((/\b(?:attendance|attend|absence|absent)\b/.test(text) && /\b(?:policy|rules?|requirements?|miss|class|session|in person)\b/.test(text) || /\bhow many classes? can i miss\b|\bwhat happens if i miss class\b/.test(text)) && byId("syllabus-attendance")) return [byId("syllabus-attendance")];
   if (/\b(?:grade|graded|grading|score|scored|points?)\b/.test(text) && /\b(?:how|policy|calculated|calculation|weight|weights|work|sprints?)\b/.test(text) && byId("syllabus-grading")) return [byId("syllabus-grading")];
   if (!/^(?:when is (?:it|that|this) due|when is the deadline|what is the deadline)$/.test(text) && /\b(?:deadline|deadlines|due|schedule)\b/.test(text) && /\b(?:course|term|assignment|work|what|when|show)\b/.test(text) && byId("syllabus-deadlines")) return [byId("syllabus-deadlines")];
   if (/\b(?:extra time|more time|extension|late)\b/.test(text) && byId("syllabus-late-work")) return [byId("syllabus-late-work")];
