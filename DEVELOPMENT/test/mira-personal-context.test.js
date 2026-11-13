@@ -110,11 +110,10 @@ test('MIRA UI exposes optional context actions without forcing a mode',()=>{
   assert.match(html,/The file is read in this browser and is not uploaded/);
   const css=fs.readFileSync(path.join(__dirname,'../css/capstone-chat.css'),'utf8');
   assert.match(css,/@media \(prefers-reduced-motion: reduce\)/);
-  assert.match(html,/data-refresh-workspace-context disabled/);
+  assert.doesNotMatch(html,/data-refresh-workspace-context/);
+  assert.match(html,/Development note: Live personal information requires an FIU-approved read-only portal integration/);
   const workspaceUi=fs.readFileSync(path.join(__dirname,'../js/chat/team-workspace-ui.js'),'utf8');
-  assert.match(workspaceUi,/Show%20my%20Capstone%20snapshot/);
-  assert.match(workspaceUi,/window\.CapstonePortal\?\.accepts/);
-  assert.match(workspaceUi,/separate from the public knowledge index/);
+  assert.doesNotMatch(workspaceUi,/Show%20my%20Capstone%20snapshot|window\.CapstonePortal|data-refresh-workspace-context/);
   const portalClient=fs.readFileSync(path.join(__dirname,'../js/local/portal-client.js'),'utf8');
   assert.match(portalClient,/mira-portal-connection/);
   assert.match(portalClient,/loadedSections:Array\.isArray/);

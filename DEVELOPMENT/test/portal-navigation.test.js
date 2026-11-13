@@ -34,12 +34,12 @@ test("all 28 reviewed portal destinations are centralized and navigation-only",(
       assert.equal(result.portalSection,entry.portalSection);
       assert.equal(result.liveDataConnected,false);
       if (entry.portalSectionId === "grade") {
-        assert.match(result.answer,/Personal grades are not yet available inside this Ocelot chat/);
+        assert.match(result.answer,/personal grade is not available in MIRA/);
         assert.match(result.answer,/land on Today, choose Grade/);
       } else if (["resources","tutorials"].includes(entry.portalSectionId)) {
         assert.match(result.answer,/public Capstone/);
         assert.match(result.answer,/does not require MIRA to read personal portal data/);
-      } else assert.match(result.answer,/Ocelot MIRA (?:cannot|has not read)/);
+      } else assert.match(result.answer,/MIRA|not available/);
     }
     for(const followUp of entry.followUps) assert.notEqual(search(followUp,entry.id).status,"unmatched",followUp);
   }

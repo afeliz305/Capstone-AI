@@ -157,6 +157,8 @@ function publicEntry(entry, score) {
     section: entry.section,
     access: entry.access,
     answer: entry.answer,
+    ...(entry.developmentNote ? {developmentNote:entry.developmentNote} : {}),
+    ...(entry.id === 'dashboard-personal' ? {developmentNote:'Development note: Live personal information requires an FIU-approved read-only portal integration.'} : {}),
     ...(entry.sourceKind ? { sourceKind:entry.sourceKind } : {}),
     ...(entry.provenance ? {
       provenance:entry.provenance,

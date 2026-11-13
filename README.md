@@ -1,4 +1,12 @@
-# Capstone - AI — start here
+# MIRA — start here
+
+Open [MIRA in your browser](https://mira-9gg.pages.dev/). Students need no extension, pairing code, local helper, GitHub download, or installation. Read the [current browser-only user guide and architecture](DEVELOPMENT/docs/BROWSER_ONLY_MIRA.md).
+
+Public/course answers appear directly in chat with sources. Personal records remain in the official FIU portal pending approved integration. Team Workspace is a labeled historical snapshot. Controlled GPT-6.1 Sol access is preserved for authorized demonstrators; public paid AI and portal submissions remain disabled.
+
+Developers: use Node.js 22+ from `DEVELOPMENT`, then `npm.cmd ci`, `npm.cmd start`, and `npm.cmd test`. Cloudflare builds `preview/mira-cloudflare` with `npm ci && npm run package:cloudflare`, output `dist/cloudflare/MIRA`. Required public build variables: `MIRA_PUBLIC_ORIGIN`, `MIRA_SUPABASE_URL`, `MIRA_SUPABASE_PUBLISHABLE_KEY`. The OpenAI key is an encrypted server-side secret, never a public build variable. See the [team guide](DEVELOPMENT/docs/TEAM_SETUP_GUIDE.md).
+
+## Historical Ocelot setup — retained for rollback, not current student instructions
 
 Renamed September 24, 2026. The owner uploaded the **Supabase shared test queue** with the latest chat, syllabus and staff features. All 21 hosted public files match the prepared release, and live chat/syllabus checks passed. A ticket save/read-back from Ocelot still needs testing; no GitHub push has been performed. See the [Supabase checklist and verification](DEVELOPMENT/docs/OCELOT_SUPABASE_UPLOAD.md). Old browser-only tickets do not automatically follow a folder rename or migrate to Supabase; see [the rename checklist](DEVELOPMENT/docs/PROJECT_RENAME.md).
 

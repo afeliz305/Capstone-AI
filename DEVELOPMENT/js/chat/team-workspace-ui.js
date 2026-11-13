@@ -13,10 +13,7 @@
   const standup = root.querySelector("#standup-draft-form");
   const standupStatus = root.querySelector("#standup-draft-status");
   const ceremonyPrompts = root.querySelector("#ceremony-prompts");
-  const liveRefresh = root.querySelector("[data-refresh-workspace-context]");
-  const liveStatus = root.querySelector("#workspace-live-context-status");
-  const liveResult = root.querySelector("#workspace-live-context-result");
-  let view = "team", selected = null, liveGeneration = null;
+  let view = "team", selected = null;
 
   function node(tag, className, text) { const element = document.createElement(tag); if (className) element.className = className; if (text !== undefined) element.textContent = text; return element; }
   function stateLabel(value) { return ({ "in-progress": "In progress", ready: "Ready", done: "Accepted" })[value] || value; }
@@ -53,20 +50,6 @@
     detail.append(header, node("p", "selected-card-description", selected.description), metadata, available, renderProgress(selected), node("h4", "", "Acceptance criteria & evidence draft"), form, result, actions, output);
   }
   function renderCeremony(kind) { ceremonyPrompts.replaceChildren(); model.ceremonyPrompts(kind, selected).forEach((prompt) => { const label = node("label", "ceremony-prompt", prompt), textarea = node("textarea"); textarea.rows = 2; textarea.maxLength = 1000; label.append(textarea); ceremonyPrompts.append(label); }); }
-  function clearLiveResult(message) { liveResult.hidden = true; liveResult.replaceChildren(); liveStatus.textContent = message; }
-  function portalConnection(detailValue) {
-    const connected = detailValue?.state === "connected"; liveGeneration = connected ? detailValue.generation : null; liveRefresh.disabled = !connected;
-    if (!connected) clearLiveResult(detailValue?.state === "snapshot-expired" ? "The authorized context expired. The timestamped historical snapshot remains available." : "Not connected. The historical workspace remains labeled with its November 12 timestamp.");
-    else liveStatus.textContent = `Connected read-only · verified ${time(detailValue.verifiedAt)} · expires ${time(detailValue.expiresAt)}. Refresh reads only approved current sources.`;
-  }
-  liveRefresh?.addEventListener("click", async () => {
-    const portalState = window.CapstonePortal?.status?.(); if (!api || portalState?.state !== "connected" || portalState.generation !== liveGeneration) { portalConnection(portalState); return; }
-    liveRefresh.disabled = true; liveStatus.textContent = "Refreshing approved current sources…";
-    try { const response = await api.fetch("/api/search?q=Show%20my%20Capstone%20snapshot&depth=quick"), result = await response.json(); if (!window.CapstonePortal?.accepts?.(result)) throw new Error("The authorized portal session changed before the refresh completed."); liveResult.replaceChildren(node("p", "assistant-state-label", "Current authorized portal · read-only · temporary"), node("pre", "", result.answer || "No approved current context was returned.")); const sections = [...new Set((result.sources || []).map((source) => source.section).filter(Boolean))]; if (sections.length) liveResult.append(node("p", "", `Sources refreshed: ${sections.join(", ")}.`)); liveResult.hidden = false; liveStatus.textContent = `Current context refreshed at ${time(new Date().toISOString())}. It remains separate from the public knowledge index.`; }
-    catch (error) { clearLiveResult(error.message || "Current portal information is unavailable. No stale value was substituted."); }
-    finally { liveRefresh.disabled = window.CapstonePortal?.status?.().state !== "connected"; }
-  });
-  window.addEventListener("mira-portal-connection", (event) => portalConnection(event.detail)); window.addEventListener("capstone-portal-clear", () => portalConnection({ state: "snapshot-expired" })); portalConnection(window.CapstonePortal?.status?.() || { state: "not-connected" });
   root.querySelectorAll("[data-workspace-view]").forEach((button) => button.addEventListener("click", () => { view = button.dataset.workspaceView; root.querySelectorAll("[data-workspace-view]").forEach((item) => { const active = item === button; item.classList.toggle("active", active); item.setAttribute("aria-pressed", String(active)); }); renderCards(); }));
   statusFilter.addEventListener("change", renderCards);
   root.querySelector("[data-prepare-standup]").addEventListener("click", () => { if (!selected) { standupStatus.textContent = "Select a card before preparing a stand-up draft."; return; } const draft = model.standupDraft(selected); standup.elements.did.value = draft.did; standup.elements.willDo.value = draft.willDo; standup.elements.blockers.value = draft.blockers; standupStatus.textContent = "Draft prepared. Duplicate warning: the latest snapshot already shows 2 of 2 weekly submissions. Verify the live portal before posting anything."; });

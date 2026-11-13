@@ -1,3 +1,5 @@
+> Current owner decision: students use [browser-only MIRA](BROWSER_ONLY_MIRA.md) directly on Cloudflare. No connector, extension, pairing or local helper is required. Public answers appear in chat; personal records remain in the official portal pending approved integration. Controlled Sol access is preserved; public paid AI and portal writes remain disabled. Earlier connector setup sections are internal development history only.
+
 > Live information update: [Read-only capability and verification record](LIVE_INFORMATION.md). Demonstrate ?What presentation materials are available?? and ?Tell me more? for live public excerpts. ?Tell me about the Capstone program? and ?How can companies engage with Capstone?? use newly allowlisted public pages. No private portal value is claimed without an active verified local connection.
 
 > Current classroom release: see [final product polish and verification](PRODUCT_POLISH_RELEASE.md). MIRA product copy, accurate data-provider disclosure and the completed authenticated acceptance supersede dated checkpoints below. Restricted live AI remains disabled by default.

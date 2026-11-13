@@ -1,4 +1,14 @@
+> Current owner decision: students use [browser-only MIRA](BROWSER_ONLY_MIRA.md) directly on Cloudflare. No connector, extension, pairing or local helper is required. Public answers appear in chat; personal records remain in the official portal pending approved integration. Controlled Sol access is preserved; public paid AI and portal writes remain disabled. Earlier connector setup sections are internal development history only.
+
 # MIRA proof-of-concept acceptance record
+
+## Browser-only release — November 13, 2026
+
+Owner decision supersedes the local connector as a student workflow. Production entry points contain no pairing, extension-install or local-helper requirement. Personal-information answers carry an official source link and relevant development note; grades require grade-specific institutional approval. Historical Workspace data remains labeled. Internal tooling and earlier evidence are retained separately.
+
+Local validation: 435 passed, 0 failed, 1 optional PHP skip; focused student UX tests 45/45. Clean Cloudflare build: 33 files, 5,180,655 bytes, manifest SHA-256 `ccac1a0191fc8af3a281a394aecc4d0aa2eab7292d00674056e8af671b281c34`. Generated-package browser checks passed both composers, public/FARO answers, mock AI, signed-out staff/recovery rendering and 390px containment. Presentation HTML/PDF rebuilt with 12 rendered slides and overflow checks.
+
+No new billable request, institutional portal read/write, Supabase mutation or Ocelot change was made. Current hosted commit/hash/browser evidence is recorded after deployment in ignored `dist/presentation/BROWSER_ONLY_RELEASE.json`. Signed-out UI checks do not establish a fresh authenticated staff-session test. Previous authenticated acceptance below remains historical evidence, not a newly performed login.
 
 Acceptance completed September 28, 2026. This record covers the approved pre-integration proof of concept and the clearly fictional shared-queue record **CAP-1002**. It does not authorize or claim professor-portal modification, automatic private-dashboard access, production deployment, or use of real student information.
 

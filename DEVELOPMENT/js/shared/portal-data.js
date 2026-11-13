@@ -38,13 +38,13 @@ const entries = sections.map(([id, label, group, intents, patterns]) => {
   const instruction = destination.navigationCapability === "exact-section"
     ? `Open ${label} in the secure Capstone portal using the link below.`
     : `Open ${label} using the verified portal link below.`;
-  let answer = `${instruction} Ocelot MIRA cannot read personal account data. If the portal asks you to sign in, finish the email-code login; the current login returns to Overview, so then choose ${label}.`;
-  if (id === "messages") answer = `${instruction} Ocelot MIRA cannot check unread counts or message contents. No message has been opened, marked read, sent, or changed. If sign-in is required, finish the email-code login and then open Inbox.`;
-  if (id === "overview") answer = `${instruction} Ocelot MIRA cannot see your current tasks, deadlines, project updates, attendance, or grades. Ask about the reviewed syllabus here, or use Today in the portal for personal information.`;
-  if (["board","meetings","my-work","this-term","people","rhythm","recognition","privacy"].includes(id)) answer = `${instruction} Hosted Ocelot MIRA has not read the current contents of this signed-in section. The optional local/portal-native connector can use an approved read-only adapter; otherwise review personal information and use any state-changing controls yourself.`;
+  let answer = `${instruction} MIRA cannot read your personal account data here. If sign-in returns you to Today, open this shortcut again.`;
+  if (id === "messages") answer = `${instruction} MIRA cannot check unread counts or message contents. No message has been opened, marked read, sent, or changed. If sign-in is required, finish the email-code login and then open Inbox.`;
+  if (id === "overview") answer = `${instruction} MIRA cannot see your current tasks, deadlines, project updates, attendance, or grades. Ask about the reviewed syllabus here, or use Today in the portal for personal information.`;
+  if (["board","meetings","my-work","this-term","people","rhythm","recognition","privacy"].includes(id)) answer = `Your current ${label} information is not available in MIRA. ${instruction}`;
   if (["resources","tutorials"].includes(id)) answer = `Open the public Capstone ${label} page using the verified link below. This destination does not require MIRA to read personal portal data.`;
-  if (id === "grade") answer = `Open your Grade section in the portal. Personal grades are not yet available inside this Ocelot chat, and MIRA has not read your posted result. If you are asked to sign in and land on Today, choose Grade in the sidebar or open this Grade shortcut again.`;
-  if (id === "canvas") answer = `${instruction} Canvas has separate authentication and is separate from portal Messages. Ocelot MIRA cannot check either inbox or read recorded Canvas grades.`;
+  if (id === "grade") answer = `Your personal grade is not available in MIRA. Open your Grade section using the official portal link below. If you sign in and land on Today, choose Grade or open this shortcut again.`;
+  if (id === "canvas") answer = `${instruction} Canvas has separate authentication and is separate from portal Messages. MIRA cannot check either inbox or read recorded Canvas grades.`;
   if (id === "request-letter") answer += " Opening the section does not submit a request; review and submit it yourself.";
   return {
     id:"portal-" + id,
@@ -67,6 +67,7 @@ const entries = sections.map(([id, label, group, intents, patterns]) => {
     access:"authenticated",
     audience:"student",
     answer,
+    developmentNote: ["resources","tutorials","brand","canvas"].includes(id)?null:id === "grade"?"Development note: Grade display requires an FIU-approved grade-specific integration.":"Development note: Live personal information requires an FIU-approved read-only portal integration.",
     content:"",
     keywords:[],
     intents:["Open portal " + label, ...intents],

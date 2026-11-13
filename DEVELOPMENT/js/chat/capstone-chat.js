@@ -326,6 +326,7 @@
   function addSourceCard(container, match) {
     const href = sourceHref(match);
     if (!href) return;
+    if (match.developmentNote) container.append(createElement("p", "message-note development-note", match.developmentNote));
     const source = createElement("a", "source-card");
     source.href = href;
     if (match.sourceKind !== "portal-navigation") {
@@ -803,7 +804,7 @@
   function renderUnavailableCapstone() {
     const message=addAssistantText(
       "Your personal Capstone summary is unavailable in this session.",
-      "MIRA has not read your dashboard. Connect the approved local portal preview, or open a reviewed portal section and check the current information there."
+      "Development note: Live personal information requires an FIU-approved read-only portal integration. Open the official portal to check your current information."
     );
     appendCapstoneSummary(message,{sources:[]});
     const actions=createElement("div","message-actions");

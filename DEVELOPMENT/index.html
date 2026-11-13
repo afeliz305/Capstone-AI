@@ -91,7 +91,7 @@
               </button>
               <section class="profile-menu" id="dashboard-profile-menu" role="menu" aria-label="MIRA profile and settings" hidden>
                 <header><span class="profile-avatar" aria-hidden="true">M</span><span><strong id="dashboard-profile-name">MIRA user</strong><small id="dashboard-profile-role">Student workspace</small></span></header>
-                <div class="profile-status" id="dashboard-profile-status"><span class="status-dot" aria-hidden="true"></span><span><strong>Course guidance ready</strong><small>Personal context unavailable</small></span></div>
+                <div class="profile-status" id="dashboard-profile-status"><span class="status-dot" aria-hidden="true"></span><span><strong>Course guidance ready</strong><small>Personal records stay in the portal</small></span></div>
                 <div class="profile-menu-group"><span>Account</span><a role="menuitem" href="https://capstone.cs.fiu.edu/me/privacy" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#profile"></use></svg>My profile</a><button role="menuitem" type="button" data-question="Explain MIRA privacy and consent"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#shield"></use></svg>Privacy &amp; consent</button><button role="menuitem" type="button" data-question="How do I manage Capstone notifications?"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#bell"></use></svg>How you're notified</button><button role="menuitem" type="button" data-question="What information can MIRA use in this session?"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#info"></use></svg>Activity &amp; session info</button></div>
                 <div class="profile-menu-group appearance-group"><span>Appearance</span><div class="theme-options" role="group" aria-label="MIRA appearance"><button type="button" data-theme-choice="portal">Follow portal</button><button type="button" data-theme-choice="light">Light</button><button type="button" data-theme-choice="dark">Dark</button><button type="button" data-theme-choice="system">Auto</button></div><small id="portal-theme-note">Portal theme unavailable; Follow portal uses Auto.</small></div>
                 <div class="profile-menu-group"><span>Help</span><button role="menuitem" type="button" data-question="What is MIRA and what can it do?"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#info"></use></svg>About MIRA</button><button role="menuitem" type="button" data-question="How can I send feedback about MIRA?"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#chat"></use></svg>Send feedback</button><details class="profile-more-screens"><summary><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#grid"></use></svg>More screens</summary><div><a href="https://capstone.cs.fiu.edu/resources" target="_blank" rel="noreferrer">Resources</a><a href="https://capstone.cs.fiu.edu/portal#brandhub" target="_blank" rel="noreferrer">Brand &amp; templates</a><a href="https://capstone.cs.fiu.edu/portal#myshowcase" target="_blank" rel="noreferrer">Showcase</a><a href="https://capstone.cs.fiu.edu/this-term" target="_blank" rel="noreferrer">Projects this term</a><a href="https://capstone.cs.fiu.edu/recognition" target="_blank" rel="noreferrer">Recognition</a></div></details><a role="menuitem" href="pages/staff.html"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#settings"></use></svg>Staff Queue</a></div>
@@ -104,7 +104,7 @@
           <header><div><p class="eyebrow">TEAM</p><h2 id="presence-title">People here now</h2></div><button id="presence-close" type="button" aria-label="Close team panel"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#minimize"></use></svg></button></header>
           <p class="presence-capability" id="presence-capability"><span class="status-dot" aria-hidden="true"></span><span><strong>Live presence is not connected</strong><small>Team availability is shown only in the official portal.</small></span></p>
           <div class="presence-tabs" role="tablist" aria-label="Team presence views"><button id="presence-tab-online" type="button" role="tab" aria-selected="true" aria-controls="presence-panel-online">Online now</button><button id="presence-tab-team" type="button" role="tab" aria-selected="false" aria-controls="presence-panel-team" tabindex="-1">My team</button><button id="presence-tab-staff" type="button" role="tab" aria-selected="false" aria-controls="presence-panel-staff" tabindex="-1">Staff</button></div>
-          <div class="presence-panel" id="presence-panel-online" role="tabpanel" aria-labelledby="presence-tab-online"><strong>No live presence available</strong><p>Connect the authorized local portal helper to show safe team availability when that adapter supports it.</p></div>
+          <div class="presence-panel" id="presence-panel-online" role="tabpanel" aria-labelledby="presence-tab-online"><strong>No live presence available</strong><p>Current team availability remains in the official portal. MIRA does not infer who is online.</p></div>
           <div class="presence-panel" id="presence-panel-team" role="tabpanel" aria-labelledby="presence-tab-team" hidden><strong>Open your Team section</strong><p>MIRA does not expose teammate identities, email addresses, or hidden contact details here.</p><a href="https://capstone.cs.fiu.edu/portal#team" target="_blank" rel="noreferrer">Open Team</a></div>
           <div class="presence-panel" id="presence-panel-staff" role="tabpanel" aria-labelledby="presence-tab-staff" hidden><strong>Course support</strong><p>Use Ask a person for reviewed role guidance or open the portal for current staff relationships.</p><button type="button" data-question="Who should I ask for help with this?">Ask MIRA who can help</button></div>
           <footer aria-label="Team shortcuts"><a href="https://capstone.cs.fiu.edu/inbox" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#inbox"></use></svg>Message team</a><a href="https://capstone.cs.fiu.edu/meetings" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#meetings"></use></svg>Meet now</a><a href="https://capstone.cs.fiu.edu/board" target="_blank" rel="noreferrer"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#board"></use></svg>Board</a></footer>
@@ -114,13 +114,13 @@
           <div class="hero-copy">
             <span class="hero-kicker"><svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#compass"></use></svg> Next best step</span>
             <h2 id="next-step-title">Open your Capstone Today view</h2>
-            <p>Connect to your signed-in Capstone portal to see current work and a personalized next step. MIRA will not invent a task when live context is unavailable.</p>
+            <p>Ask about course requirements, evidence, and your next preparation step. Open the official portal to verify your current personal work.</p>
             <div class="hero-actions">
               <a class="dashboard-button dashboard-button-primary" href="https://capstone.cs.fiu.edu/today" target="_blank" rel="noreferrer">Open Today <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#external"></use></svg></a>
               <button class="dashboard-button" type="button" data-open-check-work>Check my work</button>
               <button class="dashboard-button dashboard-button-quiet" type="button" data-question="What should I do next?">Guide me</button>
             </div>
-            <div class="hero-status" aria-label="Personal data status"><span class="status-dot" aria-hidden="true"></span><strong>Personal context unavailable</strong><span>Open the portal for live data.</span></div>
+            <div class="hero-status" aria-label="Personal data status"><span class="status-dot" aria-hidden="true"></span><strong>Personal records stay in the portal</strong><span>Open the portal for live data.</span></div>
           </div>
         </section>
 
@@ -198,11 +198,7 @@
             <a href="https://capstone.cs.fiu.edu/board" target="_blank" rel="noreferrer">Open current board <svg class="ui-icon" aria-hidden="true"><use href="css/images/icons.svg#external"></use></svg></a>
           </div>
           <div class="workspace-state-banner" role="note"><strong>Snapshot, not live portal state.</strong> MIRA can explain, check, and draft here. Only the signed-in Capstone portal can confirm current status or submit changes.</div>
-          <section class="workspace-live-context" aria-labelledby="workspace-live-context-title">
-            <div><p class="eyebrow">AUTHORIZED CURRENT CONTEXT</p><h3 id="workspace-live-context-title">Refresh from your local portal connection</h3><p id="workspace-live-context-status" role="status" aria-live="polite">Not connected. The historical workspace remains labeled with its November 12 timestamp.</p></div>
-            <button type="button" data-refresh-workspace-context disabled>Refresh current context</button>
-            <div id="workspace-live-context-result" hidden></div>
-          </section>
+          <p class="message-note development-note">Development note: Live personal information requires an FIU-approved read-only portal integration. Use the official Board link to verify current work.</p>
           <div class="team-workspace-controls">
             <div class="workspace-view-switcher" role="group" aria-label="Workspace view"><button type="button" class="active" data-workspace-view="team" aria-pressed="true">Team work</button><button type="button" data-workspace-view="mine" aria-pressed="false">My work</button></div>
             <label>Filter cards <select id="workspace-status-filter"><option value="active">Active work</option><option value="all">All cards</option><option value="ready">Ready</option><option value="in-progress">In progress</option><option value="done">Done</option></select></label>
@@ -328,7 +324,7 @@
 
         <section class="topic-grid portal-shortcuts" aria-labelledby="portal-shortcuts-title">
           <div class="section-heading"><div><p class="eyebrow">PORTAL SHORTCUTS</p><h2 id="portal-shortcuts-title">Inbox &amp; Today</h2></div></div>
-          <p>Use verified links to open the requested portal section. Personal messages, grades, and account records remain inside the authenticated portal and are not read by Ocelot MIRA.</p>
+          <p>Use verified links to open the requested portal section. Personal messages, grades, and account records remain inside the authenticated portal and are not read by MIRA.</p>
           <div class="starter-prompts" aria-label="Portal shortcuts">
             <button type="button" data-question="Do I have any new messages?">Check messages</button>
             <button type="button" data-question="Open my dashboard">Open dashboard</button>
@@ -390,7 +386,7 @@
           <div class="trust-mark" aria-hidden="true"><svg class="ui-icon"><use href="css/images/icons.svg#check"></use></svg></div>
           <div>
             <strong>Answers stay grounded in Capstone content</strong>
-              <p>Answers cite saved public-site excerpts or reviewed syllabus content. Hosted MIRA does not read live personal records. The optional local or future portal-native connector reads only approved, session-scoped fields and never places them in shared knowledge. Date conflicts are flagged for instructor confirmation.</p>
+              <p>Answers cite saved public-site excerpts or reviewed syllabus content. Hosted MIRA does not read live personal records. Future personal-data access requires an FIU-approved read-only integration. No extension or local installation is needed to use MIRA. Date conflicts are flagged for instructor confirmation.</p>
           </div>
         </section>
       </main>

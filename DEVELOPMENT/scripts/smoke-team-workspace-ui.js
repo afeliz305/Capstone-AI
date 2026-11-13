@@ -35,7 +35,8 @@ async function main() {
     await workspace.getByRole("button", { name: "Ask a teammate" }).click();
     assert.match(await page.locator(".workspace-draft-output").textContent(), /official approval decisions/i);
     assert.match(await page.locator("#selected-work-card").textContent(), /Work completed: not confirmed/);
-    assert.equal(await workspace.getByRole("button", { name: "Refresh current context" }).isDisabled(), true);
+    assert.equal(await workspace.getByRole("button", { name: "Refresh current context" }).count(), 0);
+    assert.match(await workspace.textContent(), /Development note: Live personal information requires an FIU-approved read-only portal integration/);
     await workspace.getByRole("button", { name: "Prepare from selected card" }).click();
     assert.match(await page.locator("#standup-draft-status").textContent(), /Duplicate warning/);
     assert.match(await page.locator("#standup-draft-form textarea").first().inputValue(), /CAP-1316/);
@@ -51,7 +52,7 @@ async function main() {
     assert.equal(contained, true);
     await workspace.screenshot({ path: path.join(qa, "workspace-mobile-390.png") });
     assert.deepEqual(errors, []);
-    console.log("PASS: sourced team cards, explicit progress states, mock AI assistance, disabled hosted refresh, duplicate-aware stand-up, retrospective prompts, and 390px containment.");
+    console.log("PASS: sourced historical cards, explicit progress states, mock AI, no dead connection control, duplicate-aware stand-up, retrospective prompts, and 390px containment.");
     console.log("Screenshots: " + qa);
   } finally {
     await browser?.close();

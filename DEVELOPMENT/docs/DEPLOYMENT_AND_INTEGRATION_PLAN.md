@@ -1,3 +1,5 @@
+> Current owner decision: students use [browser-only MIRA](BROWSER_ONLY_MIRA.md) directly on Cloudflare. No connector, extension, pairing or local helper is required. Public answers appear in chat; personal records remain in the official portal pending approved integration. Controlled Sol access is preserved; public paid AI and portal writes remain disabled. Earlier connector setup sections are internal development history only.
+
 > Current classroom release: see [final product polish and verification](PRODUCT_POLISH_RELEASE.md). MIRA product copy, accurate data-provider disclosure and the completed authenticated acceptance supersede dated checkpoints below. Restricted live AI remains disabled by default.
 
 Current read-only retrieval update: [Live information capabilities and limits](LIVE_INFORMATION.md). Cloudflare public resources/tutorials/privacy can return timestamped excerpts in chat. Personal information still requires the approved local connector; hosted personal access is not enabled.

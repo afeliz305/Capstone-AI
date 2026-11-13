@@ -1,3 +1,5 @@
+> Current owner decision: students use [browser-only MIRA](BROWSER_ONLY_MIRA.md) directly on Cloudflare. No connector, extension, pairing or local helper is required. Public answers appear in chat; personal records remain in the official portal pending approved integration. Controlled Sol access is preserved; public paid AI and portal writes remain disabled. Earlier connector setup sections are internal development history only.
+
 # Cloudflare Pages foundation
 
 Current AI activation authority: [Controlled $25 testing guide](AI_CONTROLLED_BUDGET.md). It supersedes the early activation prerequisites below: the classmate-owned project is explicitly authorized. Its dashboard need not be shared. The new local adapter permits only authenticated fixed-case testing with a persistent budget binding; it has not been deployed. The currently configured Pages production branch is `preview/mira-cloudflare`; `main` remains untouched.

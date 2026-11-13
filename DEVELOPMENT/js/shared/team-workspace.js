@@ -43,7 +43,7 @@
       ...card,
       sprint: "Sprint 5",
       description: `${card.type} work in ${card.area}. Confirm the current card wording and assignment in the signed-in portal before acting.`,
-      availableSources: ["Reviewed November 12 portal audit", "Current signed-in portal when the local connector is authorized", "Reviewed FARO acceptance/evidence guidance"],
+      availableSources: ["Reviewed November 12 portal audit", "Official signed-in portal (open separately for current records)", "Reviewed FARO acceptance/evidence guidance"],
       progress: Object.freeze({
         workCompleted: historicalDone,
         evidencePrepared: historicalDone && card.evidence.length > 0,

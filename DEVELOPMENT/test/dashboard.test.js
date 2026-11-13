@@ -13,7 +13,8 @@ test("homepage presents the premium My Capstone hierarchy without invented perso
   assert.match(html, /<main class="dashboard-workspace"[^>]*id="dashboard-top"/);
   assert.match(html, /<h1>My Capstone<\/h1>/);
   assert.match(html, /class="next-step-hero"[\s\S]*data-state="unavailable"/);
-  assert.match(html, /Connect to your signed-in Capstone portal/);
+  assert.match(html, /Open the official portal to verify your current personal work/);
+  assert.doesNotMatch(html,/Connect to your signed-in Capstone portal|local portal helper|data-refresh-workspace-context/);
   assert.match(html, /class="work-fallback"[\s\S]*In progress[\s\S]*Blocked[\s\S]*Verify \/ review[\s\S]*Current sprint/);
   assert.equal((html.match(/class="work-destination-list"/g) || []).length, 1);
   assert.match(html,/Open your signed-in portal for personal work/);
@@ -56,7 +57,7 @@ test("dashboard profile remains neutral and exposes compact account, theme, and 
   assert.match(html, /id="dashboard-profile-trigger"[^>]+aria-haspopup="menu"[^>]+aria-expanded="false"/);
   assert.match(html, /id="dashboard-profile-menu"[^>]+role="menu"[^>]+hidden/);
   assert.match(html, /MIRA user[\s\S]*Standalone mode/);
-  assert.match(html, /Personal context unavailable/);
+  assert.match(html, /Personal records stay in the portal/);
   for (const mode of ["portal", "light", "dark", "system"]) assert.match(html, new RegExp(`data-theme-choice="${mode}"`));
   assert.match(html, /Portal theme unavailable; Follow portal uses Auto/);
   assert.match(script, /mira-portal-profile/);

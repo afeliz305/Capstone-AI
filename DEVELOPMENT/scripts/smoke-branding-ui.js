@@ -34,7 +34,7 @@ async function main() {
       assert.equal(await page.locator(".work-fallback").isVisible(), true);
       assert.equal(await page.locator(".work-destination-list a").count(), 4);
       assert.equal(await page.locator(".mira-dashboard-assistant").isVisible(), true);
-      assert.match(await page.locator(".next-step-hero").textContent(), /personalized next step/i);
+      assert.match(await page.locator(".next-step-hero").textContent(), /next preparation step/i);
       assert.doesNotMatch(await page.locator(".work-fallback").textContent(), /Unavailable|\b0\b/i);
       const launcher = page.locator("#chat-launcher");
       await page.getByRole("button", { name: "Open MIRA chat", exact: true }).waitFor({ state: "visible" });
@@ -51,7 +51,7 @@ async function main() {
       const profileMenu = await page.locator("#dashboard-profile-menu").boundingBox();
       assert.ok(profileMenu.x >= 0 && profileMenu.y >= 0 && profileMenu.x + profileMenu.width <= viewport.width && profileMenu.y + profileMenu.height <= viewport.height,`profile menu must fit ${viewport.width}x${viewport.height}: ${JSON.stringify(profileMenu)}`);
       assert.equal(await page.locator("#dashboard-profile-name").textContent(), "MIRA user");
-      assert.match(await page.locator("#dashboard-profile-status").textContent(), /Personal context unavailable/);
+      assert.match(await page.locator("#dashboard-profile-status").textContent(), /Personal records stay in the portal/);
       await page.keyboard.press("Escape");
       assert.equal(await page.locator("#dashboard-profile-menu").isVisible(), false);
       assert.equal(await profileTrigger.evaluate(button => button === document.activeElement), true);

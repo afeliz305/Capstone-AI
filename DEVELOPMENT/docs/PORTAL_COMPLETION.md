@@ -1,3 +1,5 @@
+> Current owner decision: students use [browser-only MIRA](BROWSER_ONLY_MIRA.md) directly on Cloudflare. No connector, extension, pairing or local helper is required. Public answers appear in chat; personal records remain in the official portal pending approved integration. Controlled Sol access is preserved; public paid AI and portal writes remain disabled. Earlier connector setup sections are internal development history only.
+
 # Personalized retrieval: implementation and real acceptance
 
 Baseline: 5837e4981518f56a6b6df3f47d19f8af2dd8c7c4, https://aafd4420.mira-9gg.pages.dev/. That immutable release remains available for rollback.
