@@ -41,13 +41,13 @@ node node_modules/wrangler/bin/wrangler.js dev --config scripts/demo-operator.wr
 In another terminal:
 
 ```powershell
-powershell.exe -NoProfile -File scripts/public-ai-operator.ps1 -Action status
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/public-ai-operator.ps1 -Action status
 # Only after current pricing, billing, hosted checks and held reservations are reviewed:
-powershell.exe -NoProfile -File scripts/public-ai-operator.ps1 -Action start -PricingReviewed -BillingApproved
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/public-ai-operator.ps1 -Action start -PricingReviewed -BillingApproved
 # Immediately disable new public attempts:
-powershell.exe -NoProfile -File scripts/public-ai-operator.ps1 -Action stop
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/public-ai-operator.ps1 -Action stop
 # Persistent emergency halt of all paid paths:
-powershell.exe -NoProfile -File scripts/public-ai-operator.ps1 -Action halt
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/public-ai-operator.ps1 -Action halt
 ```
 
 The wrapper uses the existing Windows-DPAPI operator credential without printing it. Start performs read-back, requires no held reservations and available capacity, and can recover only a reviewed controlled-test-complete halt. Other halts require evidence-based investigation. It does not forgive spending or release holds. Start grants 23 hours, then public AI fails closed until pricing is reviewed again.
@@ -59,3 +59,13 @@ Cloudflare flags: `MIRA_PUBLIC_AI_ENABLED=true`, `MIRA_PUBLIC_BILLING_APPROVED=t
 Run `npm.cmd test`, `node scripts/smoke-cloudflare-preview.js`, branding/Workspace checks, clean-checkout package verification, Worker dry run and hosted asset hashes. Never use broad browser smoke scripts against an activated public gateway without intercepting `/api/public-ai`; otherwise ordinary course questions become paid calls. Controlled live acceptance uses at most two approved course questions, one attempt each, no retry, and checks ledger deltas. Current execution evidence belongs in ignored `dist/presentation/PUBLIC_AI_RELEASE.json`.
 
 Preserve main, Ocelot, Supabase, FARO and portal records. No portal submission is enabled.
+
+## November 13 acceptance
+
+Public billing permission was confirmed by the owner in this session. Full regression: 439 passed, 0 failed, 1 optional PHP skip; focused safeguards/chat: 44/44. Clean package: 33 files, 5,181,206 bytes. Hosted release `0d53d86c562acf01902c0f390a91339da9dcf9bb` at `https://216f2fe6.mira-9gg.pages.dev/` matched 32 downloadable assets and security/recovery requirements.
+
+Two signed-out real Sol requests passed (embedded question and floating follow-up), with citations and no retry. Total usage: 560 input / 407 output tokens, including zero reported reasoning tokens. Conservative new ledger charge: $0.006870. Cumulative accounted spend: $0.036495; held: $0; remaining lifetime balance: $24.963505. These are conservative estimates, not an independently verified provider invoice. Public stop was tested and blocked a request without increasing attempts, then public access was restored.
+
+At completion, one global daily attempt remained until the UTC day reset. Activation expires November 14, 2026 at 1:19 PM America/New_York; review current pricing and use the operator procedure to renew. No automatic renewal or spending reset occurs. Native 200% layout, mobile, keyboard/profile, unchanged authenticated Staff Queue and fictional record read-back passed. No Supabase, Ocelot, main, FARO or portal records were changed.
+
+Evidence: ignored `dist/presentation/PUBLIC_AI_LIVE_ACCEPTANCE.json` and `PUBLIC_AI_RELEASE.json`. Historical screenshots or tester-only guidance elsewhere do not override this current public access boundary.
