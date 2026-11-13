@@ -34,6 +34,8 @@ The browser Disconnect button removes its cookie; it is not a global kill switch
 
 The -Acceptance switch performs four billable questions, not a generic smoke test. It requires remaining authorized campaign capacity. It captures only fictional answers, source IDs, usage totals and post-login screenshots under ignored dist/presentation/. Do not repeat it merely to improve screenshots. A failed live result stops without retries or model switching.
 
+Preflight prints remaining daily and campaign capacity. A normal classroom session needs capacity for at least the two live core questions; four-question acceptance requires four daily slots. The shared cap is 10 attempts per UTC day (including incomplete/failed requests); it resets at midnight UTC, while lifetime/campaign spending never resets. If fewer than four daily slots remain, demonstrate Done plus its evidence follow-up live, then use clearly labeled recorded answers or deterministic drafts for the remaining examples. Do not raise limits for class.
+
 ## Six-minute demonstration
 
 1. **0:00-0:45:** Explain the Capstone problem and dashboard. Identify the historical workspace snapshot and official portal as source of record.

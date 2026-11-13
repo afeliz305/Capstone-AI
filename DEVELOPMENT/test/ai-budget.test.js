@@ -27,6 +27,7 @@ async function fixture() {
 test('operator demo sessions expire, revoke and enforce a durable non-resetting $1 campaign', async t => {
   const original=Date.now; let now=Date.UTC(2026,10,13,12); Date.now=()=>now; t.after(()=>Date.now=original);
   const f=await fixture(); await f.call('/initialize');
+  assert.equal((await (await f.call('/status')).json()).dailyRemaining,10);
   const operator='a'.repeat(64), token='b'.repeat(64), digest=createHash('sha256').update(token).digest('hex');
   f.env.MIRA_AI_OPERATOR_SHA256=createHash('sha256').update(operator).digest('hex');
   const start={expectedRevision:0,hash:digest,durationMinutes:60,pricingUntil:now+3600000};
@@ -37,6 +38,8 @@ test('operator demo sessions expire, revoke and enforce a durable non-resetting 
   assert.equal((await f.call('/reserve',{id:randomUUID()})).status,403);
   for(let i=0;i<4;i++) { now+=61000; const id=randomUUID(); assert.equal((await f.call('/reserve',{id,demoHash:digest})).status,200); await f.call('/settle',{id,costMicroUsd:250000}); }
   f.restart(); now+=61000;
+  assert.equal((await (await f.call('/status')).json()).dailyRemaining,6);
+  assert.equal((await (await f.call('/status')).json()).campaignRemainingMicroUsd,0);
   assert.equal((await f.call('/reserve',{id:randomUUID(),demoHash:digest})).status,429);
   assert.equal((await f.call('/demo-stop',{},operator)).status,200);
   assert.equal((await f.call('/demo-auth',{demoHash:digest})).status,403);

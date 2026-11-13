@@ -17,6 +17,9 @@ async function main(){
  try{
   record.before=await ledger('/status');const audit=await ledger('/operator-audit');
   assert.equal(record.before.heldMicroUsd,0);assert.equal(record.before.capMicroUsd,25000000);assert.ok(audit.records.every(r=>r.state==='settled'));
+  const minimumRequests=acceptance?(process.argv.includes('--review-only')?1:4):2;
+  if(!Number.isInteger(record.before.dailyRemaining) || !Number.isInteger(record.before.campaignRemainingMicroUsd) || record.before.dailyRemaining<minimumRequests || record.before.campaignRemainingMicroUsd<250000 || record.before.attempts+minimumRequests>100)throw Error('Insufficient or unavailable daily/campaign capacity; wait for the UTC day reset or use the offline demo. Do not raise limits.');
+  console.log('Daily attempts remaining: '+record.before.dailyRemaining+'. Campaign remaining: $'+(record.before.campaignRemainingMicroUsd/1e6).toFixed(6)+'.');
   if(record.before.halted){assert.equal(record.before.haltReason,'controlled-test-complete');await ledger('/recover',{id:crypto.randomUUID(),expectedRevision:record.before.revision,reason:'reviewed-controlled-test-complete',evidence:'INTEGRATED_CLASSROOM_CAMPAIGN'});}
   activated=true;
   let token=crypto.randomBytes(48).toString('base64url');

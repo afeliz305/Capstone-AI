@@ -99,7 +99,9 @@ export class AiBudget {
           return json({ authorized: true, expires: s.demo.expires, pricingUntil: s.demo.pricingUntil,
             campaignSpentMicroUsd: s.spent - s.demo.baseline, heldMicroUsd: s.held });
         }
-        if (route === '/status') return json({ capMicroUsd: CAP, spentMicroUsd: s.spent, heldMicroUsd: s.held, attempts: s.attempts, halted: s.halted, revision: s.revision || 0, haltReason: s.haltReason || (s.halted ? 'legacy-unrecorded' : null) });
+        if (route === '/status') return json({ capMicroUsd: CAP, spentMicroUsd: s.spent, heldMicroUsd: s.held, attempts: s.attempts, halted: s.halted, revision: s.revision || 0, haltReason: s.haltReason || (s.halted ? 'legacy-unrecorded' : null),
+          dailyRemaining: Math.floor(Date.now()/86400000) < s.day ? 0 : Math.floor(Date.now()/86400000) === s.day ? Math.max(0,10-s.dayCount) : 10,
+          campaignRemainingMicroUsd: s.demo ? Math.max(0,s.demo.cap-(s.spent-s.demo.baseline)-s.held) : 1000000 });
         if (route === '/operator-audit') return json({ revision: s.revision || 0, audit: s.audit || [], records: s.records, halted: s.halted, haltReason: s.haltReason || 'legacy-unrecorded' });
         if (route === '/recover') {
           if (!body || Object.keys(body).some(k => !['id','expectedRevision','reason','evidence'].includes(k)) ||
