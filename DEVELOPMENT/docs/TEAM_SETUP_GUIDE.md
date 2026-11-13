@@ -1,5 +1,7 @@
 > Current classroom release: see [final product polish and verification](PRODUCT_POLISH_RELEASE.md). MIRA product copy, accurate data-provider disclosure and the completed authenticated acceptance supersede dated checkpoints below. Restricted live AI remains disabled by default.
 
+Current read-only retrieval update: [Live information capabilities and limits](LIVE_INFORMATION.md). Cloudflare public resources/tutorials/privacy can return timestamped excerpts in chat. Personal information still requires the approved local connector; hosted personal access is not enabled.
+
 ## Current classroom workflow — November 12, 2026
 
 Use [CLASS_DEMO_GUIDE.md](CLASS_DEMO_GUIDE.md) for the six-minute script, offline setup, feature boundaries and operator checklist. The Cloudflare local preview on port 3010 now uses the production Function's mock handler for all seven workspace actions. It deliberately receives no secrets or live flags. Run it only after packaging and hash verification. Source development still uses `npm.cmd start` from DEVELOPMENT; missing package.json means you are in the wrong folder. Tested here with Windows, Node 24.15.0 and Edge; other platforms are not newly verified.

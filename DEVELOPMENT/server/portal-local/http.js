@@ -1,4 +1,5 @@
 const http=require('node:http');
+const {informationTool}=require('./information-tools');
 const fs=require('node:fs/promises');
 const path=require('node:path');
 const {randomBytes,timingSafeEqual}=require('node:crypto');
@@ -78,7 +79,7 @@ function createPortalServer({root,sourceRoot,service,extensionBridge=null,pairin
         return send(res,200,{csrf:session.csrf,connection:service.status(session.id)},{'Set-Cookie':sessionCookie(session)});
       }
       if(!session||!equal(req.headers['x-capstone-pair'],session.csrf)) return send(res,401,{error:'Local pairing expired. Private data must be cleared.'});
-      const fields={discover:[],connect:['tabId'],status:[],verify:[],content:[],configure:['messageContent'],search:['question','context','depth'],destination:['sourceId'],disconnect:[]};
+      const fields={discover:[],connect:['tabId'],status:[],verify:[],content:[],configure:['messageContent'],information:['tool'],search:['question','context','depth'],destination:['sourceId'],disconnect:[]};
       if(!Object.hasOwn(fields,operation)||Object.keys(data).some(k=>!fields[operation].includes(k))) return send(res,400,{error:'Unsupported operation or field.'});
       try {
         let result;
@@ -88,6 +89,7 @@ function createPortalServer({root,sourceRoot,service,extensionBridge=null,pairin
         if(operation==='verify') result=await service.verify(session.id);
         if(operation==='content') result=await service.refreshContent(session.id);
         if(operation==='configure') result=service.configure(session.id,data);
+        if(operation==='information') {if(!budget('search',30))return send(res,429,{error:'Please wait before another search.'});result=await informationTool(service,session.id,data);}
         if(operation==='search') {if(!budget('search',30))return send(res,429,{error:'Please wait before another search.'});result=await service.search(session.id,data);}
         if(operation==='destination') {if(typeof data.sourceId!=='string'||!/^private-[a-f0-9]{24}$/.test(data.sourceId))throw new Error();result=await service.destination(session.id,data.sourceId);}
         if(operation==='disconnect') {await service.disconnect(session.id);sessions.delete(session.id);return send(res,200,{state:'not-connected'},{'Set-Cookie':`${cookieName}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`});}

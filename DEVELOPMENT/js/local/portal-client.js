@@ -76,6 +76,7 @@
   document.addEventListener('visibilitychange',()=>{if(document.hidden)resetVisible();else void checkStatus();});
   window.addEventListener('pagehide',()=>{resetVisible();csrf='';});
   window.CapstonePortal={
+    async information(tool){const before=serial;const result=await request('information',{tool});if(before!==serial)throw new DOMException('Portal session changed.','AbortError');return result;},
     accepts:result=>result?.connection?.state==='connected'&&result.connection.generation===state.generation&&state.state==='connected',
     async destination(sourceId){const result=await request('destination',{sourceId});const url=new URL(result.url);if(url.origin!=='https://capstone.cs.fiu.edu'||result.generation!==state.generation||state.state!=='connected')throw new Error('Portal session changed.');return result;},
     status:()=>({state:state.state,generation:state.generation})

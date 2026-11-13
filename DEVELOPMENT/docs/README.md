@@ -1,5 +1,7 @@
 > Current classroom release: see [final product polish and verification](PRODUCT_POLISH_RELEASE.md). MIRA product copy, accurate data-provider disclosure and the completed authenticated acceptance supersede dated checkpoints below. Restricted live AI remains disabled by default.
 
+Current read-only retrieval update: [Live information capabilities and limits](LIVE_INFORMATION.md). Cloudflare public resources/tutorials/privacy can return timestamped excerpts in chat. Personal information still requires the approved local connector; hosted personal access is not enabled.
+
 ## Classroom handoff
 
 - [Class presentation, demo script, fallback, architecture and operator guide](CLASS_DEMO_GUIDE.md)

@@ -54,6 +54,8 @@ async function buildCloudflarePackage({ root = path.resolve(__dirname, ".."), ou
     const siteIndex = await loadReleaseIndex(root);
     if (!siteIndex) throw new Error("Cloudflare release requires the reviewed public website index. Refusing to silently omit indexed knowledge from a clean checkout.");
     const built = await createOcelotPackage({ root, outputRoot: stagingRoot, transport: "supabase", supabaseConfig: config, siteIndex });
+    const homePath = path.join(built.uploadDirectory, "index.html");
+    await fs.writeFile(homePath, (await fs.readFile(homePath, "utf8")).replace('<html', '<html data-public-information="enabled"'));
     const supabaseOrigin = new URL(config.url).origin;
     const notFound = '<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Page not found | MIRA</title></head><body><main><h1>Page not found</h1><p>The requested MIRA page does not exist.</p><p><a href="/">Return to MIRA</a></p></main></body></html>\n';
     await fs.writeFile(path.join(built.uploadDirectory, "404.html"), notFound, { flag: "wx" });

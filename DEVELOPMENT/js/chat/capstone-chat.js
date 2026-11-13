@@ -893,6 +893,29 @@
           if(demoStatus)demoStatus.textContent="Live answer unavailable or outside the reviewed demo. Showing course search instead; no automatic retry.";
         } catch { if(demoStatus)demoStatus.textContent="Live answer unavailable. Showing course search instead; no automatic retry."; }
       }
+      // Only the fixed source identifier leaves the browser, never the question.
+      const publicSource = !window.CapstonePortal && document.documentElement?.getAttribute?.("data-public-information") === "enabled"
+        && !/\b(my|our|mine|grade|messages?|inbox|assigned|standups?|stand-ups?|team)\b/i.test(question)
+        && (/\bprivacy\b/i.test(question) ? "privacy" : /\btutorials?\b/i.test(question) ? "tutorials" : /\b(resources|showcase prep|presentation materials)\b/i.test(question) ? "resources" : "");
+      if(publicSource){
+        try {
+          const fetched=await fetch('/api/public-information?source='+publicSource,{credentials:'omit',cache:'no-store',redirect:'error',signal:AbortSignal.timeout(8000)});
+          const info=fetched.ok?await fetched.json():null;
+          if(sequence!==searchSequence)return{status:"cancelled",sources:[]};
+          const expected='https://capstone.cs.fiu.edu/'+publicSource;
+          if(info?.url===expected && Array.isArray(info.excerpts) && info.excerpts.length && Number.isFinite(Date.parse(info.checkedAt)) && Math.abs(Date.now()-Date.parse(info.checkedAt))<300000){
+            loading.remove();
+            const terms=question.toLowerCase().match(/[a-z]{4,}/g)||[];
+            const ranked=info.excerpts.filter(t=>typeof t==='string'&&t.length<2000).map((text,index)=>({text,index,score:terms.filter(t=>text.toLowerCase().includes(t)).length})).sort((a,b)=>b.score-a.score||a.index-b.index);
+            const message=addAssistantText(ranked.slice(0,3).map(x=>x.text).join('\n\n'),"Public source excerpts · checked "+new Date(info.checkedAt).toLocaleString()+" · publication/update time not supplied");
+            addSourceCard(message,{title:info.title,url:expected});
+            message.append(createElement("p","message-note","Read-only public page. Linked sign-in-only documents were not read. No AI call was made."));
+            scrollToLatest(message);return{status:"matched",provider:"deterministic",sources:[info]};
+          }
+        }catch{}
+        if(sequence!==searchSequence)return{status:"cancelled",sources:[]};
+        addAssistantText("Current public information could not be verified. Showing reviewed course knowledge instead; it is not a live check.");
+      }
       const response = await api.fetch(`/api/search?q=${encodeURIComponent(question)}${contextId ? "&context=" + encodeURIComponent(contextId) : ""}&depth=${encodeURIComponent(currentDepth())}`);
       const result = await api.readJson(response);
       if (sequence !== searchSequence) return { status:"cancelled", matches:[], links:[] };

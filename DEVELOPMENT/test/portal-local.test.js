@@ -244,3 +244,12 @@ test('expired fallback pairing is rejected and the client has no periodic portal
   assert.match(client,/Connect my portal/);assert.match(client,/Advanced setup/);assert.match(client,/Last verified/);assert.match(client,/Information retrieved/);assert.match(client,/request\('bootstrap'/);assert.match(client,/request\('resume'/);
   assert.doesNotMatch(client,/setInterval\s*\(/);assert.doesNotMatch(client,/20000|including every 20 seconds|Nothing is sent to Supabase/);assert.doesNotMatch(client,/localStorage|sessionStorage/);
 });
+
+
+test('structured information tools retain real service owner, account-switch and expiry protection',async()=>{
+ const {informationTool}=require('../server/portal-local/information-tools');const f=fixture();await f.connect();
+ const before=await informationTool(f.service,'local-a',{tool:'get_my_meetings'});assert.equal(before.personal,true);assert.ok(before.sources.length);
+ assert.equal((await informationTool(f.service,'local-b',{tool:'get_my_meetings'})).sources.length,0);
+ f.switch();assert.equal((await informationTool(f.service,'local-a',{tool:'get_my_meetings'})).sources.length,0);
+ const expired=fixture();await expired.connect();expired.advance(300001);assert.equal((await informationTool(expired.service,'local-a',{tool:'get_my_team'})).sources.length,0);
+});
