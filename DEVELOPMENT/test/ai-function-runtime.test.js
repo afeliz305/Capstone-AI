@@ -19,6 +19,7 @@ test('actual Pages Function remains mock, rejects private/oversized inputs and t
     const result = await response.json();
     assert.equal(result.provider, 'mock');
     assert.equal(result.state, 'draft');
+    assert.equal(result.budgetReady, false);
     assert.equal(result.citations[0].id, 'test.criteria');
   }
   assert.equal((await run({ ...request, privatePortalData: true })).status, 403);
@@ -30,4 +31,13 @@ test('actual Pages Function remains mock, rejects private/oversized inputs and t
   assert.equal((await run(request, { MIRA_AI_MAX_REQUESTS_PER_MINUTE: '1' }, 'limit')).status, 200);
   assert.equal((await run(request, { MIRA_AI_MAX_REQUESTS_PER_MINUTE: '1' }, 'limit')).status, 429);
   assert.equal(calls, 0);
+  const ready = await (await run(request, { MIRA_AI_BUDGET: {
+    idFromName: name => name,
+    get: () => ({ fetch: async url => {
+      assert.equal(new URL(url).pathname, '/status');
+      return Response.json({ capMicroUsd: 25000000, spentMicroUsd: 0, heldMicroUsd: 0, halted: false });
+    } })
+  } })).json();
+  assert.equal(ready.budgetReady, true);
+  assert.equal(ready.provider, 'mock');
 });

@@ -4,6 +4,7 @@
   "pages_build_output_dir": "./dist/cloudflare/MIRA",
   "compatibility_date": "2026-11-12",
   "send_metrics": false,
+  "durable_objects": { "bindings": [{ "name": "MIRA_AI_BUDGET", "class_name": "AiBudget", "script_name": "mira-ai-budget" }] },
   "vars": {
     "MIRA_PUBLIC_ORIGIN": "https://mira-9gg.pages.dev/",
     "MIRA_SUPABASE_URL": "https://uoccyfcsalnancmdhnur.supabase.co",

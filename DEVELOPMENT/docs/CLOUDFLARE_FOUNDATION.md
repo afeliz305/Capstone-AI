@@ -1,5 +1,7 @@
 # Cloudflare Pages foundation
 
+Current AI activation authority: [Controlled $25 testing guide](AI_CONTROLLED_BUDGET.md). It supersedes the early activation prerequisites below: the classmate-owned project is explicitly authorized. Its dashboard need not be shared. The new local adapter permits only authenticated fixed-case testing with a persistent budget binding; it has not been deployed. The currently configured Pages production branch is `preview/mira-cloudflare`; `main` remains untouched.
+
 Status: existing preview foundation plus a new local owner-review candidate. This update did not deploy, push, change Supabase/DNS, call OpenAI, or activate a paid provider.
 
 ## Proposed Pages configuration
@@ -75,13 +77,13 @@ The in-memory request limiter is best-effort per Cloudflare isolate; it is not a
 
 When a live provider eventually returns token usage, the server can calculate a per-request estimate from the two owner-configured rate variables. It reports whether an estimate was actually configured and never guesses current model pricing. This estimate is informational, not billing authority or an enforceable budget.
 
-Do not use a classmate's personal key for a deployed workload. Use a MIRA-owned OpenAI project service account after owner authorization. Before live activation, confirm credential authorization, project ownership, model access using that exact project credential, available credits, organization/project usage limits, a hard monthly spend limit, data retention/training terms, FERPA handling, logging/redaction, rate limits, abuse controls, incident response, and key rotation.
+The classmate has authorized MIRA's limited $25 testing workload using fictional questions and reviewed public sources. Account-specific model/billing facts remain to be confirmed without sharing dashboard access. A dedicated MIRA service account is a future operational recommendation, not a new approval prerequisite. Provider notifications are not hard spending caps; use the persistent lifetime ledger and restricted test path described in the current guide.
 
 Activation sequence after separate approval:
 
-1. Create a MIRA-owned OpenAI project/service account with appropriate scope and expiration.
+1. Confirm account-specific billing/model facts with the credential owner; preserve the already-granted workload and budget authorization.
 2. Confirm the selected model for that exact project and record current pricing and rate limits.
-3. Set a hard project spend limit plus a lower notification threshold.
+3. Configure provider notifications and verify the centralized lifetime reservation ledger. Do not claim provider alerts enforce a hard cap.
 4. Store `OPENAI_API_KEY` as an encrypted Cloudflare secret.
 5. Set `MIRA_OPENAI_MODEL`, then set both activation gates only in a controlled preview environment.
 6. Run grounding, privacy, citation, fallback, cost, and abuse acceptance tests before broader release.

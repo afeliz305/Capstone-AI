@@ -1,5 +1,7 @@
 # Project guides
 
+- [Controlled OpenAI budget and secret handoff](AI_CONTROLLED_BUDGET.md) — local $25 lifetime ledger, private fixed-case testing, Cloudflare provisioning, and account-owner checks; live calls remain disabled.
+
 Current rename/release authority: [MIRA rename and Supabase migration plan](MIRA_RENAME_AND_SUPABASE_MIGRATION.md). It records the `/MIRA/` package, read-only Supabase audit, Staff Queue profile design, exact post-approval migration sequence, tests, and actions intentionally not performed. Dated documents may retain old paths where historically accurate.
 
 October 8 retrieval, context, current-portal-selector, visual-density, and support-validation work is recorded in the [19-issue team retest](TEAM_RETEST_2026-10-08.md). It is the current acceptance record for Michael's and Rome's reported cases. Publication remains a separate step.

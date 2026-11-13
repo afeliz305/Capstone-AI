@@ -277,3 +277,7 @@ Every item requires a named reviewer, date, and evidence link in the release rec
 - [ ] Project owner and technical/review owners record the final go/no-go decision and release version.
 
 **Maintenance rule:** update this document alongside changes affecting hosting, integration, authentication, persistence, testing exceptions, or release readiness. Keep implemented behavior, verified evidence, proposed work, and open decisions distinct. It does not update itself in the background.
+
+## November 12 controlled AI preparation
+
+The current hosted Cloudflare release is preserved. Local-only [centralized AI budget controls](AI_CONTROLLED_BUDGET.md) add a separate private Durable Object, fixed fictional/public-source test cases, a tester gate, and persistent reservations. Provisioning, hosted binding verification and secure key entry remain pending. No Supabase/Ocelot/portal integration changes are required. The classmate-owned project's $25 MIRA testing authorization and public/fictional processing scope are confirmed; billing/model facts are an account-owner checklist, not a request to share their account. Live paid AI and portal submissions remain disabled.
