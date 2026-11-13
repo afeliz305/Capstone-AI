@@ -4,7 +4,9 @@ import robotsParser from 'robots-parser';
 export const sources = Object.freeze({
   resources: {url:'https://capstone.cs.fiu.edu/resources',title:'Student resources'},
   tutorials: {url:'https://capstone.cs.fiu.edu/tutorials',title:'Tutorials'},
-  privacy: {url:'https://capstone.cs.fiu.edu/privacy',title:'Privacy policy'}
+  privacy: {url:'https://capstone.cs.fiu.edu/privacy',title:'Privacy policy'},
+  about: {url:'https://capstone.cs.fiu.edu/about',title:'About the Capstone program'},
+  engage: {url:'https://capstone.cs.fiu.edu/engage',title:'Engage with Capstone'}
 });
 const json=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 export async function boundedText(response,max=131072){
@@ -42,7 +44,9 @@ export async function handlePublic(request,{get=fetch,extract=extractPublic,now=
     const excerpts=await extract(html);
     if(excerpts.length<2||excerpts.some(t=>/ignore (?:all |previous )?instructions|system prompt|reveal (?:secrets|tokens)|send .*?(?:cookie|password|token)/i.test(t)))throw new Error('invalid source');
     // Current upstream responses are private,no-store: do not cache even anonymous excerpts.
-    return json({tool:'search_public_capstone_sources',sourceId:id,title:source.title,url:source.url,checkedAt:now(),sourceUpdatedAt:null,scope:'anonymous public page; linked authenticated content not read',excerpts,cache:'no-store',provider:'deterministic'});
+    const checkedAt=now(),modified=Date.parse(response.headers.get('last-modified')||'');
+    const sourceUpdatedAt=Number.isFinite(modified)&&modified<=Date.parse(checkedAt)?new Date(modified).toISOString():null;
+    return json({tool:'search_public_capstone_sources',sourceId:id,title:source.title,url:source.url,checkedAt,sourceUpdatedAt,scope:'anonymous public page; linked authenticated content not read',excerpts,cache:'no-store',provider:'deterministic'});
   }catch{return json({error:'Current public source could not be verified. Reviewed course knowledge remains available.',fallback:true},503);}
   finally{clearTimeout(timer);}
 }

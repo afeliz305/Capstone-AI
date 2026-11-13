@@ -77,6 +77,7 @@
   let lastQuestion = "";
   let lastTopic = "";
   let searchSequence = 0;
+  let publicTopic = null; // Source identifier only, never private values or persisted data.
   let currentSession = null;
   let accountBusy = false;
   let submittingTicket = false;
@@ -351,6 +352,7 @@
   }
 
   function resetConversation(notice, { sensitive=false } = {}) {
+    publicTopic=null;
     demoTopic = "";
     searchSequence++;
     const messages = log.querySelectorAll(".user-message, .assistant-message, .result-choices, .feedback-row");
@@ -766,6 +768,7 @@
   }
 
   function clearPortalConversation() {
+    publicTopic=null;
     searchSequence++;
     log.replaceChildren();
     conversation.length = 0; lastTopic = ""; topicHistory.length=0; lastQuestion = ""; input.value = "";
@@ -894,9 +897,11 @@
         } catch { if(demoStatus)demoStatus.textContent="Live answer unavailable. Showing course search instead; no automatic retry."; }
       }
       // Only the fixed source identifier leaves the browser, never the question.
+      const publicFollowup=publicTopic && Date.now()-publicTopic.at<300000 && /^(?:tell me more|more details|what else|show more)[.!?]*$/i.test(question.trim());
       const publicSource = !window.CapstonePortal && document.documentElement?.getAttribute?.("data-public-information") === "enabled"
         && !/\b(my|our|mine|grade|messages?|inbox|assigned|standups?|stand-ups?|team)\b/i.test(question)
-        && (/\bprivacy\b/i.test(question) ? "privacy" : /\btutorials?\b/i.test(question) ? "tutorials" : /\b(resources|showcase prep|presentation materials)\b/i.test(question) ? "resources" : "");
+        && (publicFollowup ? publicTopic.id : /\bprivacy\b/i.test(question) ? "privacy" : /\btutorials?\b/i.test(question) ? "tutorials" : /\b(resources|showcase prep|presentation materials)\b/i.test(question) ? "resources" : /\b(?:about (?:the )?(?:capstone|program)|capstone (?:history|program))\b/i.test(question) ? "about" : /\b(?:engage|sponsor|mentor|become a judge)\b/i.test(question) ? "engage" : "");
+      if(!publicSource)publicTopic=null;
       if(publicSource){
         try {
           const fetched=await fetch('/api/public-information?source='+publicSource,{credentials:'omit',cache:'no-store',redirect:'error',signal:AbortSignal.timeout(8000)});
@@ -906,8 +911,12 @@
           if(info?.url===expected && Array.isArray(info.excerpts) && info.excerpts.length && Number.isFinite(Date.parse(info.checkedAt)) && Math.abs(Date.now()-Date.parse(info.checkedAt))<300000){
             loading.remove();
             const terms=question.toLowerCase().match(/[a-z]{4,}/g)||[];
-            const ranked=info.excerpts.filter(t=>typeof t==='string'&&t.length<2000).map((text,index)=>({text,index,score:terms.filter(t=>text.toLowerCase().includes(t)).length})).sort((a,b)=>b.score-a.score||a.index-b.index);
-            const message=addAssistantText(ranked.slice(0,3).map(x=>x.text).join('\n\n'),"Public source excerpts · checked "+new Date(info.checkedAt).toLocaleString()+" · publication/update time not supplied");
+            const ranked=info.excerpts.filter(t=>typeof t==='string'&&t.length<2000).map((text,index)=>({text,index,score:terms.filter(t=>text.toLowerCase().includes(t)).length+(text.length>80?1:0)})).sort((a,b)=>b.score-a.score||a.index-b.index);
+            const selected=(publicFollowup?ranked.filter(x=>!publicTopic.indices.includes(x.index)):ranked).slice(0,3);
+            publicTopic={id:publicSource,at:Date.now(),indices:[...(publicFollowup?publicTopic.indices:[]),...selected.map(x=>x.index)]};
+            const checked=new Date(info.checkedAt).toLocaleString('en-US',{timeZone:'America/New_York',timeZoneName:'short'});
+            const modified=info.sourceUpdatedAt && Number.isFinite(Date.parse(info.sourceUpdatedAt))?' · source last modified '+new Date(info.sourceUpdatedAt).toISOString():' · publication/update time not supplied';
+            const message=addAssistantText(selected.length?selected.map(x=>x.text).join('\n\n'):"No additional public excerpts were returned by this source. Follow its link for the complete page.","Public source excerpts · checked "+checked+modified);
             addSourceCard(message,{title:info.title,url:expected});
             message.append(createElement("p","message-note","Read-only public page. Linked sign-in-only documents were not read. No AI call was made."));
             scrollToLatest(message);return{status:"matched",provider:"deterministic",sources:[info]};

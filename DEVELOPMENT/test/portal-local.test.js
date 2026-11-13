@@ -253,3 +253,13 @@ test('structured information tools retain real service owner, account-switch and
  f.switch();assert.equal((await informationTool(f.service,'local-a',{tool:'get_my_meetings'})).sources.length,0);
  const expired=fixture();await expired.connect();expired.advance(300001);assert.equal((await informationTool(expired.service,'local-a',{tool:'get_my_team'})).sources.length,0);
 });
+
+
+test('personal cards, stand-up submission, deadlines and standing select their actual approved sections',async()=>{
+ const {sectionsFor}=require('../server/lib/portal-intent');
+ for(const q of ['Did I submit my stand-up?','Did I submit my standup?','What stand-ups have I done?'])assert.equal(sectionFor(q),'My rhythm');
+ for(const q of ['Which cards are assigned to me?','What tasks are assigned to me?'])assert.equal(sectionFor(q),'Board');
+ assert.equal(routeQuestion("What's due next?"),true);assert.deepEqual(sectionsFor("What's due next?"),['Today','My work','Meetings']);
+ const f=fixture();await f.connect();const original=f.adapter.inspectSection;f.adapter.inspectSection=async(id,section)=>section==='My rhythm'?{...await f.adapter.identity(),section,records:[{kind:'standup',heading:'Fictional own stand-up history',text:'My standup submission count this week is two. Fictional fixture only.',url:'https://capstone.cs.fiu.edu/me/rhythm',section,subview:'Own rhythm history'}]}:original(id,section);const {informationTool}=require('../server/portal-local/information-tools');
+ for(const [tool,section] of [['get_my_cards','Board'],['get_my_standups','My rhythm'],['get_my_team_standing','Standing']]){const r=await informationTool(f.service,'local-a',{tool});assert.ok(r.sources.length,tool);assert.ok(r.sources.every(s=>s.section===section));assert.equal(r.dataState,'verified-excerpts');}
+});

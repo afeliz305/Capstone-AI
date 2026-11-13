@@ -79,3 +79,5 @@ Generated files have separate locations:
 - `dist/release-records/` — build instructions and checksum manifests, kept outside the website. A failed publish may leave a candidate website here; do not upload it as the current release.
 
 Generated releases/archives are ignored by Git and never served by the local Node app. Do not edit a generated release as the source of truth: edit the source and rebuild. Packaging never changes local runtime data or Ocelot's remote files. Before remote cleanup, privately preserve any needed records from older full-project uploads; do not delete tickets or remove access-protection rules blindly.
+
+Personalized retrieval continuation: see [connection gate, source matrix and verification](PORTAL_COMPLETION.md). No hosted private-data bridge or grade adapter is enabled. Public retrieval supports five exact pages and refreshes source-only follow-ups.

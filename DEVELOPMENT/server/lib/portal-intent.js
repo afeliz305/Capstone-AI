@@ -7,7 +7,7 @@ const personalFollowup=q=>/^(?:what about|and |when is it|is it|how about|show m
 const personalQuery=q=>/\b(my|our|mine|i am|i have|am i|who am i|signed in|logged in|messages?|inbox|unread)\b/i.test(q)||/\b(?:current|this) sprint\b/i.test(q)||/\b(?:this|the) (?:card|task|(?:team )?conversation|page)\b/i.test(q)||/\b(?:assigned to me|recorded for this task|posted grade components|standing explanation|deadlines? (?:are )?coming up|current work|open work|tasks? (?:are )?still open|what is in progress|what is blocked|anything blocked|should i finish|card am i on|waiting for verify|still needs evidence|standups? (?:do i need|have i done)|caught up on standups|my capstone|my snapshot|what should i do next|just tell me the next step|next meeting|product owner|check my work|who should i ask|ask a person|human help|need a person)\b/i.test(q);
 const publicAuthorityQuery=q=>/\b(?:mira|you) (?:cannot|can't|could not|couldn't|do not|don't) answer\b|\b(?:extension|extra time|extend(?:ed)? (?:my|the|an) assignment)\b|\b(?:what grade will|guess (?:my|the) grade|predict (?:my|the) grade)\b|\b(?:move me to|change (?:my|our) (?:capstone )?team)\b|\b(?:approve|mark) (?:my|our|the|this|a) card (?:as )?done\b|\b(?:another|other) student(?:'s)?\b|\bwhat (?:information )?(?:do i put|should i include) in (?:my |our )?(?:standup|stand-up|daily scrum)\b|\bwhere (?:do|should) we (?:submit|upload|document) (?:our )?sprint work\b/i.test(q);
 
-function routeQuestion(q,context=''){return personalQuery(q)||(String(context).includes('private-')&&(navigationQuery(q)||personalFollowup(q)));}
+function routeQuestion(q,context=''){return personalQuery(q)||/\bwhat(?:'s| is) due (?:next|this week)\b/i.test(q)||(String(context).includes('private-')&&(navigationQuery(q)||personalFollowup(q)));}
 function usablePublicResult(result){return!!result&&((result.indexed&&result.answerStatus!=='not_found')||['matched','choices'].includes(result.status));}
 function sectionFor(q,contextRecords=[],activeSection=''){
   if(navigationQuery(q)&&contextRecords.length===1)return contextRecords[0].section;
@@ -28,9 +28,10 @@ function sectionFor(q,contextRecords=[],activeSection=''){
   if(/\b(brand|logo|colors?|typography)\b/i.test(q))return'Brand & templates';
   if(/\b(resource|template|guide)\b/i.test(q))return'Resources';
   if(/\b(meetings?|ceremon(?:y|ies)|office hours|availability)\b/i.test(q))return'Meetings';
+  if(/\bstand[- ]?ups?\b/i.test(q))return'My rhythm';
   if(/\b(my work|work do i have|work am i|am i working|working on|open work|finish|assigned work)\b/i.test(q))return'My work';
   if(/\b(rhythm|standups? (?:have i|did i|this week|last week)|caught up on standups|cards moved)\b/i.test(q))return'My rhythm';
-  if(/\b(card|task|criteria|evidence|board|stand ?up|daily update|blocked|in progress|work(?: is)? assigned|current work)\b/i.test(q))return'Board';
+  if(/\b(cards?|tasks?|criteria|evidence|board|daily update|blocked|in progress|work(?: is)? assigned|current work)\b/i.test(q))return'Board';
   if(/\b(team|teammate|member|leader|leadership|product owner)\b/i.test(q))return'Team';
   if(contextRecords.length===1&&(personalFollowup(q)||/\b(?:it|that|those|previous|past|more|details?)\b/i.test(q)))return contextRecords[0].section;
   if(/^(?:what does this mean|what should i do here|what is missing|take me back to this page)[.!?]*$/i.test(String(q||'').trim())&&activeSection)return activeSection;
@@ -39,6 +40,8 @@ function sectionFor(q,contextRecords=[],activeSection=''){
 
 function sectionsFor(q,contextRecords=[],activeSection=''){
   const text=String(q||'');
+  if(/\b(?:deadlines?|due (?:next|this week)|incomplete assignments)\b/i.test(text))return /\b(?:sprint|cards?|tasks?|criteria|evidence)\b/i.test(text)?['Board','Today','My work','Meetings']:['Today','My work','Meetings'];
+  if(/\b(?:team.*sprint progress|sprint progress.*team)\b/i.test(text))return['Team','Board'];
   if(/\b(?:my capstone|my snapshot|capstone snapshot)\b/i.test(text))return['Today','My work','Board','My rhythm','Meetings','Inbox','Team'];
   if(/\b(?:what am i working on|what work do i have open|what should i finish(?: next)?|do i have anything blocked|what card am i on|what is waiting for verify|what still needs evidence)\b/i.test(text))return['My work','Board','Today'];
   if(/\bwhat should i do next\b|\bjust tell me the next step\b/i.test(text))return['Today','My work','Board','My rhythm'];

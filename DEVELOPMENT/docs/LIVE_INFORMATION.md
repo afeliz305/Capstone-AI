@@ -1,14 +1,16 @@
+> Current continuation: [Personalized retrieval acceptance and remaining connection gate](PORTAL_COMPLETION.md). The local helper has been prepared; a verified owner pairing is still required for current personal-data acceptance.
+
 # Read-only information in MIRA
 
 Baseline rollback: 47115193c34ab35a40eac3b27bff06755de5446f / https://2ebb644e.mira-9gg.pages.dev/.
 
 ## Public retrieval
 
-Cloudflare-only GET `/api/public-information?source=resources|tutorials|privacy` fetches exact anonymous public pages on capstone.cs.fiu.edu. It checks robots.txt, rejects redirects, limits bodies to 128 KiB (robots 16 KiB), and aborts after six seconds. No inbound cookies, authorization headers, question text or arbitrary URL are forwarded. Browser timeout is eight seconds. Only main-content plain-text excerpts are rendered, with a source link and checked time; no model is called. Linked templates or videos are not fetched.
+Cloudflare-only GET `/api/public-information?source=resources|tutorials|privacy|about|engage` fetches exact anonymous public pages on capstone.cs.fiu.edu. It checks robots.txt, rejects redirects, limits bodies to 128 KiB (robots 16 KiB), and aborts after six seconds. No inbound cookies, authorization headers, question text or arbitrary URL are forwarded. Browser timeout is eight seconds. Only main-content plain-text excerpts are rendered, with a source link and checked time; no model is called. Linked templates or videos are not fetched.
 
-Questions mentioning resources, showcase prep, presentation materials, tutorials or privacy use this route in the Cloudflare package. Sensitive/personal phrasing and the local connector are excluded. Other questions retain reviewed course/FARO search. This is bounded public-source retrieval, not a general web crawler or semantic live search. Failure, malformed content or stale result uses explicitly labeled reviewed-knowledge fallback. The build flag is absent from Node and Ocelot packages.
+Questions mentioning resources, showcase prep, presentation materials, tutorials, privacy, the Capstone program, or engagement use this route in the Cloudflare package. Sensitive/personal phrasing and the local connector are excluded. Other questions retain reviewed course/FARO search. This is bounded public-source retrieval, not a general web crawler or semantic live search. Failure, malformed content or stale result uses explicitly labeled reviewed-knowledge fallback. The build flag is absent from Node and Ocelot packages.
 
-Anonymous source checks on 2026-11-13 returned HTTP 200 for all three pages, with `private, no-store` and anonymous cookies. Cookies are discarded. All responses and excerpts are **no-store**, with no cache, index ingestion, Supabase storage or AI forwarding. `checkedAt` is fetch completion, not publication time; `sourceUpdatedAt` remains unknown. Scripts, forms and hidden elements are removed. Retrieved text is untrusted evidence, never executable instructions or authority to act. Pattern checks are defense in depth, not a complete prompt-injection detector; no retrieved content enters an AI prompt.
+Anonymous source checks on 2026-11-13 returned HTTP 200 for the initial three pages, with `private, no-store` and anonymous cookies. Cookies are discarded. All responses and excerpts are **no-store**, with no cache, index ingestion, Supabase storage or AI forwarding. `checkedAt` is fetch completion, not publication time; `sourceUpdatedAt` remains unknown. Scripts, forms and hidden elements are removed. Retrieved text is untrusted evidence, never executable instructions or authority to act. Pattern checks are defense in depth, not a complete prompt-injection detector; no retrieved content enters an AI prompt.
 
 ## Capability matrix
 
@@ -34,7 +36,7 @@ APPROVAL REQUIRED means the hosted bridge/institutional interface is not establi
 
 ## Structured local tools and integration contract
 
-`POST /__portal/information` accepts only `{ "tool": "get_my_team" }` and the six allowlisted names in `server/portal-local/information-tools.js`: get_my_grade, get_my_team, get_my_sprint_cards, get_my_standups, get_my_meetings, get_my_deadlines. Grade deliberately returns unavailable. The rest delegate to the existing deterministic search and its strict scoped extraction. The current chat already routes personal questions through that same service.
+`POST /__portal/information` accepts only `{ "tool": "get_my_team" }` and the allowlisted names in `server/portal-local/information-tools.js`: get_my_grade, get_my_team, get_my_sprint_cards, get_my_standups, get_my_meetings, get_my_deadlines, get_my_cards (alias), get_my_team_standing. Grade deliberately returns unavailable. The rest delegate to the existing deterministic search and its strict scoped extraction. The current chat already routes personal questions through that same service.
 
 The server derives the owner from its paired HttpOnly session, requires same-origin JSON and CSRF verification, checks the active owner, and rechecks identity, expiry and generation through the existing service. No caller-supplied account ID is accepted. Tools cannot be enabled by a model schema. The local client rejects results after a connection-generation change. Private snapshots expire within five minutes and never enter durable storage. These routes/modules are excluded from public packages.
 

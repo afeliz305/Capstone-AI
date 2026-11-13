@@ -1,3 +1,5 @@
+> Live information update: [Read-only capability and verification record](LIVE_INFORMATION.md). Demonstrate ?What presentation materials are available?? and ?Tell me more? for live public excerpts. ?Tell me about the Capstone program? and ?How can companies engage with Capstone?? use newly allowlisted public pages. No private portal value is claimed without an active verified local connection.
+
 > Current classroom release: see [final product polish and verification](PRODUCT_POLISH_RELEASE.md). MIRA product copy, accurate data-provider disclosure and the completed authenticated acceptance supersede dated checkpoints below. Restricted live AI remains disabled by default.
 
 # MIRA class demonstration and handoff
@@ -131,3 +133,11 @@ Release: `6160dee0841889a0f88b09e2c6968db5dbe2413a`, https://mira-9gg.pages.dev/
 - No new defect reproduced. No application code, deployment, ticket, user, password, recovery email, database configuration or portal record changed. No paid OpenAI calls were made. Only the authorized session was signed out and the harmless attachment was downloaded.
 
 The prior write/persistence/concurrency and live-AI acceptance evidence remains historical; this focused check did not repeat writes, force session expiry, inspect tokens or prove immediate revocation of a previously issued JWT. Presenter must sign in personally again before the staff demonstration. Live AI remains disabled by default and portal submissions remain disabled.
+
+## Current information demonstration
+
+1. Show the public source title, checked time (Eastern with EST/EDT), citation and no-AI disclosure. Publication time is unknown unless the source supplies Last-Modified.
+2. Ask Tell me more: MIRA re-fetches the same approved source and shows additional excerpts. This source-only context expires after five minutes; it is not persistent storage.
+3. Explain that public live retrieval needs the network. The offline preview uses labeled reviewed knowledge fallback.
+4. The local helper terminal and extension must be personally paired before personal testing. Use only the authorized owner account. Do not project, screenshot or record actual grades, identifiers, messages or private team records. If pairing or identity verification is unavailable, show the boundary rather than a historical snapshot as live. Grade remains disabled even after pairing.
+5. The current source wrappers support own cards, team, rhythm, meetings, deadlines and standing within existing extraction limits; team-wide completion and official approval are not inferred. No portal submissions or new AI activation during this demo.
