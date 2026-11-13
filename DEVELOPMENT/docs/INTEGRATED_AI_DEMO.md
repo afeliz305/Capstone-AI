@@ -25,10 +25,10 @@ npx.cmd wrangler dev --remote --config scripts/demo-operator.wrangler.jsonc --ip
 In a second terminal:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/start-classroom-demo.ps1 -Minutes 15
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/start-classroom-demo.ps1 -Minutes 15 -PricingReviewed
 ```
 
-Choose the duration deliberately; 15 minutes is an example, not an assumed class time. The script reads the protected operator credential without displaying it, checks the hosted audit, recovers only a reconciled controlled-test-complete halt, starts the bounded session, opens a dedicated Edge window and signs the demonstrator in through the website form. Close that window to stop. Normal exit and errors invoke /demo-stop and verify the halt. Process termination or network loss can prevent cleanup: expiry still denies new paid calls, and the operator must verify/stop the session after reconnecting. Never release uncertain reservations to continue.
+Choose the duration deliberately; 15 minutes is an example, not an assumed class time. Use -PricingReviewed only after checking current standard pricing: all input/cache-write rates must be at most $5 and output at most $10 per million tokens. Otherwise stop for a reviewed pricing correction. The script reads the protected operator credential without displaying it, checks the hosted audit, recovers only a reconciled controlled-test-complete halt, starts the bounded session, opens a dedicated Edge window and signs the demonstrator in through the website form. Close that window to stop. Normal exit and errors invoke /demo-stop and verify the halt. Process termination or network loss can prevent cleanup: expiry still denies new paid calls, and the operator must verify/stop the session after reconnecting. Never release uncertain reservations to continue.
 
 The browser Disconnect button removes its cookie; it is not a global kill switch. Operator stop is global. Reloaded pages require Check existing demo session. Expiry/revocation is checked server-side. Refreshing cannot extend a session.
 
@@ -51,3 +51,16 @@ Offline fallback: existing PDF and deterministic local preview. Explicitly call 
 Before integration, the hosted ledger read $0.003915 spent, $0 held, halted for completed testing. Current results belong in dist/presentation/CLASSROOM_LIVE_ACCEPTANCE.json; historical values are not a fresh invoice. Initial non-billable checks: 415 passed, 0 failed, one optional PHP skip; generated browser, branding/responsive and Function compilation passed. Final hosted results are recorded after publication.
 
 Outside scope: arbitrary/private student questions sent to AI, automatic hosted portal synchronization, portal writes, account-wide billing controls and unrestricted public paid access. Supabase staff authentication is independent of the demonstrator cookie. Staff records are never AI evidence. Main, Ocelot, Supabase, portal records and FARO remain unchanged.
+
+
+## Hosted acceptance completed November 13, 2026
+
+- Actual browser UI: Done question (embedded), evidence follow-up (floating), and fictional stand-up each returned live Sol answers with reviewed citations.
+- Initial Review/Retro response reached the 512-token ceiling. The incomplete answer was rejected, its usage settled, and fallback displayed. Session shutdown succeeded.
+- Confirmed repairs: concise generation instruction without increasing ceilings; preserved newlines; text-only paragraph rendering; numbered source cards; rejected malformed citation ranges. The single Review/Retro retest returned a complete grounded answer (361 input / 227 output tokens).
+- Five provider requests total, including the rejected incomplete answer. New conservative ledger cost: **$0.025710**. Cumulative: **$0.029625 spent, $0 held, $24.970375 available**. All seven lifetime requests settled. This is usage-derived conservative accounting, not an invoice.
+- Anonymous demo requests denied. Session revoked; persistent halt active. Public deterministic/mock behavior preserved.
+- Public hosted walkthrough: 14 questions, seven workspace actions, embedded/floating, themes/Profile/Team, four viewport widths, zoom, signed-out Staff Queue and recovery passed. Native Chrome 200% zoom was also observed and restored to 100%.
+- Staff Queue was signed out in the existing Chrome profile; no new authenticated read/download/logout claim is made. Prior authenticated audit remains historical. No passwords, tickets or attachments changed.
+- Live answer tests span the initial integration release and its targeted formatting/length correction. The first three paid scenarios were not repeated just for screenshots. A follow-up is scoped to the reviewed Done topic; arbitrary live conversation remains unsupported.
+- Final safeguards remain disabled by default. No critical defect is known in the restricted flow; unrestricted conversational AI is not claimed complete.

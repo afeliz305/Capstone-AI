@@ -19,3 +19,4 @@ UPLOAD_TO_OCELOT/
 /DEVELOPMENT/server/supabase.local.json
 /DEVELOPMENT/server/website-index/runtime/
 /DEVELOPMENT/.wrangler/
+/DEVELOPMENT/scripts/.wrangler/

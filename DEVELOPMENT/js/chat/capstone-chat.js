@@ -89,7 +89,7 @@
   const topicHistory = [];
   const HISTORY_KEY = "miraPublicState";
   const LAUNCHER_HINT_KEY = "miraLauncherHintDismissed";
-  let demoExpires = 0, demoTopic = "";
+  let demoExpires = 0, demoTopic = "", demoExpiryTimer = null;
   const demoStatus = document.querySelector("#mira-demo-status");
   const demoLogin = document.querySelector("#mira-demo-login");
   const demoCode = document.querySelector("#mira-demo-code");
@@ -100,7 +100,9 @@
     "how do i prepare both sprint review and retrospective"
   ]);
   function demoState(active, expires, message) {
+    clearTimeout(demoExpiryTimer);
     demoExpires = active ? expires : 0;
+    if(active) demoExpiryTimer=setTimeout(()=>demoState(false,0,"Live demo expired. Course search remains available."),Math.max(0,expires-Date.now()));
     if (!active) demoTopic = "";
     if (demoStatus) demoStatus.textContent = message || (active ? "Restricted GPT-6.1 Sol session connected. Only listed classroom prompts use live AI." : "Live AI off. Course search is available.");
     document.querySelectorAll("[data-ai-mode]").forEach(label=>{label.textContent=active?"GPT-6.1 Sol · restricted demo":"Course sources · live AI off";});
@@ -349,6 +351,7 @@
   }
 
   function resetConversation(notice, { sensitive=false } = {}) {
+    demoTopic = "";
     searchSequence++;
     const messages = log.querySelectorAll(".user-message, .assistant-message, .result-choices, .feedback-row");
     messages.forEach((message, index) => { if (index > 0) message.remove(); });

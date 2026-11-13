@@ -4,6 +4,7 @@ const fs=require('node:fs'),crypto=require('node:crypto'),assert=require('node:a
 const {chromium}=require('playwright-core');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function main(){
+ if(!process.argv.includes('--pricing-reviewed'))throw Error('Current conservative pricing review required');
  const operator=fs.readFileSync(0,'utf8').trim();
  if(!/^[A-Za-z0-9_-]{43,128}$/.test(operator))throw Error('Protected operator credential unavailable');
  const minutes=Number(process.argv[process.argv.indexOf('--minutes')+1]);
@@ -11,6 +12,8 @@ async function main(){
  const acceptance=process.argv.includes('--acceptance'),origin='https://mira-9gg.pages.dev';
  const ledger=async(route,body={})=>{const r=await fetch('http://127.0.0.1:8798',{method:'POST',headers:{authorization:'Bearer '+operator},body:JSON.stringify({route,body})});const value=await r.json();if(!r.ok)throw Error('Operator operation rejected: '+route+' HTTP '+r.status);return value;};
  const record={startedAt:new Date().toISOString(),origin,liveRequests:0,answers:[]};let browser,activated=false;
+ const stop=()=>{ if(browser)void browser.close().catch(()=>{}); };
+ process.once('SIGINT',stop); process.once('SIGTERM',stop);
  try{
   record.before=await ledger('/status');const audit=await ledger('/operator-audit');
   assert.equal(record.before.heldMicroUsd,0);assert.equal(record.before.capMicroUsd,25000000);assert.ok(audit.records.every(r=>r.state==='settled'));
@@ -45,9 +48,14 @@ async function main(){
     fs.mkdirSync('dist/presentation/live-demo',{recursive:true});await page.screenshot({path:`dist/presentation/live-demo/${process.argv.includes('--review-only')?'review-retest':'turn-'+(i+1)}.png`});
    }
    record.browserLive='PASS';
-  }else await Promise.race([new Promise(resolve=>browser.on('disconnected',resolve)),sleep(Math.max(1,session.expires-Date.now()))]);
+  }else {
+   let expiryTimer;
+   try { await Promise.race([new Promise(resolve=>browser.on('disconnected',resolve)),new Promise(resolve=>{expiryTimer=setTimeout(resolve,Math.max(1,session.expires-Date.now()));})]); }
+   finally { clearTimeout(expiryTimer); }
+  }
  }catch(error){record.error=error.message;process.exitCode=1;console.log('Demo stopped: '+error.message);}
  finally{
+  process.removeListener('SIGINT',stop); process.removeListener('SIGTERM',stop);
   if(activated){try{await ledger('/demo-stop');record.after=await ledger('/status');assert.equal(record.after.halted,true);record.newCostMicroUsd=record.after.spentMicroUsd-record.before.spentMicroUsd;assert.ok(record.newCostMicroUsd+record.after.heldMicroUsd<=1000000);console.log('Session revoked; persistent halt active.');}catch(error){record.shutdownError=error.message;process.exitCode=1;console.log('URGENT: operator shutdown verification failed.');}}
   if(browser)await browser.close().catch(()=>{});
   fs.mkdirSync('dist/presentation',{recursive:true});const evidencePath='dist/presentation/CLASSROOM_LIVE_ACCEPTANCE.json';if(fs.existsSync(evidencePath))fs.copyFileSync(evidencePath,evidencePath.replace('.json','-'+Date.now()+'.json'));fs.writeFileSync(evidencePath,JSON.stringify(record,null,2));
