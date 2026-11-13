@@ -20,7 +20,7 @@ async function fixture() {
   } };
   const env = { MIRA_AI_ALLOW_INITIALIZE: 'true', MIRA_AI_BUDGET_ENABLED: 'true' };
   let instance = new AiBudget({ storage }, env);
-  const call = (route, body = {}) => instance.fetch(new Request('https://budget.internal' + route, { method: 'POST', body: JSON.stringify(body) }));
+  const call = (route, body = {}, credential) => instance.fetch(new Request('https://budget.internal' + route, { method: 'POST', headers: credential ? { authorization: 'Bearer ' + credential } : {}, body: JSON.stringify(body) }));
   return { call, env, corrupt: () => { record.spent = -1; }, restart: () => { instance = new AiBudget({ storage }, env); } };
 }
 
@@ -88,6 +88,7 @@ test('actual SQLite Durable Object persists across runtime restart and serialize
   const os = require('node:os');
   const persist = await fs.mkdtemp(path.join(os.tmpdir(), 'mira-budget-test-'));
   const script = await fs.readFile(path.resolve(__dirname, '../workers/ai-budget/worker.mjs'), 'utf8');
+  const operator = 'fictional-sqlite-operator-'.padEnd(64, 's');
   const options = { ...convertV4MiniflareOptions({ name: 'budget-test', modules: true, script, compatibilityDate: '2026-11-12', durableObjects: { BUDGET: { className: 'AiBudget', useSQLite: true }, MIRA_AI_BUDGET: { className: 'AiBudget', useSQLite: true } }, bindings: { MIRA_AI_ALLOW_INITIALIZE: 'true', MIRA_AI_BUDGET_ENABLED: 'true' } }), resourcePersistencePath: persist };
   let mf = new Miniflare(options);
   t.after(async () => { await mf.dispose(); });
@@ -110,6 +111,21 @@ test('actual SQLite Durable Object persists across runtime restart and serialize
   await mf.dispose(); mf = new Miniflare(options);
   assert.equal((await (await call('/status')).json()).heldMicroUsd, 500000);
   assert.equal((await mf.dispatchFetch('https://example.test/status')).status, 404);
+  // Reopen the same SQLite store with explicit operator configuration, not a new ledger.
+  await mf.dispose();
+  const operatorOptions = { ...convertV4MiniflareOptions({ name:'budget-test', modules:true, script, compatibilityDate:'2026-11-12', durableObjects:{BUDGET:{className:'AiBudget',useSQLite:true},MIRA_AI_BUDGET:{className:'AiBudget',useSQLite:true}}, bindings:{MIRA_AI_BUDGET_ENABLED:'true',MIRA_AI_OPERATOR_SHA256:createHash('sha256').update(operator).digest('hex')} }), resourcePersistencePath:persist };
+  mf = new Miniflare(operatorOptions);
+  const admin = async (route, body = {}) => { const ns=await mf.getDurableObjectNamespace('BUDGET'); return ns.get(ns.idFromName('mira-usd25-lifetime-v1')).fetch('https://budget.internal'+route,{method:'POST',headers:{authorization:'Bearer '+operator},body:JSON.stringify(body)}); };
+  const history = await (await admin('/operator-audit')).json();
+  for(const r of history.records) await call('/settle',{id:r.id,costMicroUsd:55});
+  await call('/halt',{reason:'controlled-test-complete'});
+  const revision=(await(await call('/status')).json()).revision;
+  assert.equal((await admin('/recover',{id:randomUUID(),expectedRevision:revision,reason:'reviewed-controlled-test-complete',evidence:'FICTIONAL_SQLITE_ACCEPTANCE'})).status,200);
+  await mf.dispose(); mf=new Miniflare(operatorOptions);
+  const persisted=await(await admin('/operator-audit')).json();
+  assert.equal(persisted.audit.filter(e=>e.action==='operator-recovery').length,1);
+  assert.equal((await(await call('/status')).json()).spentMicroUsd,110);
+  assert.equal(persisted.records.length,2);
 });
 
 test('controlled Function excludes arbitrary text, reserves before sending, reconciles usage and preserves holds on failures', async t => {
@@ -151,7 +167,7 @@ test('controlled Function cannot release uncertain usage or present invented cit
   const api = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
   const original = global.fetch; t.after(() => { global.fetch = original; });
   const tester = 'fictional-second-test-credential-'.padEnd(48, 'y');
-  for (const outcome of ['missing-usage', 'excess-usage', 'bad-citation', 'settlement-offline']) {
+  for (const outcome of ['missing-usage', 'excess-usage', 'bad-citation', 'settlement-offline', 'provider-timeout', 'model-rejection']) {
     const f = await fixture(); await f.call('/initialize');
     const env = { MIRA_AI_PROVIDER: 'openai', MIRA_AI_LIVE_ENABLED: 'true', MIRA_AI_CONTROLLED_TESTS: 'true', MIRA_AI_KILL_SWITCH: 'off', MIRA_AI_TESTER_SHA256: createHash('sha256').update(tester).digest('hex'),
       OPENAI_API_KEY: 'fictional-unit-test-value', MIRA_OPENAI_MODEL: 'gpt-6-luna', MIRA_AI_VERIFIED_MODEL: 'gpt-6-luna', MIRA_AI_INPUT_USD_PER_MILLION: '0.10', MIRA_AI_OUTPUT_USD_PER_MILLION: '0.50', MIRA_AI_PRICING_VALID_UNTIL: new Date(Date.now() + 3600000).toISOString(),
@@ -159,12 +175,68 @@ test('controlled Function cannot release uncertain usage or present invented cit
         if (outcome === 'settlement-offline' && url.endsWith('/settle')) throw new Error('storage unavailable');
         return f.call(new URL(url).pathname, JSON.parse(opts.body));
       } }) } };
-    global.fetch = async () => Response.json({ output_text: 'Draft [999]', ...(outcome === 'missing-usage' ? {} : { usage: { input_tokens: 300, output_tokens: outcome === 'excess-usage' ? 999 : 50 } }) });
+    global.fetch = async () => {
+      if (outcome === 'provider-timeout') throw new Error('fictional timeout');
+      if (outcome === 'model-rejection') return Response.json({error:'must-not-be-exposed'}, {status:404});
+      return Response.json({ output_text: 'Rejected content must-not-be-exposed [999]', ...(outcome === 'missing-usage' ? {} : { usage: { input_tokens: 300, output_tokens: outcome === 'excess-usage' ? 999 : 50, output_tokens_details: {reasoning_tokens:30} } }) });
+    };
     const result = await api.onRequestPost({ env, request: new Request('https://example.test/api/ai', { method: 'POST', headers: { authorization: 'Bearer ' + tester, 'cf-connecting-ip': outcome }, body: JSON.stringify({ task: 'next-steps', testCase: 'public-program-v1' }) }) });
-    assert.equal((await result.json()).provider, 'deterministic');
+    const answer = await result.json();
+    assert.equal(answer.provider, 'deterministic');
+    assert.doesNotMatch(JSON.stringify(answer), /must-not-be-exposed/);
     const status = await (await f.call('/status')).json();
     assert.equal(status.heldMicroUsd, outcome === 'bad-citation' ? 0 : 250000);
     if (outcome.includes('usage')) assert.equal(status.halted, true);
-    if (outcome === 'bad-citation') assert.equal(status.spentMicroUsd, 55);
+    if (outcome === 'bad-citation') {
+      assert.equal(status.spentMicroUsd, 55);
+      assert.equal(answer.providerAttempt.accounting, 'settled');
+      assert.equal(answer.providerAttempt.costMicroUsd, 55);
+      assert.deepEqual(answer.providerAttempt.usage, { inputTokens:300, outputTokens:50, reasoningTokens:30, estimatedUsd:0.000055, estimateConfigured:true });
+    }
+    if (outcome === 'model-rejection') assert.equal(answer.providerAttempt.providerStatus, 404);
+    if (outcome === 'provider-timeout') assert.equal(answer.providerAttempt.reason, 'provider-outcome-uncertain');
+  }
+});
+
+test('operator recovery is separately authenticated, atomic, audited and preserves spending', async () => {
+  const f = await fixture(); await f.call('/initialize');
+  const operator = 'fictional-operator-'.padEnd(64, 'o');
+  const tester = 'fictional-tester-'.padEnd(64, 't');
+  f.env.MIRA_AI_OPERATOR_SHA256 = createHash('sha256').update(operator).digest('hex');
+  const id = randomUUID(); await f.call('/reserve', { id }); await f.call('/settle', { id, costMicroUsd: 120 });
+  await f.call('/halt', { reason: 'controlled-test-complete' });
+  const before = await (await f.call('/status')).json();
+  const body = { id: randomUUID(), expectedRevision: before.revision, reason: 'reviewed-controlled-test-complete', evidence: 'FICTIONAL_ACCEPTANCE_001' };
+  assert.equal((await f.call('/recover', body)).status, 403);
+  assert.equal((await f.call('/recover', body, tester)).status, 403);
+  assert.equal((await f.call('/operator-audit', {}, tester)).status, 403);
+  assert.equal((await f.call('/recover', { ...body, reason: '' }, operator)).status, 400);
+  assert.equal((await f.call('/recover', { ...body, expectedRevision: before.revision - 1 }, operator)).status, 409);
+  const results = await Promise.all(Array.from({length: 8}, () => f.call('/recover', {...body, id: randomUUID()}, operator)));
+  assert.equal(results.filter(r => r.status === 200).length, 1);
+  assert.equal(results.filter(r => r.status === 409).length, 7);
+  f.restart();
+  const after = await (await f.call('/status')).json();
+  assert.equal(after.spentMicroUsd, 120); assert.equal(after.heldMicroUsd, 0); assert.equal(after.attempts, 1); assert.equal(after.halted, false);
+  const audit = await (await f.call('/operator-audit', {}, operator)).json();
+  assert.equal(audit.records.length, 1); assert.equal(audit.records[0].cost, 120);
+  assert.equal(audit.audit.filter(e => e.action === 'operator-recovery').length, 1);
+  const used = audit.audit.find(e => e.action === 'operator-recovery').id;
+  assert.equal((await f.call('/recover', {...body, id:used}, operator)).status, 409);
+  await f.call('/halt', {reason:'controlled-test-complete'});
+  assert.equal((await f.call('/reserve', {id:randomUUID()})).status, 403);
+  assert.equal((await f.call('/recover', {...body,id:used,expectedRevision:(await (await f.call('/status')).json()).revision}, operator)).status, 409);
+});
+
+test('recovery fails closed on unresolved holds, financial halts and exhausted budget', async () => {
+  const operator = 'fictional-financial-operator-'.padEnd(64,'z');
+  for (const outcome of ['held','usage','overspend','exhausted']) {
+    const f=await fixture();await f.call('/initialize');f.env.MIRA_AI_OPERATOR_SHA256=createHash('sha256').update(operator).digest('hex');
+    const id=randomUUID();await f.call('/reserve',{id});
+    if(outcome!=='held')await f.call('/settle',{id,costMicroUsd:outcome==='exhausted'?25000000:outcome==='overspend'?250001:120});
+    await f.call('/halt',{reason:outcome==='usage'?'usage-unverified':'controlled-test-complete'});
+    const before=await(await f.call('/status')).json();
+    const r=await f.call('/recover',{id:randomUUID(),expectedRevision:before.revision,reason:'reviewed-controlled-test-complete',evidence:'FICTIONAL_UNRESOLVED_001'},operator);
+    assert.equal(r.status,409);assert.deepEqual(await(await f.call('/status')).json(),before);
   }
 });

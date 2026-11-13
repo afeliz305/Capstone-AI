@@ -594,3 +594,5 @@ Before sharing a new version:
 - [ ] Tell teammates to pull again or download a new ZIP.
 
 This is a version-controlled document. It does not update itself while no one is working on the project; maintain it alongside future changes.
+
+Budget administrators only: see [operator recovery and controlled AI testing](AI_CONTROLLED_BUDGET.md). Ordinary teammates must not set operator credentials or unhalt spending; the public preview remains mock-only until controlled acceptance succeeds.

@@ -281,3 +281,5 @@ Every item requires a named reviewer, date, and evidence link in the release rec
 ## November 12 controlled AI preparation
 
 The current hosted Cloudflare release is preserved. Local-only [centralized AI budget controls](AI_CONTROLLED_BUDGET.md) add a separate private Durable Object, fixed fictional/public-source test cases, a tester gate, and persistent reservations. Provisioning, hosted binding verification and secure key entry remain pending. No Supabase/Ocelot/portal integration changes are required. The classmate-owned project's $25 MIRA testing authorization and public/fictional processing scope are confirmed; billing/model facts are an account-owner checklist, not a request to share their account. Live paid AI and portal submissions remain disabled.
+
+Controlled AI recovery now requires separate operator authorization, exact ledger revision and durable audit evidence; no balances are reset. Follow [AI_CONTROLLED_BUDGET.md](AI_CONTROLLED_BUDGET.md). Preserve the existing shared ledger and keep public paid AI disabled.
